@@ -62,7 +62,8 @@ app.include_router(admin_router, prefix="/admin", tags=["admin"])
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Root endpoint - redirect to admin dashboard"""
-    return templates.TemplateResponse("admin/dashboard.html", {"request": request})
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/admin", status_code=303)
 
 # Health check endpoint
 @app.get("/health")
