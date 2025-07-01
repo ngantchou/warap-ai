@@ -14,6 +14,7 @@ class ServiceType(str, Enum):
 
 class RequestStatus(str, Enum):
     PENDING = "en attente"
+    PROVIDER_NOTIFIED = "prestataire_notifie"
     ASSIGNED = "assignée"
     IN_PROGRESS = "en cours"
     COMPLETED = "terminée"

@@ -126,26 +126,29 @@ async def handle_user_request(user_id: int, message: str, user_phone: str, db: S
                 service_request = request_service.create_request(user_id, extracted_info)
             
             if service_request:
-                # Find available providers
-                providers = provider_service.find_available_providers(
-                    extracted_info["service_type"],
-                    extracted_info["location"]
-                )
+                # Use advanced notification service with matching and fallback
+                from app.services.notification_service import WhatsAppNotificationService
+                notification_service = WhatsAppNotificationService(db)
                 
-                if providers:
-                    # Notify providers (start with the highest rated)
-                    await notify_providers(service_request, providers[:3], db)  # Notify top 3 providers
-                else:
-                    # No providers available
-                    no_provider_message = f"""
-Désolé, nous n'avons actuellement aucun prestataire disponible pour le service {extracted_info['service_type']} dans votre zone.
+                # Start provider notification process asynchronously
+                import asyncio
+                loop = asyncio.get_event_loop()
+                loop.create_task(notification_service.notify_providers_for_request(service_request))
+                
+                # Send initial confirmation to user
+                confirmation_message = f"""✅ Votre demande a été enregistrée !
 
-Notre équipe va rechercher des prestataires supplémentaires et vous recontactera dès que possible.
+🔧 Service : {extracted_info['service_type']}
+📍 Lieu : {extracted_info['location']}
+⏰ Délai : {extracted_info.get('urgency', 'Dès que possible')}
 
-Merci de votre patience !
-                    """.strip()
-                    
-                    whatsapp_service.send_message(user_phone, no_provider_message)
+🔄 Nous recherchons le meilleur prestataire pour vous.
+Vous recevrez une notification dès qu'un prestataire accepte votre demande.
+
+💰 Commission : 15% du montant final
+📞 Support : Contactez-nous si besoin"""
+                
+                whatsapp_service.send_message(user_phone, confirmation_message)
         
         elif extracted_info["service_type"] == "non_identifié" and not extracted_info.get("missing_info"):
             # Create incomplete request to continue conversation
