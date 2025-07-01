@@ -10,6 +10,7 @@ from services.ai_service import ai_service
 from services.whatsapp_service import whatsapp_service
 from services.provider_service import ProviderService
 from services.request_service import RequestService
+from app.services.conversation_manager import conversation_manager
 from models import RequestStatus, Conversation, ServiceRequest, User
 from utils.logger import setup_logger
 
@@ -79,22 +80,8 @@ async def handle_user_request(user_id: int, message: str, user_phone: str, db: S
         request_service = RequestService(db)
         provider_service = ProviderService(db)
         
-        # Get conversation history (last 5 messages)
-        conversations = db.query(Conversation).filter(
-            Conversation.user_id == user_id
-        ).order_by(Conversation.created_at.desc()).limit(5).all()
-        
-        conversation_history = [
-            {"type": "user" if conv.message_type == "incoming" else "assistant", 
-             "content": conv.message_content}
-            for conv in reversed(conversations)
-        ]
-        
-        # Extract information from message using AI
-        extracted_info = ai_service.extract_request_info(message, conversation_history)
-        
-        # Generate response message
-        response_message = extracted_info.get("response_message", "Je vous remercie pour votre message.")
+        # Use Sprint 2 conversation manager for intelligent processing
+        response_message, request_info = conversation_manager.process_message(str(user_id), message)
         
         # Send response to user
         whatsapp_service.send_message(user_phone, response_message)
@@ -104,41 +91,55 @@ async def handle_user_request(user_id: int, message: str, user_phone: str, db: S
             user_id=user_id,
             message_content=message,
             ai_response=response_message,
-            extracted_data=extracted_info
+            extracted_data={
+                "service_type": request_info.service_type,
+                "location": request_info.location,
+                "description": request_info.description,
+                "urgency": request_info.urgency,
+                "confidence_score": request_info.confidence_score
+            }
         )
         
         # If request is complete, create service request and notify providers
-        if extracted_info.get("is_complete", False):
+        if request_info.is_complete():
             # Check if user has an incomplete request to update
             incomplete_request = request_service.find_incomplete_request_for_user(user_id)
             
             if incomplete_request:
                 # Update existing request
-                incomplete_request.service_type = extracted_info["service_type"]
-                incomplete_request.description = extracted_info["description"]
-                incomplete_request.location = extracted_info["location"]
-                incomplete_request.preferred_time = extracted_info.get("preferred_time")
-                incomplete_request.urgency = extracted_info.get("urgency", "normal")
+                incomplete_request.service_type = request_info.service_type
+                incomplete_request.description = request_info.description
+                incomplete_request.location = request_info.location
+                incomplete_request.preferred_time = request_info.urgency
+                incomplete_request.urgency = request_info.urgency
                 db.commit()
                 service_request = incomplete_request
             else:
-                # Create new service request
-                service_request = request_service.create_request(user_id, extracted_info)
+                # Create new service request using RequestInfo data
+                request_data = {
+                    "service_type": request_info.service_type,
+                    "description": request_info.description,
+                    "location": request_info.location,
+                    "preferred_time": request_info.urgency,
+                    "urgency": request_info.urgency
+                }
+                service_request = request_service.create_request(user_id, request_data)
             
             if service_request:
                 # Find available providers
                 providers = provider_service.find_available_providers(
-                    extracted_info["service_type"],
-                    extracted_info["location"]
+                    request_info.service_type,
+                    request_info.location
                 )
                 
                 if providers:
                     # Notify providers (start with the highest rated)
                     await notify_providers(service_request, providers[:3], db)  # Notify top 3 providers
+                    logger.info(f"Created service request ID {service_request.id} and notified {len(providers)} providers")
                 else:
                     # No providers available
                     no_provider_message = f"""
-Désolé, nous n'avons actuellement aucun prestataire disponible pour le service {extracted_info['service_type']} dans votre zone.
+Désolé, nous n'avons actuellement aucun prestataire disponible pour le service {request_info.service_type} dans votre zone.
 
 Notre équipe va rechercher des prestataires supplémentaires et vous recontactera dès que possible.
 
@@ -147,16 +148,8 @@ Merci de votre patience !
                     
                     whatsapp_service.send_message(user_phone, no_provider_message)
         
-        elif extracted_info["service_type"] == "non_identifié" and not extracted_info.get("missing_info"):
-            # Create incomplete request to continue conversation
-            incomplete_data = {
-                "service_type": "",
-                "description": "",
-                "location": "",
-                "preferred_time": "",
-                "urgency": "normal"
-            }
-            request_service.create_request(user_id, incomplete_data)
+        # Note: With Sprint 2 conversation manager, all incomplete requests are handled automatically
+        # through the intelligent conversation flow. No need for manual incomplete request creation.
         
     except Exception as e:
         logger.error(f"Error handling user request: {e}")

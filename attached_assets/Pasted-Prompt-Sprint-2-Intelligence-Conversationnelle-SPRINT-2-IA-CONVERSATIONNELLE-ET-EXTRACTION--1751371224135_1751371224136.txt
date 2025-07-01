@@ -1,0 +1,62 @@
+Prompt Sprint 2 - Intelligence Conversationnelle
+**SPRINT 2 : IA CONVERSATIONNELLE ET EXTRACTION**
+
+Tu vas développer le cerveau de l'agent avec LangChain :
+
+**OBJECTIFS DU SPRINT :**
+1. Intégration LLM (OpenAI GPT ou Gemini) via LangChain
+2. Système d'extraction d'informations intelligent
+3. Prompts optimisés pour le contexte camerounais
+4. Gestion des conversations multi-tours
+
+**INFORMATIONS À EXTRAIRE OBLIGATOIREMENT :**
+1. **Service requis** : plomberie, électricité, réparation électroménager
+2. **Localisation** : adresse précise dans Bonamoussadi
+3. **Description problème** : détails techniques du besoin
+4. **Délai souhaité** : urgent, cet après-midi, demain, etc.
+
+**DÉFIS LINGUISTIQUES À GÉRER :**
+- Mélange français/anglais/langues locales camerounaises
+- Expressions familières ("le courant a jump", "le robinet coule-coule")
+- Abbreviations WhatsApp courantes
+- Fautes de frappe et langage SMS
+
+**ARCHITECTURE LANGCHAIN ATTENDUE :**
+```python
+class DjobeaConversationManager:
+    def __init__(self):
+        self.llm = # OpenAI ou Gemini
+        self.memory = ConversationBufferMemory()
+        self.extraction_chain = self.create_extraction_chain()
+    
+    def process_message(self, user_id, message):
+        # Logique de traitement
+        pass
+    
+    def extract_request_info(self, conversation):
+        # Extraction des 4 infos clés
+        pass
+    
+    def generate_response(self, context, missing_info):
+        # Génération réponse contextuelle
+        pass
+PROMPTS À DÉVELOPPER :
+
+Prompt d'extraction d'informations
+Prompt de génération de questions manquantes
+Prompt de confirmation de demande
+Prompt de gestion d'erreurs/incompréhensions
+
+EXEMPLE DE CONVERSATION CIBLE :
+User: "Bonjour, j'ai un problème de courant chez moi"
+Bot: "Bonjour ! Je peux vous aider. Pouvez-vous me dire exactement quel est le problème électrique et votre adresse à Bonamoussadi ?"
+User: "Les prises de ma chambre ne marchent plus, je suis à Bonamoussadi carrefour Shell"
+Bot: "D'accord, panne de prises électriques. Pour mieux vous aider, j'ai besoin de votre adresse complète et quand souhaitez-vous l'intervention ?"
+TESTS À IMPLÉMENTER :
+
+Test extraction avec messages complets
+Test gestion informations manquantes
+Test compréhension expressions locales
+Test robustesse avec fautes de frappe
+
+Développe ce système étape par étape avec des tests pour chaque composant.
