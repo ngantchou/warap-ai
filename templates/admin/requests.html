@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Djobea AI - Gestion Demandes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/admin.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/admin">
+                <i class="fas fa-robot"></i> Djobea AI Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin">Dashboard</a>
+                <a class="nav-link" href="/admin/providers">Prestataires</a>
+                <a class="nav-link active" href="/admin/requests">Demandes</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1><i class="fas fa-clipboard-list"></i> Gestion des Demandes</h1>
+                <p class="text-muted">Suivi et gestion des demandes de service</p>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if not current_status else '' }}" 
+                           href="/admin/requests">
+                            <i class="fas fa-list"></i> Toutes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if current_status == 'en attente' else '' }}" 
+                           href="/admin/requests?status=en attente">
+                            <i class="fas fa-clock"></i> En Attente
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if current_status == 'assignée' else '' }}" 
+                           href="/admin/requests?status=assignée">
+                            <i class="fas fa-user-check"></i> Assignées
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if current_status == 'en cours' else '' }}" 
+                           href="/admin/requests?status=en cours">
+                            <i class="fas fa-cog"></i> En Cours
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if current_status == 'terminée' else '' }}" 
+                           href="/admin/requests?status=terminée">
+                            <i class="fas fa-check-circle"></i> Terminées
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Requests Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>
+                            <i class="fas fa-table"></i> 
+                            {% if current_status %}
+                                Demandes {{ current_status }}
+                            {% else %}
+                                Toutes les Demandes
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if requests %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Client</th>
+                                        <th>Service</th>
+                                        <th>Description</th>
+                                        <th>Localisation</th>
+                                        <th>Prestataire</th>
+                                        <th>Statut</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for request in requests %}
+                                    <tr>
+                                        <td>
+                                            <strong>#{{ request.id }}</strong>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ request.user.name or 'Anonyme' }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ request.user.whatsapp_id }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-wrench"></i>
+                                                {{ request.service_type }}
+                                            </span>
+                                            {% if request.urgency == 'urgent' %}
+                                            <br>
+                                            <span class="badge bg-danger mt-1">
+                                                <i class="fas fa-exclamation"></i> Urgent
+                                            </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="description-cell">
+                                                {{ request.description[:100] }}{% if request.description|length > 100 %}...{% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            {{ request.location }}
+                                            {% if request.preferred_time %}
+                                            <br>
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock"></i> {{ request.preferred_time }}
+                                            </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if request.provider %}
+                                                <div>
+                                                    <strong>{{ request.provider.name }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ request.provider.phone_number }}</small>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted">Non assigné</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if request.status == 'en attente' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock"></i> {{ request.status }}
+                                                </span>
+                                            {% elif request.status == 'assignée' %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-user-check"></i> {{ request.status }}
+                                                </span>
+                                            {% elif request.status == 'en cours' %}
+                                                <span class="badge bg-primary">
+                                                    <i class="fas fa-cog fa-spin"></i> {{ request.status }}
+                                                </span>
+                                            {% elif request.status == 'terminée' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle"></i> {{ request.status }}
+                                                </span>
+                                            {% elif request.status == 'annulée' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle"></i> {{ request.status }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ request.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ request.created_at.strftime('%d/%m/%Y') }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ request.created_at.strftime('%H:%M') }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if request.status not in ['terminée', 'annulée'] %}
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-info btn-sm" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#detailsModal{{ request.id }}"
+                                                        title="Voir détails">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                
+                                                {% if request.status == 'en attente' %}
+                                                <form method="post" action="/admin/requests/{{ request.id }}/cancel" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                            onclick="return confirm('Confirmer l\'annulation ?')"
+                                                            title="Annuler">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">
+                                {% if current_status %}
+                                    Aucune demande {{ current_status }} trouvée
+                                {% else %}
+                                    Aucune demande enregistrée
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Details Modals -->
+    {% for request in requests %}
+    <div class="modal fade" id="detailsModal{{ request.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle"></i> 
+                        Détails de la Demande #{{ request.id }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-user"></i> Informations Client</h6>
+                            <p><strong>Nom:</strong> {{ request.user.name or 'Non spécifié' }}</p>
+                            <p><strong>WhatsApp:</strong> {{ request.user.whatsapp_id }}</p>
+                            <p><strong>Téléphone:</strong> {{ request.user.phone_number or 'Non spécifié' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-wrench"></i> Détails du Service</h6>
+                            <p><strong>Service:</strong> {{ request.service_type }}</p>
+                            <p><strong>Urgence:</strong> {{ request.urgency }}</p>
+                            <p><strong>Délai souhaité:</strong> {{ request.preferred_time or 'Non spécifié' }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6><i class="fas fa-file-alt"></i> Description</h6>
+                            <p class="border p-3 bg-light">{{ request.description or 'Aucune description fournie' }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-map-marker-alt"></i> Localisation</h6>
+                            <p>{{ request.location }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-clock"></i> Dates</h6>
+                            <p><strong>Créée:</strong> {{ request.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            {% if request.accepted_at %}
+                            <p><strong>Acceptée:</strong> {{ request.accepted_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            {% endif %}
+                            {% if request.completed_at %}
+                            <p><strong>Terminée:</strong> {{ request.completed_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if request.provider %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6><i class="fas fa-user-tie"></i> Prestataire Assigné</h6>
+                            <div class="border p-3 bg-light">
+                                <p><strong>Nom:</strong> {{ request.provider.name }}</p>
+                                <p><strong>Téléphone:</strong> {{ request.provider.phone_number }}</p>
+                                <p><strong>WhatsApp:</strong> {{ request.provider.whatsapp_id }}</p>
+                                <p><strong>Note:</strong> 
+                                {% if request.provider.rating > 0 %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-star"></i> {{ request.provider.rating|round(1) }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">Pas encore noté</span>
+                                {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

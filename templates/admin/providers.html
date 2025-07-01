@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Djobea AI - Gestion Prestataires</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/admin.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/admin">
+                <i class="fas fa-robot"></i> Djobea AI Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin">Dashboard</a>
+                <a class="nav-link active" href="/admin/providers">Prestataires</a>
+                <a class="nav-link" href="/admin/requests">Demandes</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1><i class="fas fa-users"></i> Gestion des Prestataires</h1>
+                        <p class="text-muted">Gérer les prestataires de services</p>
+                    </div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+                        <i class="fas fa-plus"></i> Ajouter Prestataire
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Providers Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-list"></i> Liste des Prestataires</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if providers %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nom</th>
+                                        <th>WhatsApp</th>
+                                        <th>Services</th>
+                                        <th>Zones</th>
+                                        <th>Missions</th>
+                                        <th>Note</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for provider in providers %}
+                                    <tr>
+                                        <td>#{{ provider.id }}</td>
+                                        <td>
+                                            <strong>{{ provider.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ provider.phone_number }}</small>
+                                        </td>
+                                        <td>
+                                            <code>{{ provider.whatsapp_id }}</code>
+                                        </td>
+                                        <td>
+                                            {% for service in provider.services %}
+                                                <span class="badge bg-secondary me-1">{{ service }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            {% for area in provider.coverage_areas %}
+                                                <span class="badge bg-info me-1">{{ area }}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ provider.total_jobs }}</strong>
+                                            {% if provider_stats.get(provider.id) %}
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ provider_stats[provider.id]['completed_requests'] }} terminées
+                                            </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if provider.rating > 0 %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-star"></i> {{ provider.rating|round(1) }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if provider.is_active %}
+                                                {% if provider.is_available %}
+                                                    <span class="badge bg-success">Disponible</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Occupé</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactif</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <form method="post" action="/admin/providers/{{ provider.id }}/toggle-status" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-secondary" 
+                                                            title="{{ 'Désactiver' if provider.is_active else 'Activer' }}">
+                                                        <i class="fas fa-{{ 'pause' if provider.is_active else 'play' }}"></i>
+                                                    </button>
+                                                </form>
+                                                
+                                                {% if provider.is_active %}
+                                                <form method="post" action="/admin/providers/{{ provider.id }}/toggle-availability" class="d-inline">
+                                                    <button type="submit" class="btn btn-outline-info"
+                                                            title="{{ 'Marquer occupé' if provider.is_available else 'Marquer disponible' }}">
+                                                        <i class="fas fa-{{ 'user-times' if provider.is_available else 'user-check' }}"></i>
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Aucun prestataire enregistré</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+                                <i class="fas fa-plus"></i> Ajouter le Premier Prestataire
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Provider Modal -->
+    <div class="modal fade" id="addProviderModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus"></i> Ajouter un Prestataire
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="/admin/providers/add">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nom Complet *</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="whatsapp_id" class="form-label">WhatsApp ID *</label>
+                            <input type="text" class="form-control" id="whatsapp_id" name="whatsapp_id" 
+                                   placeholder="+237690000000" required>
+                            <small class="form-text text-muted">Format: +237XXXXXXXXX</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone_number" class="form-label">Numéro de Téléphone *</label>
+                            <input type="text" class="form-control" id="phone_number" name="phone_number" 
+                                   placeholder="+237690000000" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="services" class="form-label">Services Offerts *</label>
+                            <input type="text" class="form-control" id="services" name="services" 
+                                   placeholder="plomberie, électricité" required>
+                            <small class="form-text text-muted">Séparez par des virgules</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="coverage_areas" class="form-label">Zones de Couverture *</label>
+                            <input type="text" class="form-control" id="coverage_areas" name="coverage_areas" 
+                                   placeholder="Bonamoussadi, Douala" required>
+                            <small class="form-text text-muted">Séparez par des virgules</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>
