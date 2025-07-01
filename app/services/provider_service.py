@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
-from models import Provider, ServiceRequest, RequestStatus
-from utils.logger import setup_logger
+from app.models.database_models import Provider, ServiceRequest, RequestStatus
+from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 

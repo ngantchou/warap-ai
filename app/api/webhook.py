@@ -5,14 +5,14 @@ from typing import Dict, Any
 import asyncio
 from datetime import datetime
 
-from database import get_db
-from services.ai_service import ai_service
-from services.whatsapp_service import whatsapp_service
-from services.provider_service import ProviderService
-from services.request_service import RequestService
+from app.database import get_db
+from app.services.ai_service import ai_service
+from app.services.whatsapp_service import whatsapp_service
+from app.services.provider_service import ProviderService
+from app.services.request_service import RequestService
 from app.services.conversation_manager import conversation_manager
-from models import RequestStatus, Conversation, ServiceRequest, User
-from utils.logger import setup_logger
+from app.models.database_models import RequestStatus, Conversation, ServiceRequest, User
+from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 router = APIRouter()

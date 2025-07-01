@@ -2,8 +2,8 @@ from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
-from models import ServiceRequest, User, Provider, RequestStatus, Conversation
-from utils.logger import setup_logger
+from app.models.database_models import ServiceRequest, User, Provider, RequestStatus, Conversation
+from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 

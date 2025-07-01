@@ -4,11 +4,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from database import get_db
-from services.provider_service import ProviderService
-from services.request_service import RequestService
-from models import Provider, ServiceRequest, User, Conversation
-from utils.logger import setup_logger
+from app.database import get_db
+from app.services.provider_service import ProviderService
+from app.services.request_service import RequestService
+from app.models.database_models import Provider, ServiceRequest, User, Conversation
+from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 router = APIRouter()

@@ -3,8 +3,8 @@ import json
 import sys
 from typing import Dict, Optional, List
 from anthropic import Anthropic
-from utils.logger import setup_logger
-from config import get_settings
+from app.utils.logger import setup_logger
+from app.config import get_settings
 
 logger = setup_logger(__name__)
 settings = get_settings()

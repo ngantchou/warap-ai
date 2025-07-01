@@ -2,8 +2,8 @@ import os
 from typing import Dict, List, Optional
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
-from utils.logger import setup_logger
-from config import get_settings
+from app.utils.logger import setup_logger
+from app.config import get_settings
 
 logger = setup_logger(__name__)
 settings = get_settings()
