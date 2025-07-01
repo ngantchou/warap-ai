@@ -7,7 +7,8 @@ from typing import Optional
 from app.database import get_db
 from app.services.provider_service import ProviderService
 from app.services.request_service import RequestService
-from app.models.database_models import Provider, ServiceRequest, User, Conversation
+from app.services.analytics_service import AnalyticsService
+from app.models.database_models import Provider, ServiceRequest, User, Conversation, RequestStatus
 from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -225,3 +226,167 @@ async def admin_logs(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error in admin logs: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+# Sprint 4 - New Analytics and Metrics Endpoints
+
+@router.get("/metrics", response_class=HTMLResponse)
+async def admin_metrics(request: Request, db: Session = Depends(get_db)):
+    """Real-time metrics dashboard"""
+    try:
+        analytics = AnalyticsService(db)
+        metrics = analytics.get_dashboard_metrics()
+        
+        return templates.TemplateResponse("admin/metrics.html", {
+            "request": request,
+            "metrics": metrics
+        })
+    
+    except Exception as e:
+        logger.error(f"Error loading metrics: {e}")
+        raise HTTPException(status_code=500, detail="Error loading metrics")
+
+
+@router.get("/analytics", response_class=HTMLResponse)
+async def admin_analytics(request: Request, db: Session = Depends(get_db)):
+    """Analytics dashboard page"""
+    try:
+        analytics = AnalyticsService(db)
+        
+        # Get various analytics
+        success_rate_data = analytics.get_success_rate_analytics(30)
+        response_time_data = analytics.get_response_time_analytics(30)
+        service_type_data = analytics.get_service_type_analytics()
+        geographic_data = analytics.get_geographic_analytics()
+        provider_rankings = analytics.get_provider_rankings()
+        
+        return templates.TemplateResponse("admin/analytics.html", {
+            "request": request,
+            "success_rate_data": success_rate_data,
+            "response_time_data": response_time_data,
+            "service_type_data": service_type_data,
+            "geographic_data": geographic_data,
+            "provider_rankings": provider_rankings
+        })
+    
+    except Exception as e:
+        logger.error(f"Error loading analytics: {e}")
+        raise HTTPException(status_code=500, detail="Error loading analytics")
+
+
+# API Endpoints for AJAX requests
+
+@router.get("/api/metrics")
+async def api_metrics(db: Session = Depends(get_db)):
+    """API endpoint for real-time metrics"""
+    try:
+        analytics = AnalyticsService(db)
+        return analytics.get_dashboard_metrics()
+    
+    except Exception as e:
+        logger.error(f"Error getting metrics API: {e}")
+        raise HTTPException(status_code=500, detail="Error getting metrics")
+
+
+@router.get("/analytics/success-rate")
+async def analytics_success_rate(days: int = 30, db: Session = Depends(get_db)):
+    """Success rate analytics API"""
+    try:
+        analytics = AnalyticsService(db)
+        return analytics.get_success_rate_analytics(days)
+    
+    except Exception as e:
+        logger.error(f"Error getting success rate analytics: {e}")
+        raise HTTPException(status_code=500, detail="Error getting success rate analytics")
+
+
+@router.get("/analytics/response-times")
+async def analytics_response_times(days: int = 30, db: Session = Depends(get_db)):
+    """Response time analytics API"""
+    try:
+        analytics = AnalyticsService(db)
+        return analytics.get_response_time_analytics(days)
+    
+    except Exception as e:
+        logger.error(f"Error getting response time analytics: {e}")
+        raise HTTPException(status_code=500, detail="Error getting response time analytics")
+
+
+@router.get("/analytics/provider-rankings")
+async def analytics_provider_rankings(db: Session = Depends(get_db)):
+    """Provider rankings analytics API"""
+    try:
+        analytics = AnalyticsService(db)
+        return analytics.get_provider_rankings()
+    
+    except Exception as e:
+        logger.error(f"Error getting provider rankings: {e}")
+        raise HTTPException(status_code=500, detail="Error getting provider rankings")
+
+
+# Enhanced Request Management
+
+@router.get("/requests/{request_id}", response_class=HTMLResponse)
+async def admin_request_detail(request_id: int, request: Request, db: Session = Depends(get_db)):
+    """Individual request detail page"""
+    try:
+        service_request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+        if not service_request:
+            raise HTTPException(status_code=404, detail="Request not found")
+        
+        # Get related data
+        user = db.query(User).filter(User.id == service_request.user_id).first()
+        provider = None
+        if service_request.provider_id:
+            provider = db.query(Provider).filter(Provider.id == service_request.provider_id).first()
+        
+        # Get conversation history for this request
+        conversations = db.query(Conversation).filter(
+            Conversation.request_id == request_id
+        ).order_by(Conversation.created_at).all()
+        
+        return templates.TemplateResponse("admin/request_detail.html", {
+            "request": request,
+            "service_request": service_request,
+            "user": user,
+            "provider": provider,
+            "conversations": conversations
+        })
+    
+    except Exception as e:
+        logger.error(f"Error loading request detail: {e}")
+        raise HTTPException(status_code=500, detail="Error loading request detail")
+
+
+@router.put("/requests/{request_id}/status")
+async def update_request_status(
+    request_id: int,
+    new_status: str,
+    db: Session = Depends(get_db)
+):
+    """Update request status (admin override)"""
+    try:
+        # Validate status
+        valid_statuses = [status.value for status in RequestStatus]
+        if new_status not in valid_statuses:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+        
+        # Update request
+        request_service = RequestService(db)
+        success = request_service.update_request_status(
+            request_id, 
+            RequestStatus(new_status)
+        )
+        
+        if success:
+            logger.info("admin_status_update", extra={
+                "request_id": request_id,
+                "new_status": new_status
+            })
+            return {"success": True, "message": f"Status updated to {new_status}"}
+        else:
+            raise HTTPException(status_code=400, detail="Failed to update status")
+    
+    except Exception as e:
+        logger.error(f"Error updating request status: {e}")
+        raise HTTPException(status_code=500, detail="Error updating request status")

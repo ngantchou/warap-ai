@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Djobea AI Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+        .analytics-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .provider-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .provider-row:last-child {
+            border-bottom: none;
+        }
+        .performance-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .performance-excellent { background: #d4edda; color: #155724; }
+        .performance-good { background: #d1ecf1; color: #0c5460; }
+        .performance-average { background: #fff3cd; color: #856404; }
+        .performance-poor { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/admin">
+                <i class="bi bi-gear-fill"></i> Djobea AI Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin">Dashboard</a>
+                <a class="nav-link" href="/admin/providers">Prestataires</a>
+                <a class="nav-link" href="/admin/requests">Demandes</a>
+                <a class="nav-link" href="/admin/metrics">Métriques</a>
+                <a class="nav-link active" href="/admin/analytics">Analytics</a>
+                <a class="nav-link" href="/admin/logs">Logs</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1><i class="bi bi-graph-up"></i> Analytics & Performance</h1>
+        <p class="text-muted">Analyse détaillée des performances et tendances du système</p>
+
+        <!-- Success Rate Analytics -->
+        <div class="analytics-card">
+            <h3><i class="bi bi-check-circle"></i> Taux de Succès (30 derniers jours)</h3>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="chart-container">
+                        <canvas id="successRateChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-box">
+                        <div class="stat-number">{{ success_rate_data.overall_success_rate }}%</div>
+                        <div class="stat-label">Taux Global</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ success_rate_data.total_requests }}</div>
+                        <div class="stat-label">Total Demandes</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ success_rate_data.completed_requests }}</div>
+                        <div class="stat-label">Complétées</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Time Analytics -->
+        <div class="analytics-card">
+            <h3><i class="bi bi-stopwatch"></i> Temps de Réponse</h3>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="chart-container">
+                        <canvas id="responseTimeChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    {% if response_time_data.average_response_time_minutes %}
+                    <div class="stat-box">
+                        <div class="stat-number">{{ response_time_data.average_response_time_minutes }}min</div>
+                        <div class="stat-label">Temps Moyen</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">{{ response_time_data.median_response_time_minutes }}min</div>
+                        <div class="stat-label">Temps Médian</div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Pas assez de données pour calculer les temps de réponse
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Type & Geographic Analytics -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="analytics-card">
+                    <h4><i class="bi bi-tools"></i> Services les Plus Demandés</h4>
+                    <div class="chart-container">
+                        <canvas id="serviceTypeChart"></canvas>
+                    </div>
+                    {% if service_type_data.most_requested %}
+                    <p class="text-center mt-3">
+                        <strong>Plus populaire:</strong> {{ service_type_data.most_requested }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="analytics-card">
+                    <h4><i class="bi bi-geo-alt"></i> Zones Géographiques</h4>
+                    <div class="chart-container">
+                        <canvas id="geographicChart"></canvas>
+                    </div>
+                    {% if geographic_data.most_served_area %}
+                    <p class="text-center mt-3">
+                        <strong>Zone la plus servie:</strong> {{ geographic_data.most_served_area|title }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Provider Rankings -->
+        <div class="analytics-card">
+            <h3><i class="bi bi-trophy"></i> Classement des Prestataires</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Prestataire</th>
+                            <th>Services</th>
+                            <th>Taux de Succès</th>
+                            <th>Temps Moyen</th>
+                            <th>Total Demandes</th>
+                            <th>Note</th>
+                            <th>Statut</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for provider in provider_rankings[:10] %}
+                        <tr>
+                            <td><strong>{{ loop.index }}</strong></td>
+                            <td>
+                                <strong>{{ provider.name }}</strong><br>
+                                <small class="text-muted">{{ provider.phone_number }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ provider.services }}</span>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if provider.completion_rate >= 90 %}bg-success
+                                    {% elif provider.completion_rate >= 75 %}bg-info
+                                    {% elif provider.completion_rate >= 50 %}bg-warning
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ provider.completion_rate }}%
+                                </span>
+                            </td>
+                            <td>
+                                {% if provider.avg_response_time_minutes %}
+                                    {{ provider.avg_response_time_minutes }}min
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ provider.total_requests }}</td>
+                            <td>
+                                <span class="text-warning">
+                                    ⭐ {{ provider.rating }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if provider.is_active %}
+                                    {% if provider.is_available %}
+                                        <span class="badge bg-success">Disponible</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Occupé</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set performance_class = "performance-poor" %}
+                                {% set performance_text = "Faible" %}
+                                {% if provider.completion_rate >= 90 and (not provider.avg_response_time_minutes or provider.avg_response_time_minutes <= 30) %}
+                                    {% set performance_class = "performance-excellent" %}
+                                    {% set performance_text = "Excellent" %}
+                                {% elif provider.completion_rate >= 75 %}
+                                    {% set performance_class = "performance-good" %}
+                                    {% set performance_text = "Bon" %}
+                                {% elif provider.completion_rate >= 50 %}
+                                    {% set performance_class = "performance-average" %}
+                                    {% set performance_text = "Moyen" %}
+                                {% endif %}
+                                <span class="performance-badge {{ performance_class }}">
+                                    {{ performance_text }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Success Rate Chart
+        const successCtx = document.getElementById('successRateChart').getContext('2d');
+        const successRateData = {{ success_rate_data.daily_data | tojson }};
+        
+        new Chart(successCtx, {
+            type: 'line',
+            data: {
+                labels: successRateData.map(d => d.date),
+                datasets: [{
+                    label: 'Taux de Succès (%)',
+                    data: successRateData.map(d => d.success_rate),
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // Response Time Distribution Chart
+        const responseCtx = document.getElementById('responseTimeChart').getContext('2d');
+        const responseTimeData = {{ response_time_data.response_time_distribution | tojson }};
+        
+        new Chart(responseCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['< 10 min', '10-30 min', '30-60 min', '> 60 min'],
+                datasets: [{
+                    data: [
+                        responseTimeData.under_10_min,
+                        responseTimeData['10_to_30_min'],
+                        responseTimeData['30_to_60_min'],
+                        responseTimeData.over_60_min
+                    ],
+                    backgroundColor: [
+                        '#28a745',
+                        '#ffc107',
+                        '#fd7e14',
+                        '#dc3545'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Service Type Chart
+        const serviceCtx = document.getElementById('serviceTypeChart').getContext('2d');
+        const serviceData = {{ service_type_data.service_distribution | tojson }};
+        
+        const serviceLabels = Object.keys(serviceData);
+        const serviceValues = Object.values(serviceData).map(d => d.total_requests);
+        
+        new Chart(serviceCtx, {
+            type: 'bar',
+            data: {
+                labels: serviceLabels,
+                datasets: [{
+                    label: 'Nombre de Demandes',
+                    data: serviceValues,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Geographic Chart
+        const geoCtx = document.getElementById('geographicChart').getContext('2d');
+        const geoData = {{ geographic_data.location_distribution | tojson }};
+        
+        const geoLabels = Object.keys(geoData);
+        const geoValues = Object.values(geoData).map(d => d.total_requests);
+        
+        new Chart(geoCtx, {
+            type: 'pie',
+            data: {
+                labels: geoLabels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
+                datasets: [{
+                    data: geoValues,
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF',
+                        '#FF9F40'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+</body>
+</html>

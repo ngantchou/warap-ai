@@ -1,0 +1,135 @@
+SPRINT 4 : FINALISATION ET INTERFACE ADMIN
+Tu vas finaliser le cycle complet et créer l'interface d'administration :
+OBJECTIFS DU SPRINT :
+
+Cycle de vie complet des demandes
+Suivi en temps réel pour utilisateurs
+Interface admin web simple
+Dashboard metrics et analytics
+Tests end-to-end complets
+
+FONCTIONNALITÉS UTILISATEUR FINALES :
+pythonclass UserJourneyManager:
+    def handle_status_request(self, user_id):
+        # "Quel est le statut de ma demande ?"
+        pass
+    
+    def handle_cancellation(self, user_id, request_id):
+        # Annulation avant acceptation prestataire
+        pass
+    
+    def handle_feedback(self, user_id, request_id, rating):
+        # Système de notation simple
+        pass
+INTERFACE ADMIN REQUISE (FastAPI + HTML):
+
+Dashboard : métriques en temps réel
+Gestion prestataires : CRUD complet
+Suivi demandes : liste filtrable/searchable
+Logs conversations : debugging
+Analytics : graphiques performance
+
+ENDPOINTS ADMIN :
+python# Tableaux de bord
+GET /admin/dashboard
+GET /admin/metrics
+
+# Gestion prestataires
+GET /admin/providers
+POST /admin/providers
+PUT /admin/providers/{id}
+DELETE /admin/providers/{id}
+
+# Suivi demandes
+GET /admin/requests
+GET /admin/requests/{id}
+PUT /admin/requests/{id}/status
+
+# Analytics
+GET /admin/analytics/success-rate
+GET /admin/analytics/response-times
+TESTS END-TO-END À CRÉER :
+
+Scénario complet succès :
+
+Client envoie demande → extraction → matching → notification → acceptation → confirmation
+
+
+Scénario timeout prestataire :
+
+Demande → 1er prestataire timeout → 2ème prestataire → acceptation
+
+
+Scénario aucun prestataire :
+
+Demande → tous prestataires refusent → message fallback
+
+
+Scénario annulation client :
+
+Demande → annulation avant acceptation → nettoyage DB
+
+
+
+MONITORING ET LOGS :
+python# Logs structurés obligatoires
+logger.info("request_created", extra={
+    "user_id": user_id,
+    "service_type": service,
+    "location": location,
+    "request_id": request_id
+})
+
+# Métriques business
+track_metric("request.created", 1)
+track_metric("provider.response_time", response_time)
+track_metric("success.rate", success_rate)
+CONFIGURATION PRODUCTION :
+
+Variables d'environnement sécurisées
+Rate limiting sur endpoints
+Monitoring santé services
+Backup automatique DB
+Rotation logs
+
+Finalise le système avec une attention particulière à la robustesse et la simplicité d'utilisation.
+
+## Prompt Optimisation et Bonnes Pratiques
+STANDARDS DE QUALITÉ OBLIGATOIRES
+Respecte ces bonnes pratiques tout au long du développement :
+ARCHITECTURE :
+
+Separation of concerns stricte
+Dependency injection
+Design patterns appropriés
+Error handling complet
+
+SÉCURITÉ :
+
+Validation input systematique
+Sanitization des données
+Gestion sécurisée des clés API
+Rate limiting anti-spam
+
+PERFORMANCE :
+
+Requêtes DB optimisées
+Caching intelligent
+Async/await pour I/O
+Connection pooling DB
+
+MAINTENABILITÉ :
+
+Code self-documented
+Tests coverage > 80%
+Configuration externalisée
+Logs détaillés mais structurés
+
+CAMEROUN-SPECIFIC :
+
+Gestion instabilité réseau
+Optimisation bande passante
+Timeout adaptés connexions locales
+Format dates/heures local
+
+Applique ces standards à chaque feature développée.

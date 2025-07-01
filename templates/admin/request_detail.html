@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détail Demande #{{ service_request.id }} - Djobea AI Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .request-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: #dee2e6;
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6c757d;
+        }
+        .timeline-item.completed::before {
+            background: #28a745;
+        }
+        .timeline-item.current::before {
+            background: #007bff;
+        }
+        .conversation-bubble {
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+        .bubble-user {
+            margin-left: auto;
+        }
+        .bubble-user .card {
+            background: #007bff;
+            color: white;
+        }
+        .bubble-system .card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .status-update-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/admin">
+                <i class="bi bi-gear-fill"></i> Djobea AI Admin
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/admin">Dashboard</a>
+                <a class="nav-link" href="/admin/providers">Prestataires</a>
+                <a class="nav-link active" href="/admin/requests">Demandes</a>
+                <a class="nav-link" href="/admin/metrics">Métriques</a>
+                <a class="nav-link" href="/admin/analytics">Analytics</a>
+                <a class="nav-link" href="/admin/logs">Logs</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-file-text"></i> Demande #{{ service_request.id }}</h1>
+            <a href="/admin/requests" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour aux Demandes
+            </a>
+        </div>
+
+        <!-- Request Header -->
+        <div class="request-header">
+            <div class="row">
+                <div class="col-md-8">
+                    <h3>{{ service_request.service_type|title }}</h3>
+                    <p class="mb-2"><i class="bi bi-geo-alt"></i> {{ service_request.location }}</p>
+                    <p class="mb-0">{{ service_request.description }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="status-badge 
+                        {% if service_request.status == 'COMPLETED' %}bg-success
+                        {% elif service_request.status == 'PENDING' %}bg-warning text-dark
+                        {% elif service_request.status == 'ASSIGNED' %}bg-info
+                        {% elif service_request.status == 'IN_PROGRESS' %}bg-primary
+                        {% elif service_request.status == 'CANCELLED' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ service_request.status.replace('_', ' ').title() }}
+                    </span>
+                    <div class="mt-2">
+                        <small>Créée le {{ service_request.created_at.strftime('%d/%m/%Y à %H:%M') }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Request Details -->
+            <div class="col-md-8">
+                <!-- Request Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-info-circle"></i> Informations de la Demande</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Type de Service:</strong> {{ service_request.service_type }}</p>
+                                <p><strong>Localisation:</strong> {{ service_request.location }}</p>
+                                <p><strong>Urgence:</strong> 
+                                    <span class="badge 
+                                        {% if service_request.urgency == 'urgent' %}bg-danger
+                                        {% elif service_request.urgency == 'normal' %}bg-warning
+                                        {% else %}bg-success{% endif %}">
+                                        {{ service_request.urgency|title }}
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                {% if service_request.preferred_time %}
+                                <p><strong>Heure Préférée:</strong> {{ service_request.preferred_time }}</p>
+                                {% endif %}
+                                {% if service_request.accepted_at %}
+                                <p><strong>Acceptée le:</strong> {{ service_request.accepted_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                                {% endif %}
+                                {% if service_request.completed_at %}
+                                <p><strong>Terminée le:</strong> {{ service_request.completed_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <p><strong>Description:</strong></p>
+                                <p class="text-muted">{{ service_request.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-clock-history"></i> Chronologie</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="timeline-item completed">
+                                <strong>Demande créée</strong>
+                                <br><small class="text-muted">{{ service_request.created_at.strftime('%d/%m/%Y à %H:%M') }}</small>
+                                <p class="mt-2">Demande reçue via WhatsApp et traitée par l'IA</p>
+                            </div>
+                            
+                            {% if service_request.status != 'PENDING' %}
+                            <div class="timeline-item completed">
+                                <strong>Prestataire notifié</strong>
+                                <br><small class="text-muted">Recherche et notification effectuées</small>
+                            </div>
+                            {% else %}
+                            <div class="timeline-item current">
+                                <strong>Recherche de prestataire en cours...</strong>
+                                <br><small class="text-muted">En attente de correspondance</small>
+                            </div>
+                            {% endif %}
+
+                            {% if service_request.accepted_at %}
+                            <div class="timeline-item completed">
+                                <strong>Demande acceptée</strong>
+                                <br><small class="text-muted">{{ service_request.accepted_at.strftime('%d/%m/%Y à %H:%M') }}</small>
+                            </div>
+                            {% endif %}
+
+                            {% if service_request.status == 'IN_PROGRESS' %}
+                            <div class="timeline-item current">
+                                <strong>Travail en cours</strong>
+                                <br><small class="text-muted">Le prestataire effectue le service</small>
+                            </div>
+                            {% endif %}
+
+                            {% if service_request.completed_at %}
+                            <div class="timeline-item completed">
+                                <strong>Service terminé</strong>
+                                <br><small class="text-muted">{{ service_request.completed_at.strftime('%d/%m/%Y à %H:%M') }}</small>
+                            </div>
+                            {% endif %}
+
+                            {% if service_request.status == 'CANCELLED' %}
+                            <div class="timeline-item" style="color: #dc3545;">
+                                <strong>Demande annulée</strong>
+                                <br><small class="text-muted">Annulation effectuée</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversation History -->
+                {% if conversations %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-chat-dots"></i> Historique des Conversations</h5>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        {% for conversation in conversations %}
+                        <div class="conversation-bubble {% if conversation.sender == 'user' %}bubble-user{% else %}bubble-system{% endif %}">
+                            <div class="card">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <small class="text-muted">
+                                            {{ conversation.sender|title }} - {{ conversation.created_at.strftime('%d/%m %H:%M') }}
+                                        </small>
+                                    </div>
+                                    <p class="mb-0 mt-1">{{ conversation.message }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column: User and Provider Info -->
+            <div class="col-md-4">
+                <!-- User Information -->
+                {% if user %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-person"></i> Client</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Nom:</strong> {{ user.name or 'Non spécifié' }}</p>
+                        <p><strong>Téléphone:</strong> {{ user.phone_number }}</p>
+                        <p><strong>WhatsApp ID:</strong> <small>{{ user.whatsapp_id }}</small></p>
+                        <p><strong>Inscrit le:</strong> {{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Provider Information -->
+                {% if provider %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-tools"></i> Prestataire</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Nom:</strong> {{ provider.name }}</p>
+                        <p><strong>Téléphone:</strong> {{ provider.phone_number }}</p>
+                        <p><strong>Services:</strong> {{ provider.services }}</p>
+                        <p><strong>Note:</strong> 
+                            <span class="text-warning">⭐ {{ provider.rating }}</span>
+                            <small class="text-muted">({{ provider.total_jobs }} jobs)</small>
+                        </p>
+                        <p><strong>Zones:</strong> {{ provider.coverage_areas }}</p>
+                        <p><strong>Statut:</strong>
+                            {% if provider.is_active %}
+                                {% if provider.is_available %}
+                                    <span class="badge bg-success">Disponible</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Occupé</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Admin Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-gear"></i> Actions Admin</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Status Update Form -->
+                        <div class="status-update-form">
+                            <h6>Modifier le Statut</h6>
+                            <form id="statusUpdateForm">
+                                <div class="mb-3">
+                                    <select class="form-select" id="newStatus" name="newStatus">
+                                        <option value="PENDING" {% if service_request.status == 'PENDING' %}selected{% endif %}>En Attente</option>
+                                        <option value="PROVIDER_NOTIFIED" {% if service_request.status == 'PROVIDER_NOTIFIED' %}selected{% endif %}>Prestataire Notifié</option>
+                                        <option value="ASSIGNED" {% if service_request.status == 'ASSIGNED' %}selected{% endif %}>Assignée</option>
+                                        <option value="IN_PROGRESS" {% if service_request.status == 'IN_PROGRESS' %}selected{% endif %}>En Cours</option>
+                                        <option value="COMPLETED" {% if service_request.status == 'COMPLETED' %}selected{% endif %}>Terminée</option>
+                                        <option value="CANCELLED" {% if service_request.status == 'CANCELLED' %}selected{% endif %}>Annulée</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-check"></i> Mettre à Jour
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="mt-3">
+                            <h6>Actions Rapides</h6>
+                            {% if service_request.status not in ['CANCELLED', 'COMPLETED'] %}
+                            <button class="btn btn-outline-danger btn-sm w-100 mb-2" onclick="cancelRequest()">
+                                <i class="bi bi-x-circle"></i> Annuler la Demande
+                            </button>
+                            {% endif %}
+                            
+                            <a href="/admin/requests" class="btn btn-outline-secondary btn-sm w-100">
+                                <i class="bi bi-list"></i> Voir Toutes les Demandes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Status update form handler
+        document.getElementById('statusUpdateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newStatus = document.getElementById('newStatus').value;
+            const requestId = {{ service_request.id }};
+            
+            fetch(`/admin/requests/${requestId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ new_status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Statut mis à jour avec succès!');
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la mise à jour: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Erreur lors de la mise à jour du statut');
+            });
+        });
+
+        function cancelRequest() {
+            if (confirm('Êtes-vous sûr de vouloir annuler cette demande?')) {
+                fetch(`/admin/requests/{{ service_request.id }}/cancel`, {
+                    method: 'POST'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Demande annulée avec succès');
+                        location.reload();
+                    } else {
+                        alert('Erreur lors de l\'annulation');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Erreur lors de l\'annulation');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
