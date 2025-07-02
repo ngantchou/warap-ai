@@ -1,0 +1,75 @@
+Implement flexible scheduling system and enhanced location recognition:
+
+Scheduling Options System:
+
+Add scheduling preferences to request creation
+Create time slot management system
+Implement urgency-based pricing (urgent = +2000 XAF)
+Support specific time preferences
+
+
+Time Slot Options:
+
+URGENT: "Dans l'heure (supplément +2,000 XAF)"
+TODAY: "Aujourd'hui entre 9h-17h"
+TOMORROW_MORNING: "Demain matin (8h-12h)"
+TOMORROW_AFTERNOON: "Demain après-midi (13h-17h)"
+THIS_WEEK: "Cette semaine, heure flexible"
+WEEKEND: "Weekend (samedi/dimanche)"
+
+
+Enhanced Location Recognition:
+
+Create comprehensive Bonamoussadi landmark database
+Implement fuzzy matching for landmark recognition
+Support common references: "près du marché", "derrière la pharmacie"
+Add GPS coordinates for major landmarks
+
+
+Landmark Database Creation:
+
+Major landmarks: Marché Central, Hôpital, Écoles, Pharmacies
+Commercial areas: Carrefour, stations-service, banks
+Residential references: quartiers, rues principales
+Transportation hubs: arrêts de bus, carrefours importants
+
+
+Location Confirmation System:
+
+Send location confirmation with map link (Google Maps)
+Suggest nearby reference points for clarity
+Ask for additional landmarks if location is ambiguous
+Store successful location matches for future reference
+
+
+Provider Scheduling Integration:
+
+Match provider availability with user preferences
+Show available time slots from providers
+Implement appointment booking system
+Send calendar confirmations to both parties
+
+
+Time Zone & Local Context:
+
+Handle Cameroon time zone (WAT - West Africa Time)
+Respect local working hours and customs
+Consider traffic patterns and travel time
+Account for local holidays and events
+
+
+
+Database Schema Extensions:
+
+Add scheduling_preference to service_requests table
+Create landmarks table (name, location, coordinates, area)
+Add provider_availability table (provider_id, day, start_time, end_time)
+Create appointment_slots table for booking management
+
+Integration Requirements:
+
+Extend conversation_manager.py for scheduling and location parsing
+Update provider matching algorithm for availability
+Add scheduling to existing request workflow
+Integrate with existing WhatsApp templates
+Maintain compatibility with current database schema

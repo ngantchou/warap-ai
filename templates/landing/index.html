@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Djobea AI - Services à Domicile à Douala</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/landing.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="#">
+                <i class="bi bi-tools me-2"></i>Djobea AI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#services">Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#how-it-works">Comment ça marche</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-primary text-white px-3 ms-2" href="#" onclick="openWhatsAppChat()">
+                            <i class="bi bi-whatsapp me-1"></i>Commencer
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">
+                        Trouvez des <span class="text-primary">Prestataires</span> 
+                        de Confiance à Douala
+                    </h1>
+                    <p class="lead mb-4">
+                        Plomberie, électricité, réparation d'électroménager... 
+                        Connectez-vous instantanément avec des professionnels qualifiés 
+                        via WhatsApp grâce à notre IA intelligente.
+                    </p>
+                    <div class="d-flex flex-column flex-md-row gap-3">
+                        <button class="btn btn-primary btn-lg px-4" onclick="openWhatsAppChat()">
+                            <i class="bi bi-whatsapp me-2"></i>Démarrer sur WhatsApp
+                        </button>
+                        <button class="btn btn-outline-primary btn-lg px-4" onclick="openDemoChat()">
+                            <i class="bi bi-play-circle me-2"></i>Voir la Démo
+                        </button>
+                    </div>
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-check text-success me-1"></i>
+                            Prestataires vérifiés • Réponse en moins de 5 minutes • Commission transparente
+                        </small>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="hero-phone">
+                        <div class="phone-mockup">
+                            <div class="phone-screen">
+                                <div class="whatsapp-header">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar me-2">
+                                            <i class="bi bi-robot"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">Djobea AI</div>
+                                            <small class="text-success">En ligne</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="chat-messages">
+                                    <div class="message bot-message">
+                                        <div class="message-bubble">
+                                            Bonjour! 👋 Je suis votre assistant IA pour trouver des prestataires à Douala.
+                                        </div>
+                                        <small class="message-time">10:30</small>
+                                    </div>
+                                    <div class="message user-message">
+                                        <div class="message-bubble">
+                                            Salut! J'ai une fuite d'eau dans ma cuisine à Bonamoussadi
+                                        </div>
+                                        <small class="message-time">10:32</small>
+                                    </div>
+                                    <div class="message bot-message">
+                                        <div class="message-bubble">
+                                            Je comprends! C'est urgent une fuite d'eau. Je recherche immédiatement un plombier disponible dans votre zone... 🔍
+                                        </div>
+                                        <small class="message-time">10:32</small>
+                                    </div>
+                                    <div class="message bot-message">
+                                        <div class="message-bubble">
+                                            ✅ Parfait! J'ai trouvé un plombier expérimenté près de chez vous. Il peut intervenir dans 30 minutes. Voulez-vous que je le contacte?
+                                        </div>
+                                        <small class="message-time">10:33</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Nos Services</h2>
+                <p class="text-muted">Des professionnels qualifiés pour tous vos besoins</p>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="service-card h-100">
+                        <div class="service-icon">
+                            <i class="bi bi-wrench-adjustable"></i>
+                        </div>
+                        <h4>Plomberie</h4>
+                        <p>Fuites, canalisations bouchées, installation sanitaire, réparations d'urgence</p>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Intervention rapide</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Matériel professionnel</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Garantie travaux</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="service-card h-100">
+                        <div class="service-icon">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <h4>Électricité</h4>
+                        <p>Installation électrique, pannes, courts-circuits, mise aux normes</p>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Électriciens certifiés</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Sécurité garantie</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Devis transparent</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="service-card h-100">
+                        <div class="service-icon">
+                            <i class="bi bi-house-gear"></i>
+                        </div>
+                        <h4>Électroménager</h4>
+                        <p>Réparation frigo, machine à laver, climatisation, micro-ondes</p>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Toutes marques</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Pièces détachées</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Service après-vente</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works Section -->
+    <section id="how-it-works" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Comment ça marche</h2>
+                <p class="text-muted">Simple comme bonjour avec notre IA intelligente</p>
+            </div>
+            <div class="row">
+                <div class="col-md-3 mb-4">
+                    <div class="step-card text-center">
+                        <div class="step-number">1</div>
+                        <div class="step-icon">
+                            <i class="bi bi-whatsapp"></i>
+                        </div>
+                        <h5>Écrivez sur WhatsApp</h5>
+                        <p class="text-muted">Décrivez votre problème en français, en anglais ou en pidgin</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="step-card text-center">
+                        <div class="step-number">2</div>
+                        <div class="step-icon">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <h5>IA Analyse</h5>
+                        <p class="text-muted">Notre IA comprend votre besoin et trouve le bon prestataire</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="step-card text-center">
+                        <div class="step-number">3</div>
+                        <div class="step-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h5>Mise en Contact</h5>
+                        <p class="text-muted">Connexion directe avec un professionnel disponible près de vous</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="step-card text-center">
+                        <div class="step-number">4</div>
+                        <div class="step-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <h5>Service Rendu</h5>
+                        <p class="text-muted">Intervention rapide et paiement sécurisé</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-5 bg-primary text-white">
+        <div class="container text-center">
+            <h2 class="fw-bold mb-4">Prêt à commencer ?</h2>
+            <p class="lead mb-4">Rejoignez des centaines de clients satisfaits à Douala</p>
+            <button class="btn btn-light btn-lg px-5" onclick="openWhatsAppChat()">
+                <i class="bi bi-whatsapp me-2"></i>Commencer Maintenant
+            </button>
+        </div>
+    </section>
+
+    <!-- WhatsApp Chat Widget -->
+    <div id="whatsapp-widget" class="whatsapp-widget">
+        <div class="widget-header" onclick="toggleChat()">
+            <div class="d-flex align-items-center">
+                <div class="widget-avatar me-2">
+                    <i class="bi bi-robot text-white"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">Djobea AI</div>
+                    <small class="widget-status">En ligne - Réponse rapide</small>
+                </div>
+                <button class="btn-close-widget" onclick="closeChat(event)">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="widget-body" id="widget-body">
+            <div class="welcome-message">
+                <div class="bot-avatar">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <div class="welcome-text">
+                    <h6>Bonjour! 👋</h6>
+                    <p>Je suis votre assistant IA pour trouver des prestataires de confiance à Douala.</p>
+                    <p><strong>Comment puis-je vous aider aujourd'hui?</strong></p>
+                    <div class="quick-options">
+                        <button class="btn btn-outline-primary btn-sm me-2 mb-2" onclick="selectService('plomberie')">
+                            🔧 Plomberie
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm me-2 mb-2" onclick="selectService('électricité')">
+                            ⚡ Électricité
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="selectService('électroménager')">
+                            🏠 Électroménager
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages"></div>
+        </div>
+        
+        <div class="widget-footer">
+            <div class="input-group">
+                <input type="text" id="user-input" class="form-control" 
+                       placeholder="Tapez votre message..." 
+                       onkeypress="handleKeyPress(event)">
+                <button class="btn btn-primary" onclick="sendMessage()">
+                    <i class="bi bi-send"></i>
+                </button>
+            </div>
+            <div class="powered-by">
+                <small class="text-muted">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Alimenté par Djobea AI
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Toggle Button -->
+    <div class="chat-toggle" onclick="toggleChat()" id="chat-toggle">
+        <i class="bi bi-chat-dots"></i>
+        <div class="notification-badge" id="notification-badge">1</div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-4 bg-dark text-white text-center">
+        <div class="container">
+            <p>&copy; 2025 Djobea AI. Tous droits réservés. Service de mise en relation à Douala, Cameroun.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/chat-widget.js"></script>
+</body>
+</html>

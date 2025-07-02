@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Phone Number Test</title>
+</head>
+<body>
+    <h1>Clear Phone Number for Testing</h1>
+    <button onclick="clearPhone()">Clear Phone Number</button>
+    <br><br>
+    <a href="/">Return to Chat</a>
+    
+    <script>
+        function clearPhone() {
+            localStorage.removeItem('djobea_phone_number');
+            alert('Phone number cleared! Now go back to the chat.');
+        }
+    </script>
+</body>
+</html>

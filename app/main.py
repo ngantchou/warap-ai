@@ -8,9 +8,16 @@ from fastapi.responses import HTMLResponse
 import uvicorn
 
 from app.models.database_models import Base, init_db
+from app.models.cultural_models import CulturalContext
+from app.models.personalization_models import UserPreferences, ServiceHistory
+from app.models.provider_models import (
+    ProviderSession, ProviderSettings, ProviderStatsCache, 
+    ProviderNotification, ProviderAvailability, ProviderDashboardWidget
+)
 from app.database import engine, get_db
 from app.utils.logger import setup_logger
 from app.config import get_settings
+from app.services.cultural_data_service import CulturalDataService
 
 # Setup logging
 logger = setup_logger(__name__)
@@ -27,6 +34,13 @@ async def lifespan(app: FastAPI):
     try:
         init_db(engine)
         logger.info("Database initialized successfully")
+        
+        # Seed cultural data
+        cultural_service = CulturalDataService()
+        with next(get_db()) as db:
+            cultural_service.seed_all_cultural_data(db)
+        logger.info("Cultural data seeded successfully")
+        
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
@@ -50,26 +64,75 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Templates
 templates = Jinja2Templates(directory="templates")
 
+# Setup security middleware
+from app.middleware.security import setup_security_middleware
+setup_security_middleware(app)
+
 # Import routers after app creation to avoid circular imports
 from app.api.webhook import router as webhook_router
 from app.api.admin import router as admin_router
+from app.api.chat import router as chat_router
+from app.api.auth import router as auth_router
+from app.api.payment import router as payment_router
+from app.api.public_profiles import router as public_profiles_router
+from app.api.analytics import router as analytics_router
+from app.api.provider_dashboard import router as provider_router
+from app.api.demo_provider_auth import router as demo_auth_router
+from app.api.demo_dashboard import router as demo_dashboard_router
 
 # Include routers
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
+app.include_router(chat_router, tags=["chat"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
+app.include_router(auth_router, prefix="/auth", tags=["authentication"])
+app.include_router(payment_router, tags=["payments"])
+app.include_router(public_profiles_router, tags=["public-profiles"])
+app.include_router(analytics_router, tags=["analytics"])
+app.include_router(provider_router, prefix="/api", tags=["provider-dashboard"])
+app.include_router(demo_auth_router, prefix="/api", tags=["demo-auth"])
+app.include_router(demo_dashboard_router, prefix="/api", tags=["demo-dashboard"])
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """Root endpoint - redirect to admin dashboard"""
+    """Root endpoint - serve beautiful landing page"""
+    return templates.TemplateResponse("landing_v2.html", {"request": request})
+
+# Provider dashboard routes
+@app.get("/provider-login", response_class=HTMLResponse)
+async def provider_login_page(request: Request):
+    """Provider login page"""
+    return templates.TemplateResponse("provider_login.html", {"request": request})
+
+@app.get("/provider-dashboard", response_class=HTMLResponse)
+async def provider_dashboard_page(request: Request):
+    """Provider dashboard page"""
+    return templates.TemplateResponse("provider_dashboard.html", {"request": request})
+
+@app.get("/provider-profile", response_class=HTMLResponse)
+async def provider_profile_page(request: Request):
+    """Provider profile management page"""
+    return templates.TemplateResponse("provider_profile.html", {"request": request})
+
+@app.get("/admin")
+async def admin_redirect():
+    """Redirect /admin to /admin/"""
     from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/admin", status_code=303)
+    return RedirectResponse(url="/admin/", status_code=307)
 
 # Health check endpoint
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "djobea-ai"}
+
+@app.get("/api/config")
+async def get_config():
+    """Get client configuration"""
+    return {
+        "demo_mode": settings.demo_mode,
+        "app_name": settings.app_name
+    }
 
 
 

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Djobea AI - Services à Domicile Rapides à Douala | Plomberie, Électricité, Électroménager</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Services à domicile rapides à Douala et Bonamoussadi. Trouvez instantanément un plombier, électricien ou réparateur via WhatsApp. IA avancée, prestataires vérifiés, prix transparents.">
+    <meta name="keywords" content="plomberie Douala, électricien Bonamoussadi, réparation électroménager, services domicile Cameroun, WhatsApp service">
+    <meta name="author" content="Djobea AI">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://djobea.ai/">
+    <meta property="og:title" content="Djobea AI - Services à Domicile Rapides à Douala">
+    <meta property="og:description" content="Trouvez instantanément un plombier, électricien ou réparateur via WhatsApp. Intelligence artificielle avancée pour des services de qualité.">
+    <meta property="og:image" content="/static/images/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://djobea.ai/">
+    <meta property="twitter:title" content="Djobea AI - Services à Domicile Rapides à Douala">
+    <meta property="twitter:description" content="Services à domicile via WhatsApp. Plomberie, électricité, électroménager à Douala et Bonamoussadi.">
+    <meta property="twitter:image" content="/static/images/og-image.jpg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/landing_v2.css">
+    
+    <!-- Schema Markup -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "Djobea AI",
+      "description": "Services à domicile rapides via WhatsApp à Douala et Bonamoussadi",
+      "url": "https://djobea.ai",
+      "telephone": "+237690000000",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Douala",
+        "addressRegion": "Littoral",
+        "addressCountry": "CM"
+      },
+      "areaServed": "Bonamoussadi, Douala",
+      "serviceType": ["Plomberie", "Électricité", "Réparation électroménager"],
+      "priceRange": "1500-15000 XAF"
+    }
+    </script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header" id="header">
+        <nav class="nav container">
+            <div class="nav__logo">
+                <div class="logo">
+                    <div class="logo__icon">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <span class="logo__text">Djobea AI</span>
+                </div>
+            </div>
+            
+            <div class="nav__menu" id="nav-menu">
+                <ul class="nav__list">
+                    <li class="nav__item">
+                        <a href="#services" class="nav__link">Services</a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="#how-it-works" class="nav__link">Comment ça marche</a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="#why-choose" class="nav__link">Pourquoi nous</a>
+                    </li>
+                    <li class="nav__item">
+                        <a href="#contact" class="nav__link">Contact</a>
+                    </li>
+                </ul>
+                
+                <div class="nav__close" id="nav-close">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+            
+            <div class="nav__actions">
+                <button class="btn btn--whatsapp" onclick="openWhatsApp()">
+                    <i class="fab fa-whatsapp"></i>
+                    WhatsApp
+                </button>
+                
+                <div class="nav__toggle" id="nav-toggle">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero__container container">
+            <div class="hero__content">
+                <div class="hero__data">
+                    <h1 class="hero__title">
+                        Services à Domicile 
+                        <span class="highlight">Rapides</span> 
+                        à Douala
+                    </h1>
+                    
+                    <p class="hero__description">
+                        Trouvez instantanément un plombier, électricien ou réparateur 
+                        via WhatsApp. Intelligence artificielle avancée, prestataires 
+                        vérifiés, prix transparents à Bonamoussadi et environs.
+                    </p>
+                    
+                    <div class="hero__stats">
+                        <div class="stat">
+                            <span class="stat__number">500+</span>
+                            <span class="stat__text">Clients satisfaits</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat__number">&lt; 5min</span>
+                            <span class="stat__text">Temps de réponse</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat__number">100%</span>
+                            <span class="stat__text">Prestataires vérifiés</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hero__cta">
+                        <button class="btn btn--primary btn--large" onclick="toggleChatWidget()">
+                            <i class="fas fa-comments"></i>
+                            Démarrer une conversation
+                        </button>
+                        
+                        <button class="btn btn--secondary btn--large" onclick="openWhatsApp()">
+                            <i class="fab fa-whatsapp"></i>
+                            WhatsApp Direct
+                        </button>
+                    </div>
+                    
+                    <div class="hero__trust">
+                        <div class="trust-badge">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Service local à Bonamoussadi</span>
+                        </div>
+                        <div class="trust-badge">
+                            <i class="fas fa-clock"></i>
+                            <span>Réponse sous 5 minutes</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hero__image">
+                    <div class="hero__visual">
+                        <div class="phone-mockup">
+                            <div class="phone-screen">
+                                <div class="chat-preview">
+                                    <div class="message message--received">
+                                        <div class="message__content">
+                                            Bonjour! J'ai une fuite d'eau dans ma cuisine
+                                        </div>
+                                        <div class="message__time">14:30</div>
+                                    </div>
+                                    <div class="message message--sent">
+                                        <div class="message__content">
+                                            Je comprends votre urgence! Je vous trouve un plombier qualifié à Bonamoussadi dans les 5 minutes.
+                                        </div>
+                                        <div class="message__time">14:31</div>
+                                    </div>
+                                    <div class="typing-indicator">
+                                        <div class="dot"></div>
+                                        <div class="dot"></div>
+                                        <div class="dot"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Background Elements -->
+        <div class="hero__bg">
+            <div class="bg-shape bg-shape--1"></div>
+            <div class="bg-shape bg-shape--2"></div>
+            <div class="bg-shape bg-shape--3"></div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="services" id="services">
+        <div class="container">
+            <div class="section__header">
+                <h2 class="section__title">Nos Services</h2>
+                <p class="section__description">
+                    Des solutions rapides et fiables pour tous vos besoins à domicile
+                </p>
+            </div>
+            
+            <div class="services__grid">
+                <div class="service-card">
+                    <div class="service-card__icon">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <h3 class="service-card__title">Plomberie</h3>
+                    <p class="service-card__description">
+                        Réparation de fuites, débouchage de canalisations, 
+                        installation de robinets et équipements sanitaires.
+                    </p>
+                    <div class="service-card__examples">
+                        <span class="example">• Réparation de fuites</span>
+                        <span class="example">• Débouchage canalisations</span>
+                        <span class="example">• Installation robinets</span>
+                    </div>
+                    <div class="service-card__price">
+                        <span class="price-range">3,000 - 15,000 XAF</span>
+                    </div>
+                    <button class="btn btn--service" onclick="startServiceChat('plomberie')">
+                        Demander un plombier
+                    </button>
+                </div>
+                
+                <div class="service-card service-card--featured">
+                    <div class="service-card__badge">
+                        <span>Plus demandé</span>
+                    </div>
+                    <div class="service-card__icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3 class="service-card__title">Électricité</h3>
+                    <p class="service-card__description">
+                        Réparation de pannes électriques, installation de prises, 
+                        interrupteurs et réparation d'appareils électriques.
+                    </p>
+                    <div class="service-card__examples">
+                        <span class="example">• Réparation de pannes</span>
+                        <span class="example">• Installation prises</span>
+                        <span class="example">• Réparation ventilateurs</span>
+                    </div>
+                    <div class="service-card__price">
+                        <span class="price-range">2,000 - 12,000 XAF</span>
+                    </div>
+                    <button class="btn btn--service" onclick="startServiceChat('électricité')">
+                        Demander un électricien
+                    </button>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-card__icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3 class="service-card__title">Électroménager</h3>
+                    <p class="service-card__description">
+                        Réparation de fers à repasser, bouilloires, mixeurs 
+                        et autres appareils électroménagers.
+                    </p>
+                    <div class="service-card__examples">
+                        <span class="example">• Réparation fers à repasser</span>
+                        <span class="example">• Réparation bouilloires</span>
+                        <span class="example">• Réparation mixeurs</span>
+                    </div>
+                    <div class="service-card__price">
+                        <span class="price-range">1,500 - 8,000 XAF</span>
+                    </div>
+                    <button class="btn btn--service" onclick="startServiceChat('électroménager')">
+                        Demander un réparateur
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section__header">
+                <h2 class="section__title">Comment ça marche</h2>
+                <p class="section__description">
+                    3 étapes simples pour résoudre vos problèmes à domicile
+                </p>
+            </div>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step__number">1</div>
+                    <div class="step__content">
+                        <h3 class="step__title">Décrivez votre problème</h3>
+                        <p class="step__description">
+                            Envoyez un message via WhatsApp ou notre chat. 
+                            Notre IA comprend votre besoin en français, anglais ou pidgin.
+                        </p>
+                        <div class="step__icon">
+                            <i class="fas fa-comment-dots"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step__number">2</div>
+                    <div class="step__content">
+                        <h3 class="step__title">Nous trouvons le prestataire</h3>
+                        <p class="step__description">
+                            Notre système trouve automatiquement le meilleur prestataire 
+                            disponible près de chez vous à Bonamoussadi.
+                        </p>
+                        <div class="step__icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step__number">3</div>
+                    <div class="step__content">
+                        <h3 class="step__title">Intervention rapide</h3>
+                        <p class="step__description">
+                            Le prestataire vous contacte directement et se déplace 
+                            chez vous. Paiement sécurisé via mobile money.
+                        </p>
+                        <div class="step__icon">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us Section -->
+    <section class="why-choose" id="why-choose">
+        <div class="container">
+            <div class="section__header">
+                <h2 class="section__title">Pourquoi choisir Djobea AI</h2>
+                <p class="section__description">
+                    La plateforme la plus avancée pour les services à domicile au Cameroun
+                </p>
+            </div>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature__icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3 class="feature__title">Rapidité extrême</h3>
+                    <p class="feature__description">
+                        Service trouvé en moins de 5 minutes grâce à notre IA avancée
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature__icon">
+                        <i class="fas fa-shield-check"></i>
+                    </div>
+                    <h3 class="feature__title">Prestataires vérifiés</h3>
+                    <p class="feature__description">
+                        Tous nos partenaires sont vérifiés, notés et assurés
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature__icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <h3 class="feature__title">Via WhatsApp</h3>
+                    <p class="feature__description">
+                        Interface familière que vous utilisez déjà au quotidien
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature__icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3 class="feature__title">Service local</h3>
+                    <p class="feature__description">
+                        Spécialisé à Douala-Bonamoussadi, nous connaissons votre quartier
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature__icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="feature__title">IA avancée</h3>
+                    <p class="feature__description">
+                        Intelligence artificielle qui comprend vos besoins naturellement
+                    </p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature__icon">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <h3 class="feature__title">Prix transparents</h3>
+                    <p class="feature__description">
+                        Tarifs clairs communiqués avant toute intervention
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section class="final-cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta__title">
+                    Prêt à résoudre votre problème ?
+                </h2>
+                <p class="cta__description">
+                    Rejoignez les 500+ clients qui nous font confiance à Douala
+                </p>
+                <div class="cta__buttons">
+                    <button class="btn btn--primary btn--large" onclick="toggleChatWidget()">
+                        <i class="fas fa-comments"></i>
+                        Démarrer maintenant
+                    </button>
+                    <button class="btn btn--whatsapp btn--large" onclick="openWhatsApp()">
+                        <i class="fab fa-whatsapp"></i>
+                        WhatsApp Direct
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contact">
+        <div class="container">
+            <div class="footer__content">
+                <div class="footer__section">
+                    <div class="logo">
+                        <div class="logo__icon">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <span class="logo__text">Djobea AI</span>
+                    </div>
+                    <p class="footer__description">
+                        La plateforme intelligente pour tous vos services à domicile 
+                        à Douala et Bonamoussadi.
+                    </p>
+                    <div class="footer__contact">
+                        <div class="contact-item">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>+237 690 000 000</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>Bonamoussadi, Douala</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="footer__section">
+                    <h4 class="footer__title">Services</h4>
+                    <ul class="footer__links">
+                        <li><a href="#services">Plomberie</a></li>
+                        <li><a href="#services">Électricité</a></li>
+                        <li><a href="#services">Électroménager</a></li>
+                        <li><a href="#services">Urgences</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer__section">
+                    <h4 class="footer__title">Entreprise</h4>
+                    <ul class="footer__links">
+                        <li><a href="#how-it-works">Comment ça marche</a></li>
+                        <li><a href="#why-choose">Pourquoi nous</a></li>
+                        <li><a href="/admin/login">Espace prestataire</a></li>
+                        <li><a href="/terms">Conditions d'utilisation</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer__section">
+                    <h4 class="footer__title">Contact</h4>
+                    <ul class="footer__links">
+                        <li><a href="#" onclick="openWhatsApp()">WhatsApp</a></li>
+                        <li><a href="#" onclick="toggleChatWidget()">Chat en ligne</a></li>
+                        <li><a href="mailto:contact@djobea.ai">Email</a></li>
+                        <li><a href="/help">Centre d'aide</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer__bottom">
+                <div class="footer__copyright">
+                    <p>&copy; 2025 Djobea AI. Tous droits réservés.</p>
+                </div>
+                <div class="footer__social">
+                    <a href="#" class="social-link">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="#" class="social-link">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="social-link">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                    <a href="#" class="social-link">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget" id="chat-widget">
+        <div class="chat-toggle" id="chat-toggle">
+            <i class="fas fa-comments"></i>
+            <div class="notification-badge" id="notification-badge">1</div>
+        </div>
+        
+        <div class="chat-window" id="chat-window">
+            <div class="chat-header">
+                <div class="chat-header__info">
+                    <div class="chat-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="chat-details">
+                        <h4>Djobea AI Assistant</h4>
+                        <span class="status online">En ligne</span>
+                    </div>
+                </div>
+                <button class="chat-close" onclick="toggleChatWidget()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="message message--received">
+                    <div class="message__content">
+                        Bonjour! 👋 Je suis votre assistant IA pour les services à domicile. 
+                        Comment puis-je vous aider aujourd'hui?
+                    </div>
+                    <div class="message__time">Maintenant</div>
+                </div>
+                
+                <div class="quick-replies">
+                    <button class="quick-reply" onclick="sendQuickReply('J\'ai un problème de plomberie')">
+                        🔧 Plomberie
+                    </button>
+                    <button class="quick-reply" onclick="sendQuickReply('J\'ai un problème électrique')">
+                        ⚡ Électricité
+                    </button>
+                    <button class="quick-reply" onclick="sendQuickReply('Mon électroménager ne marche pas')">
+                        🔨 Électroménager
+                    </button>
+                </div>
+            </div>
+            
+            <div class="chat-input">
+                <div class="input-container">
+                    <input type="text" 
+                           id="message-input" 
+                           placeholder="Tapez votre message..." 
+                           onkeypress="handleKeyPress(event)">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Urgent Button -->
+    <div class="urgent-btn" onclick="handleUrgent()">
+        <div class="urgent-btn__content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>URGENT</span>
+        </div>
+        <div class="urgent-btn__pulse"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/landing_v2.js"></script>
+    <script src="/static/js/chat-widget_v2.js?v=20250702-080"></script>
+    
+    <!-- Analytics (Replace with your tracking code) -->
+    <script>
+        // Google Analytics or other tracking code would go here
+        console.log('Landing page loaded successfully');
+    </script>
+</body>
+</html>

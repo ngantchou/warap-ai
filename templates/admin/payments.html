@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Paiements - Djobea AI Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .payment-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-completed { background: #28a745; color: white; }
+        .status-pending { background: #ffc107; color: #212529; }
+        .status-failed { background: #dc3545; color: white; }
+        .status-initiated { background: #17a2b8; color: white; }
+        .transaction-card {
+            border-left: 4px solid #007bff;
+            margin-bottom: 1rem;
+        }
+        .sidebar {
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 1rem 1.5rem;
+            border-radius: 0;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        .main-content {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0 sidebar">
+                <div class="py-4">
+                    <h4 class="text-white text-center mb-4">
+                        <i class="fas fa-robot"></i> Djobea AI
+                    </h4>
+                    <nav class="nav flex-column">
+                        <a class="nav-link" href="/admin/">
+                            <i class="fas fa-tachometer-alt me-2"></i> Tableau de Bord
+                        </a>
+                        <a class="nav-link" href="/admin/providers">
+                            <i class="fas fa-users me-2"></i> Prestataires
+                        </a>
+                        <a class="nav-link" href="/admin/requests">
+                            <i class="fas fa-clipboard-list me-2"></i> Demandes
+                        </a>
+                        <a class="nav-link active" href="/admin/payments">
+                            <i class="fas fa-credit-card me-2"></i> Paiements
+                        </a>
+                        <a class="nav-link" href="/admin/analytics">
+                            <i class="fas fa-chart-bar me-2"></i> Analytics
+                        </a>
+                        <a class="nav-link" href="/admin/logs">
+                            <i class="fas fa-file-alt me-2"></i> Logs
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-10 main-content">
+                <div class="container-fluid py-4">
+                    <!-- Header -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-credit-card me-2"></i>Gestion des Paiements</h2>
+                        <div class="d-flex gap-2">
+                            <select class="form-select" id="statusFilter" onchange="filterByStatus()">
+                                <option value="">Tous les statuts</option>
+                                <option value="en attente" {% if current_status == 'en attente' %}selected{% endif %}>En attente</option>
+                                <option value="initiée" {% if current_status == 'initiée' %}selected{% endif %}>Initiée</option>
+                                <option value="terminée" {% if current_status == 'terminée' %}selected{% endif %}>Terminée</option>
+                                <option value="échouée" {% if current_status == 'échouée' %}selected{% endif %}>Échouée</option>
+                            </select>
+                            <button class="btn btn-primary" onclick="refreshData()">
+                                <i class="fas fa-sync-alt"></i> Actualiser
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Payment Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="payment-card text-center">
+                                <div class="h2 mb-1">{{ "{:,.0f}".format(stats.total_revenue) }}</div>
+                                <div class="small">FCFA de Revenus Totaux</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="payment-card text-center">
+                                <div class="h2 mb-1">{{ "{:,.0f}".format(stats.total_commission) }}</div>
+                                <div class="small">FCFA de Commissions</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="payment-card text-center">
+                                <div class="h2 mb-1">{{ stats.completed_transactions }}</div>
+                                <div class="small">Paiements Terminés</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="payment-card text-center">
+                                <div class="h2 mb-1">{{ "{:.1f}%".format(stats.success_rate) }}</div>
+                                <div class="small">Taux de Succès</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="text-warning">{{ stats.pending_payments }}</h5>
+                                    <small class="text-muted">En Attente</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="text-danger">{{ stats.failed_payments }}</h5>
+                                    <small class="text-muted">Échecs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="text-info">{{ stats.total_transactions }}</h5>
+                                    <small class="text-muted">Total Transactions</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="text-success">15%</h5>
+                                    <small class="text-muted">Taux Commission</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Transactions -->
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Transactions Récentes</h5>
+                            <small class="text-muted">{{ recent_transactions|length }} dernières transactions</small>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_transactions %}
+                                {% for transaction in recent_transactions %}
+                                <div class="transaction-card card p-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Référence</small>
+                                            <div class="fw-bold">{{ transaction.payment_reference[:12] }}...</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Client</small>
+                                            <div>{{ transaction.customer.name or transaction.customer.phone_number }}</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Service</small>
+                                            <div>{{ transaction.service_request.service_type }}</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted">Montant</small>
+                                            <div class="fw-bold">{{ "{:,.0f}".format(transaction.amount) }} FCFA</div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <span class="status-badge status-{{ transaction.status.replace(' ', '-') }}">
+                                                {{ transaction.status|title }}
+                                            </span>
+                                        </div>
+                                        <div class="col-md-2">
+                                            {% if transaction.status == 'échouée' %}
+                                                <button class="btn btn-sm btn-outline-warning" 
+                                                        onclick="retryPayment({{ transaction.id }})">
+                                                    <i class="fas fa-redo"></i> Réessayer
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fas fa-credit-card fa-2x mb-3"></i>
+                                    <p>Aucune transaction trouvée</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- All Transactions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Toutes les Transactions</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if transactions %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Référence</th>
+                                                <th>Client</th>
+                                                <th>Prestataire</th>
+                                                <th>Service</th>
+                                                <th>Montant</th>
+                                                <th>Commission</th>
+                                                <th>Statut</th>
+                                                <th>Date</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for transaction in transactions %}
+                                            <tr>
+                                                <td>
+                                                    <small class="text-muted">{{ transaction.payment_reference[:12] }}...</small>
+                                                </td>
+                                                <td>{{ transaction.customer.name or transaction.customer.phone_number }}</td>
+                                                <td>{{ transaction.provider.name }}</td>
+                                                <td>{{ transaction.service_request.service_type }}</td>
+                                                <td class="fw-bold">{{ "{:,.0f}".format(transaction.amount) }} FCFA</td>
+                                                <td class="text-success">{{ "{:,.0f}".format(transaction.commission) }} FCFA</td>
+                                                <td>
+                                                    <span class="status-badge status-{{ transaction.status.replace(' ', '-') }}">
+                                                        {{ transaction.status|title }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ transaction.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                                <td>
+                                                    {% if transaction.status == 'échouée' %}
+                                                        <button class="btn btn-sm btn-outline-warning" 
+                                                                onclick="retryPayment({{ transaction.id }})">
+                                                            <i class="fas fa-redo"></i>
+                                                        </button>
+                                                    {% endif %}
+                                                    <button class="btn btn-sm btn-outline-info" 
+                                                            onclick="viewTransaction({{ transaction.id }})">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="fas fa-credit-card fa-2x mb-3"></i>
+                                    <p>Aucune transaction trouvée pour ce filtre</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function filterByStatus() {
+            const status = document.getElementById('statusFilter').value;
+            const url = new URL(window.location);
+            if (status) {
+                url.searchParams.set('status', status);
+            } else {
+                url.searchParams.delete('status');
+            }
+            window.location = url;
+        }
+
+        function refreshData() {
+            window.location.reload();
+        }
+
+        async function retryPayment(transactionId) {
+            try {
+                const response = await fetch(`/admin/payments/${transactionId}/retry`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert('Relance du paiement initiée avec succès');
+                    window.location.reload();
+                } else {
+                    alert('Erreur: ' + result.message);
+                }
+            } catch (error) {
+                alert('Erreur lors de la relance du paiement');
+                console.error(error);
+            }
+        }
+
+        function viewTransaction(transactionId) {
+            // TODO: Implement transaction detail modal
+            alert('Détails de la transaction: ' + transactionId);
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshData, 30000);
+    </script>
+</body>
+</html>

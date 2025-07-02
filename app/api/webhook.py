@@ -11,7 +11,12 @@ from app.services.whatsapp_service import whatsapp_service
 from app.services.provider_service import ProviderService
 from app.services.request_service import RequestService
 from app.services.conversation_manager import conversation_manager
-from app.models.database_models import RequestStatus, Conversation, ServiceRequest, User
+from app.services.communication_service import CommunicationService
+from app.services.quick_actions_service import QuickActionsService
+from app.services.scheduling_service import SchedulingService
+from app.services.media_upload_service import get_media_upload_service
+from app.services.visual_analysis_service import get_visual_analysis_service
+from app.models.database_models import RequestStatus, Conversation, ServiceRequest, User, ActionType, Provider, MediaUpload, VisualAnalysis
 from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -24,7 +29,10 @@ async def whatsapp_webhook(
     MessageSid: str = Form(...),
     From: str = Form(...),
     To: str = Form(...),
-    Body: str = Form(...),
+    Body: str = Form(""),
+    NumMedia: int = Form(0),
+    MediaUrl0: str = Form(None),
+    MediaContentType0: str = Form(None),
     db: Session = Depends(get_db)
 ):
     """Handle incoming WhatsApp messages"""
@@ -36,7 +44,10 @@ async def whatsapp_webhook(
             "MessageSid": MessageSid,
             "From": From,
             "To": To,
-            "Body": Body
+            "Body": Body,
+            "NumMedia": NumMedia,
+            "MediaUrl0": MediaUrl0,
+            "MediaContentType0": MediaContentType0
         }
         
         message_data = whatsapp_service.parse_incoming_message(webhook_data)
@@ -47,6 +58,7 @@ async def whatsapp_webhook(
         
         user_phone = message_data["from"]
         message_body = message_data["body"].strip()
+        has_media = NumMedia > 0 and MediaUrl0
         
         logger.info(f"Received WhatsApp message from {user_phone}: {message_body}")
         
@@ -64,8 +76,13 @@ async def whatsapp_webhook(
             # Handle provider response
             await handle_provider_response(provider, message_body, db)
         else:
-            # Handle user request
-            await handle_user_request(user.id, message_body, user_phone, db)
+            # Handle media uploads if present
+            if has_media:
+                await handle_media_upload(user.id, MediaUrl0, MediaContentType0, user_phone, db)
+            
+            # Handle text message if present
+            if message_body:
+                await handle_user_request(user.id, message_body, user_phone, db)
         
         return PlainTextResponse("", status_code=200)
         
@@ -73,12 +90,216 @@ async def whatsapp_webhook(
         logger.error(f"Error in WhatsApp webhook: {e}")
         return PlainTextResponse("", status_code=500)
 
+async def handle_media_upload(user_id: int, media_url: str, content_type: str, user_phone: str, db: Session):
+    """Handle media upload from WhatsApp"""
+    try:
+        logger.info(f"Processing media upload from user {user_id}: {media_url}")
+        
+        # Get user's current/most recent service request
+        request_service = RequestService(db)
+        user_requests = request_service.get_user_requests(user_id, limit=1)
+        
+        if not user_requests:
+            # No existing request - ask user to describe the problem first
+            response = """📸 J'ai reçu votre photo ! 
+
+Pour mieux vous aider, pourriez-vous d'abord me décrire votre problème en quelques mots ? Par exemple :
+• "Fuite d'eau dans la cuisine"
+• "Panne électrique dans le salon" 
+• "Climatiseur ne fonctionne plus"
+
+Ensuite, je pourrai analyser votre photo et vous donner des conseils précis ! 🔧"""
+            
+            whatsapp_service.send_message(user_phone, response)
+            return
+        
+        current_request = user_requests[0]
+        
+        # Check if request is in progress and needs visual progress tracking
+        if current_request.status in ["ASSIGNED", "IN_PROGRESS"]:
+            # Handle progress photo
+            media_service = get_media_upload_service(db)
+            media_upload = await media_service.process_whatsapp_media(
+                media_url, "image", content_type, current_request.id
+            )
+            
+            if media_upload:
+                response = """📸 Photo reçue ! 
+
+Je suis en train d'analyser votre image pour suivre les progrès des travaux. Je vous enverrai un rapport détaillé dans quelques instants.
+
+Votre prestataire pourra également voir cette photo pour mieux comprendre la situation. 📋"""
+                
+                whatsapp_service.send_message(user_phone, response)
+                
+                # Notify the provider if request is assigned
+                if current_request.provider_id:
+                    provider = db.query(Provider).filter(
+                        Provider.id == current_request.provider_id
+                    ).first()
+                    provider_phone = provider.whatsapp_id if provider else None
+                    
+                    if provider_phone:
+                        provider_message = f"""📸 Nouvelle photo reçue du client !
+
+Demande #{current_request.id} - {current_request.service_type}
+📍 {current_request.location}
+
+Le client a envoyé une nouvelle photo. Vous pouvez la consulter pour suivre l'évolution des travaux."""
+                        
+                        whatsapp_service.send_message(provider_phone, provider_message)
+        
+        else:
+            # Handle initial problem photo
+            media_service = get_media_upload_service(db)
+            media_upload = await media_service.process_whatsapp_media(
+                media_url, "image", content_type, current_request.id
+            )
+            
+            if media_upload:
+                # Generate initial analysis response
+                response = f"""📸 Merci pour cette photo ! 
+
+🔍 Je suis en train d'analyser votre image avec l'IA pour :
+• Identifier le problème exact
+• Évaluer la gravité de la situation  
+• Estimer les coûts de réparation
+• Recommander le bon spécialiste
+
+📊 Analyse en cours... Je vous enverrai un rapport détaillé dans quelques instants !
+
+Demande #{current_request.id} - {current_request.service_type}"""
+                
+                whatsapp_service.send_message(user_phone, response)
+                
+                # If analysis is completed, send detailed results
+                if media_upload.analysis_completed and media_upload.visual_analysis:
+                    await send_visual_analysis_results(current_request.id, user_phone, db)
+    
+    except Exception as e:
+        logger.error(f"Error handling media upload: {e}")
+        error_response = """❌ Désolé, j'ai eu un problème en traitant votre photo.
+
+Pourriez-vous essayer de l'envoyer à nouveau ? Assurez-vous que :
+• La photo est claire et bien éclairée
+• Le problème est visible sur l'image
+• La taille du fichier n'est pas trop importante
+
+Je suis là pour vous aider ! 🔧"""
+        
+        whatsapp_service.send_message(user_phone, error_response)
+
+async def send_visual_analysis_results(request_id: int, user_phone: str, db: Session):
+    """Send detailed visual analysis results to user"""
+    try:
+        # Get the visual analysis
+        media_uploads = db.query(MediaUpload).filter(
+            MediaUpload.service_request_id == request_id,
+            MediaUpload.analysis_completed == True
+        ).all()
+        
+        if not media_uploads:
+            return
+        
+        # Get service request
+        request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+        if not request:
+            return
+        
+        # Get most recent analysis
+        latest_media = media_uploads[-1]
+        analysis = latest_media.visual_analysis
+        
+        if not analysis:
+            return
+        
+        # Format analysis results
+        severity_emoji = {
+            "minor": "🟢",
+            "moderate": "🟡", 
+            "major": "🟠",
+            "emergency": "🔴"
+        }
+        
+        response = f"""🔍 **ANALYSE TERMINÉE** - Demande #{request_id}
+
+{severity_emoji.get(analysis.severity, '🟡')} **Problème détecté :** {analysis.primary_problem}
+
+📊 **Évaluation :**
+• Gravité : {analysis.severity.upper()}
+• Confiance : {int(analysis.problem_confidence * 100)}%
+
+💰 **Estimation des coûts :**
+{int(analysis.estimated_cost_min):,} - {int(analysis.estimated_cost_max):,} XAF
+
+🔧 **Matériel requis :**
+{chr(10).join(f"• {tool}" for tool in analysis.tools_needed[:3]) if analysis.tools_needed else "• À déterminer"}
+
+⏱️ **Durée estimée :** {analysis.estimated_duration}
+
+🚨 **Sécurité :** {'⚠️ Précautions nécessaires' if analysis.safety_hazards else '✅ Pas de risque immédiat'}"""
+
+        if analysis.additional_photos_needed:
+            response += f"""
+
+📸 **Photos supplémentaires recommandées :**
+{chr(10).join(f"• {photo}" for photo in analysis.additional_photos_needed[:2])}"""
+
+        response += f"""
+
+✅ Je recherche maintenant le meilleur prestataire pour votre {request.service_type} !"""
+
+        whatsapp_service.send_message(user_phone, response)
+        
+        # Generate photo guidance for better documentation
+        media_service = get_media_upload_service(db)
+        guidance = media_service.generate_photo_guidance(request.service_type, media_uploads)
+        
+        if guidance.get("missing"):
+            guidance_message = f"""💡 **Conseils pour de meilleures photos :**
+
+{guidance['missing']}
+
+📋 **Angles recommandés :**
+{chr(10).join(f"• {angle}" for angle in guidance['angles'][:3]) if guidance.get('angles') else ''}
+
+🎯 **Astuce :** {guidance['tips'][0] if guidance.get('tips') else 'Prenez des photos sous différents angles avec un bon éclairage'}"""
+            
+            whatsapp_service.send_message(user_phone, guidance_message)
+        
+    except Exception as e:
+        logger.error(f"Error sending visual analysis results: {e}")
+
 async def handle_user_request(user_id: int, message: str, user_phone: str, db: Session):
     """Handle incoming user request"""
     
     try:
         request_service = RequestService(db)
         provider_service = ProviderService(db)
+        quick_actions_service = QuickActionsService(db)
+        
+        # First check if this is a quick action command
+        detected_action = conversation_manager.detect_quick_action(message)
+        
+        if detected_action:
+            # Handle quick action command
+            response = await quick_actions_service.handle_action_command(
+                user_id, user_phone, detected_action, message
+            )
+            
+            # Log the action
+            request_service.log_conversation(
+                user_id=user_id,
+                message_content=message,
+                ai_response=response,
+                extracted_data={"action_type": detected_action.value}
+            )
+            
+            # Send response
+            whatsapp_service.send_message(user_phone, response)
+            
+            logger.info(f"Handled quick action {detected_action.value} for user {user_id}")
+            return
         
         # Use Sprint 2 conversation manager for intelligent processing
         response_message, request_info = conversation_manager.process_message(str(user_id), message)
@@ -102,16 +323,32 @@ async def handle_user_request(user_id: int, message: str, user_phone: str, db: S
         
         # If request is complete, create service request and notify providers
         if request_info.is_complete():
+            # Initialize scheduling service
+            scheduling_service = SchedulingService(db)
+            
             # Check if user has an incomplete request to update
             incomplete_request = request_service.find_incomplete_request_for_user(user_id)
             
             if incomplete_request:
-                # Update existing request
+                # Update existing request with new information
                 incomplete_request.service_type = request_info.service_type
                 incomplete_request.description = request_info.description
                 incomplete_request.location = request_info.location
-                incomplete_request.preferred_time = request_info.urgency
+                incomplete_request.preferred_time = request_info.urgency or request_info.preferred_time_details
                 incomplete_request.urgency = request_info.urgency
+                
+                # Update enhanced scheduling fields
+                if request_info.scheduling_preference:
+                    scheduling_service.update_request_scheduling(
+                        incomplete_request, 
+                        request_info.scheduling_preference
+                    )
+                
+                # Update enhanced location fields  
+                if request_info.landmark_references:
+                    incomplete_request.landmark_references = ", ".join(request_info.landmark_references)
+                    incomplete_request.location_accuracy = "approximate" if request_info.location_confidence < 0.8 else "good"
+                
                 db.commit()
                 service_request = incomplete_request
             else:
@@ -120,12 +357,33 @@ async def handle_user_request(user_id: int, message: str, user_phone: str, db: S
                     "service_type": request_info.service_type,
                     "description": request_info.description,
                     "location": request_info.location,
-                    "preferred_time": request_info.urgency,
-                    "urgency": request_info.urgency
+                    "preferred_time": request_info.urgency or request_info.preferred_time_details,
+                    "urgency": request_info.urgency or "normal"
                 }
                 service_request = request_service.create_request(user_id, request_data)
+                
+                # Apply enhanced scheduling if available
+                if service_request and request_info.scheduling_preference:
+                    scheduling_service.update_request_scheduling(
+                        service_request, 
+                        request_info.scheduling_preference
+                    )
+                
+                # Apply enhanced location data if available
+                if service_request and request_info.landmark_references:
+                    service_request.landmark_references = ", ".join(request_info.landmark_references)
+                    service_request.location_accuracy = "approximate" if request_info.location_confidence < 0.8 else "good"
+                    db.commit()
             
             if service_request:
+                # Send instant confirmation with pricing
+                communication_service = CommunicationService()
+                await communication_service.send_instant_confirmation(service_request.id, db)
+                
+                # Add quick actions menu
+                actions_menu = quick_actions_service.generate_actions_menu(service_request.id)
+                whatsapp_service.send_message(user_phone, actions_menu)
+                
                 # Find available providers
                 providers = provider_service.find_available_providers(
                     request_info.service_type,
@@ -186,21 +444,9 @@ async def handle_provider_response(provider, message: str, db: Session):
                 
                 db.commit()
                 
-                # Notify user
-                user_phone = request.user.whatsapp_id
-                confirmation_message = f"""
-✅ Bonne nouvelle ! Votre demande de {request.service_type} a été acceptée par {provider.name}.
-
-📞 Contact du prestataire: {provider.phone_number}
-📍 Adresse: {request.location}
-⏰ Délai: {request.preferred_time or 'À convenir'}
-
-Le prestataire va vous contacter directement pour organiser l'intervention.
-
-Merci d'avoir utilisé Djobea AI !
-                """.strip()
-                
-                whatsapp_service.send_message(user_phone, confirmation_message)
+                # Send enhanced provider acceptance notification
+                communication_service = CommunicationService()
+                await communication_service.send_provider_acceptance(request.id, provider.id, db)
                 
                 # Confirm to provider
                 provider_confirmation = f"""

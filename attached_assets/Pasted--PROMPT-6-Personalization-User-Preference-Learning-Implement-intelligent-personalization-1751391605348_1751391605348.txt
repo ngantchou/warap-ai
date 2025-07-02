@@ -1,0 +1,74 @@
+## 🎯 **PROMPT 6: Personalization & User Preference Learning**
+Implement intelligent personalization and user preference learning system:
+
+User Preference Tracking:
+
+Create UserPreferences model with comprehensive fields
+Track service usage patterns and preferences
+Learn communication style preferences (formal/casual)
+Monitor time preferences and scheduling patterns
+
+
+Preference Learning Algorithm:
+
+Analyze conversation history for communication style
+Track successful provider matches for future prioritization
+Learn from user feedback and ratings
+Adapt message tone and complexity based on user responses
+
+
+Personalized Communication:
+
+Adapt message tone based on user preference
+Remember user's preferred language mix (French/English/Pidgin)
+Personalize greeting and interaction style
+Adjust technical detail level based on user comprehension
+
+
+Smart Defaults System:
+
+Remember user's typical location for faster requests
+Pre-fill service descriptions based on history
+Suggest preferred time slots
+Recommend previously successful providers
+
+
+Behavioral Pattern Recognition:
+
+Identify power users vs occasional users
+Recognize urgent vs planned service patterns
+Track seasonal service needs
+Learn from cancellation and modification patterns
+
+
+Contextual Intelligence:
+
+Remember ongoing conversations and context
+Reference previous successful services
+Anticipate needs based on service history
+Provide proactive suggestions and maintenance reminders
+
+
+Privacy & Data Management:
+
+Implement user data privacy controls
+Allow users to reset preferences
+Provide data export functionality
+Ensure GDPR-like privacy compliance
+
+
+
+Database Schema:
+
+Create user_preferences table (communication_style, language_preference, etc.)
+Add service_history tracking table
+Create behavioral_patterns table
+Add preference_learning_data table
+
+Integration Requirements:
+
+Extend User model with preference relationships
+Update conversation_manager for personalized responses
+Integrate with existing user journey management
+Add preference management to admin interface
+Maintain conversation context and memory

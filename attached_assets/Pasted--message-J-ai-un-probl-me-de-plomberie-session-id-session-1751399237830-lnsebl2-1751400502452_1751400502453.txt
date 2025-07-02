@@ -1,0 +1,54 @@
+{
+    "message": "J'ai un problème de plomberie",
+    "session_id": "session_1751399237830_lnsebl23z",
+    "phone_number": "237691924172",
+    "source": "web_chat",
+    "timestamp": "2025-07-01T20:07:20.031Z",
+    "conversation_history": [
+        {
+            "content": "J'ai un problème de plomberie. Pouvez-vous m'aider?",
+            "isUser": true,
+            "timestamp": 1751400310875
+        },
+        {
+            "content": "Bonjour ! Je vais vous aider à trouver un plombier pour votre problème. Pouvez-vous me donner votre adresse précise à Bonamoussadi ou dans quel quartier de Douala vous vous trouvez ?",
+            "isUser": false,
+            "timestamp": 1751400321540
+        },
+        {
+            "content": "Je suis à Bonamoussadi",
+            "isUser": true,
+            "timestamp": 1751400324831
+        },
+        {
+            "content": "Bonjour ! Je vois que vous êtes à Bonamoussadi. Quel type de service recherchez-vous aujourd'hui ? Par exemple : plomberie, électricité, réparation d'électroménager, climatisation, ou autre chose ?",
+            "isUser": false,
+            "timestamp": 1751400341250
+        },
+        {
+            "content": "J'ai un problème électrique",
+            "isUser": true,
+            "timestamp": 1751400373886
+        },
+        {
+            "content": "Bonjour ! Je comprends que vous avez un problème électrique. Pouvez-vous me donner votre adresse précise à Bonamoussadi pour que je puisse vous mettre en contact avec un électricien dans votre secteur ?",
+            "isUser": false,
+            "timestamp": 1751400384829
+        },
+        {
+            "content": "Je suis à Bonamoussadi",
+            "isUser": true,
+            "timestamp": 1751400418639
+        },
+        {
+            "content": "Bonjour ! Je vois que vous êtes à Bonamoussadi. Quel type de service vous faut-il ? Par exemple : plomberie, électricité, réparation électroménager, climatisation, ou autre chose ?",
+            "isUser": false,
+            "timestamp": 1751400430217
+        },
+        {
+            "content": "J'ai un problème de plomberie",
+            "isUser": true,
+            "timestamp": 1751400440030
+        }
+    ]
+}

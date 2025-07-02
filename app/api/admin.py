@@ -8,15 +8,32 @@ from app.database import get_db
 from app.services.provider_service import ProviderService
 from app.services.request_service import RequestService
 from app.services.analytics_service import AnalyticsService
-from app.models.database_models import Provider, ServiceRequest, User, Conversation, RequestStatus
+from app.models.database_models import Provider, ServiceRequest, User, Conversation, RequestStatus, AdminUser
+from app.services.auth_service import get_current_user
 from app.utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+def get_current_admin_user(request: Request, db: Session = Depends(get_db)) -> AdminUser:
+    """Get current authenticated admin user from cookie"""
+    access_token = request.cookies.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=302, headers={"Location": "/auth/login"})
+    
+    try:
+        return get_current_user(db, access_token)
+    except HTTPException:
+        raise HTTPException(status_code=302, headers={"Location": "/auth/login"})
+
+
 @router.get("/", response_class=HTMLResponse)
-async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+async def admin_dashboard(
+    request: Request, 
+    db: Session = Depends(get_db),
+    current_user: AdminUser = Depends(get_current_admin_user)
+):
     """Admin dashboard with overview statistics"""
     
     try:
