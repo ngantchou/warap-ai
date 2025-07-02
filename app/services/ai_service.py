@@ -189,6 +189,52 @@ Djobea AI - Services à domicile
         
         return status_messages.get(status, "Statut de votre demande mis à jour.")
     
+    async def generate_response(self, messages: List[Dict], system_prompt: str = None, max_tokens: int = 1000, temperature: float = 0.7) -> str:
+        """Generate a response using Claude API"""
+        try:
+            # Prepare system prompt
+            if not system_prompt:
+                system_prompt = f"""
+                Tu es l'assistant IA de Djobea AI, un service de mise en relation entre clients et prestataires de services à domicile au Cameroun.
+                
+                ZONE COUVERTE: {self.target_area}
+                SERVICES DISPONIBLES: {', '.join(self.supported_services)}
+                
+                Tu dois:
+                - Être poli et professionnel
+                - Parler en français adapté au contexte camerounais
+                - Aider les clients à formuler leurs demandes de service
+                - Être précis dans tes réponses
+                """
+            
+            # Convert messages format if needed
+            claude_messages = []
+            for msg in messages:
+                if isinstance(msg, dict):
+                    claude_messages.append({
+                        "role": msg.get("role", "user"),
+                        "content": msg.get("content", str(msg))
+                    })
+                else:
+                    claude_messages.append({
+                        "role": "user",
+                        "content": str(msg)
+                    })
+            
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=system_prompt,
+                messages=claude_messages
+            )
+            
+            return response.content[0].text.strip()
+            
+        except Exception as e:
+            logger.error(f"Error in generate_response: {e}")
+            return "Désolé, je rencontre une difficulté technique. Pouvez-vous reformuler votre demande ?"
+    
     def _get_fallback_response(self, message: str) -> Dict:
         """Fallback response when AI fails"""
         return {

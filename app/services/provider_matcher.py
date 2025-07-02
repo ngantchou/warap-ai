@@ -76,7 +76,7 @@ class ProviderMatcher:
             # Filter by service type
             service_type = request.service_type.lower()
             query = query.filter(
-                func.json_extract(Provider.services, '$').contains(service_type)
+                Provider.services.op('->>')(0).contains(service_type)
             )
             
             # Filter by geographic coverage
@@ -85,7 +85,7 @@ class ProviderMatcher:
                 coverage_conditions = []
                 for keyword in location_keywords:
                     coverage_conditions.append(
-                        func.json_extract(Provider.coverage_areas, '$').contains(keyword)
+                        Provider.coverage_areas.op('->>')(0).contains(keyword)
                     )
                 query = query.filter(or_(*coverage_conditions))
             

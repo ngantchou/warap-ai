@@ -294,14 +294,19 @@ class ProviderDashboardService:
             Dashboard statistics and metrics
         """
         try:
+            # Refresh provider object to ensure we have current data
+            db.refresh(provider)
+            
             today = date.today()
             week_start = today - timedelta(days=today.weekday())
             month_start = today.replace(day=1)
             
+            provider_id = provider.id
+            
             # Today's requests
             today_requests = db.query(ServiceRequest).filter(
                 and_(
-                    ServiceRequest.provider_id == provider.id,
+                    ServiceRequest.provider_id == provider_id,
                     func.date(ServiceRequest.created_at) == today
                 )
             ).all()
@@ -309,7 +314,7 @@ class ProviderDashboardService:
             # Week's requests
             week_requests = db.query(ServiceRequest).filter(
                 and_(
-                    ServiceRequest.provider_id == provider.id,
+                    ServiceRequest.provider_id == provider_id,
                     func.date(ServiceRequest.created_at) >= week_start
                 )
             ).all()
@@ -317,7 +322,7 @@ class ProviderDashboardService:
             # Month's requests
             month_requests = db.query(ServiceRequest).filter(
                 and_(
-                    ServiceRequest.provider_id == provider.id,
+                    ServiceRequest.provider_id == provider_id,
                     func.date(ServiceRequest.created_at) >= month_start
                 )
             ).all()
@@ -329,20 +334,35 @@ class ProviderDashboardService:
             
             # Earnings calculation (15% commission)
             commission_rate = 0.15
-            week_earnings = sum(r.final_price or 0 for r in week_requests if r.status == 'COMPLETED')
+            week_earnings = sum(float(r.final_price or 0) for r in week_requests if r.status == 'COMPLETED')
             week_net_earnings = week_earnings * (1 - commission_rate)
             
             # Notifications count
             unread_notifications = db.query(ProviderNotification).filter(
                 and_(
-                    ProviderNotification.provider_id == provider.id,
+                    ProviderNotification.provider_id == provider_id,
                     ProviderNotification.is_read == False
                 )
             ).count()
             
+            # Get provider attributes safely
+            provider_rating = getattr(provider, 'rating', 0.0) or 0.0
+            provider_total_jobs = getattr(provider, 'total_jobs', 0) or 0
+            provider_trust_score = getattr(provider, 'trust_score', 0.0) or 0.0
+            
             return {
                 "success": True,
                 "stats": {
+                    "provider": {
+                        "id": provider.id,
+                        "name": getattr(provider, 'name', 'Prestataire'),
+                        "service_type": getattr(provider, 'service_type', 'Service général'),
+                        "location": getattr(provider, 'location', 'Douala'),
+                        "verification_status": getattr(provider, 'verification_status', 'unverified'),
+                        "phone": getattr(provider, 'phone', ''),
+                        "rating": float(provider_rating),
+                        "trust_score": float(provider_trust_score)
+                    },
                     "today": {
                         "new_requests": today_stats["new"],
                         "in_progress": today_stats["in_progress"],
@@ -357,16 +377,16 @@ class ProviderDashboardService:
                         "commission_paid": week_earnings * commission_rate
                     },
                     "performance": {
-                        "average_rating": provider.rating or 0,
-                        "total_jobs": provider.total_jobs or 0,
+                        "average_rating": float(provider_rating),
+                        "total_jobs": int(provider_total_jobs),
                         "response_time_avg": self._calculate_avg_response_time(db, provider),
-                        "trust_score": provider.trust_score
+                        "trust_score": float(provider_trust_score)
                     },
                     "notifications": {
                         "unread_count": unread_notifications,
                         "urgent_count": db.query(ProviderNotification).filter(
                             and_(
-                                ProviderNotification.provider_id == provider.id,
+                                ProviderNotification.provider_id == provider_id,
                                 ProviderNotification.is_read == False,
                                 ProviderNotification.is_urgent == True
                             )
@@ -541,10 +561,28 @@ class ProviderDashboardService:
                         "count": count
                     })
             
+            # Transform revenue data for API format (List of dictionaries)
+            revenue_chart_data = []
+            for item in revenue_data:
+                revenue_chart_data.append({
+                    "date": item["date"],
+                    "net": item["net"],
+                    "gross": item["gross"],
+                    "requests": item["requests"]
+                })
+            
+            # Transform service breakdown for API format (Dict[str, str])
+            service_breakdown_data = {}
+            if service_breakdown:
+                for service, count in service_breakdown.items():
+                    service_breakdown_data[service] = str(count)
+            else:
+                service_breakdown_data["Aucun service"] = "0"
+
             return {
                 "success": True,
-                "revenue_chart": revenue_data,
-                "service_breakdown": service_breakdown,
+                "revenue_chart": revenue_chart_data,
+                "service_breakdown": service_breakdown_data,
                 "activity_heatmap": activity_data,
                 "period": period,
                 "date_range": {

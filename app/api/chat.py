@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 
 from app.database import get_db
-from app.services.conversation_manager import DjobeaConversationManager
+from app.services.natural_conversation_engine import NaturalConversationEngine
 from app.models.database_models import User, Conversation
 from app.config import get_settings
 
@@ -26,6 +26,7 @@ class ChatMessage(BaseModel):
     source: str = Field(default="web_chat", description="Message source")
     timestamp: Optional[str] = Field(None, description="Message timestamp")
     conversation_history: Optional[List[Dict[str, Any]]] = Field(default=[], description="Recent conversation context")
+    button_value: Optional[str] = Field(None, description="Button value if user clicked a button")
 
 class ChatResponse(BaseModel):
     """Response model for chat requests"""
@@ -37,6 +38,9 @@ class ChatResponse(BaseModel):
     needs_info: List[str] = Field(default=[], description="Missing information needed")
     status: str = Field(default="active", description="Conversation status")
     user_id: Optional[int] = Field(None, description="User ID")
+    buttons: List[Dict[str, Any]] = Field(default=[], description="Button options for user interface")
+    system_action: Optional[str] = Field(None, description="System action to perform")
+    next_step: Optional[str] = Field(None, description="Next conversation step")
 
 @router.post("/webhook/chat", response_model=ChatResponse)
 async def handle_web_chat(
@@ -64,35 +68,34 @@ async def handle_web_chat(
                 status="phone_required"
             )
         
-        # Initialize conversation manager
-        conversation_manager = DjobeaConversationManager()
+        # Initialize natural conversation engine
+        conversation_engine = NaturalConversationEngine(db)
         
         # Get or create user based on session ID and phone number
         user = get_or_create_web_user(db, chat_message.session_id, chat_message.phone_number)
         
-        # Process message through conversation manager with personalization
+        # Process message through natural conversation engine
         try:
-            # Use the actual phone number or session-based identifier for conversation manager
+            # Use the actual phone number or session-based identifier
             user_identifier = chat_message.phone_number or f"web_{chat_message.session_id}"
             
-            # First try personalized processing if user exists
-            if user.id:
-                response, request_info = await conversation_manager.process_message_with_personalization(
-                    db=db,
-                    user_id=user_identifier,
-                    message=chat_message.message
-                )
-            else:
-                # Fallback to regular processing for anonymous users
-                response, request_info = conversation_manager.process_message(
-                    user_id=user_identifier,
-                    message=chat_message.message
-                )
+            # Process message naturally - all database operations are hidden
+            conversation_result = await conversation_engine.process_natural_conversation(
+                user_identifier, 
+                chat_message.message
+            )
             
-            # Create result object for compatibility
+            # Convert natural conversation result to expected format
             result = {
-                "response": response,
-                "request_info": request_info.__dict__ if hasattr(request_info, '__dict__') else {}
+                "response": conversation_result.response_message,
+                "request_info": {
+                    "is_complete": conversation_result.conversation_state.active_request_id is not None,
+                    "confidence_score": conversation_result.confidence_score,
+                    "phase": conversation_result.conversation_state.current_phase.value
+                },
+                "buttons": [],  # Natural conversation doesn't use buttons - purely conversational
+                "system_action": None,
+                "next_step": None
             }
         except Exception as e:
             # Fallback to simple response if conversation manager fails
@@ -149,7 +152,10 @@ async def handle_web_chat(
             suggestions=suggestions,
             needs_info=needs_info,
             status="completed" if is_complete else "active",
-            user_id=user.id
+            user_id=user.id,
+            buttons=result.get("buttons", []),
+            system_action=result.get("system_action"),
+            next_step=result.get("next_step")
         )
         
     except Exception as e:
