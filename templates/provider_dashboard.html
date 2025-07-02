@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Djobea Pro - Tableau de Bord</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #25D366;
+            --secondary-color: #075E54;
+            --accent-color: #128C7E;
+            --warning-color: #FFC107;
+            --danger-color: #DC3545;
+            --light-bg: #F8F9FA;
+            --card-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 5px 15px;
+            transition: all 0.3s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            border: none;
+            transition: transform 0.3s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stats-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-change {
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .stats-change.positive {
+            color: #28a745;
+        }
+
+        .stats-change.negative {
+            color: #dc3545;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .profile-avatar-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .trust-score {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+        }
+
+        .notification-badge {
+            background: var(--warning-color);
+            color: #000;
+            border-radius: 50%;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .request-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .request-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        }
+
+        .request-card.urgent {
+            border-left-color: var(--danger-color);
+        }
+
+        .request-card.new {
+            border-left-color: var(--primary-color);
+        }
+
+        .request-card.in-progress {
+            border-left-color: var(--warning-color);
+        }
+
+        .request-card.completed {
+            border-left-color: #28a745;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-assigned {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-in-progress {
+            background: #ffeaa7;
+            color: #6c5ce7;
+        }
+
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-right: 8px;
+        }
+
+        .btn-accept {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-accept:hover {
+            background: #20b957;
+            transform: translateY(-2px);
+        }
+
+        .btn-decline {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-decline:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner-border-custom {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                min-height: auto;
+            }
+            
+            .main-content {
+                padding: 15px;
+            }
+            
+            .stats-number {
+                font-size: 2rem;
+            }
+            
+            .profile-header {
+                padding: 20px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <h4><i class="fas fa-tools"></i> Djobea Pro</h4>
+                        <p class="small">Espace Prestataire</p>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#dashboard" data-section="dashboard">
+                                <i class="fas fa-tachometer-alt"></i>
+                                Tableau de bord
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#requests" data-section="requests">
+                                <i class="fas fa-clipboard-list"></i>
+                                Demandes
+                                <span class="notification-badge ms-auto" id="new-requests-badge">0</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#analytics" data-section="analytics">
+                                <i class="fas fa-chart-line"></i>
+                                Analytiques
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#notifications" data-section="notifications">
+                                <i class="fas fa-bell"></i>
+                                Notifications
+                                <span class="notification-badge ms-auto" id="notifications-badge">0</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#profile" data-section="profile">
+                                <i class="fas fa-user-cog"></i>
+                                Profil
+                            </a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <a class="nav-link" href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Déconnexion
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="content-section">
+                    <!-- Profile Header -->
+                    <div class="profile-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-2">
+                                <div class="profile-avatar-container">
+                                    <img id="header-profile-avatar" src="/static/images/default-avatar.svg" 
+                                         alt="Photo de profil" class="profile-avatar-img">
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <h2 id="provider-name">Chargement...</h2>
+                                <p class="mb-1" id="provider-services">Services: Chargement...</p>
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                    <span id="provider-location">Chargement...</span>
+                                </p>
+                                <div class="mt-2">
+                                    <i class="fas fa-star text-warning"></i>
+                                    <span id="provider-rating">0.0</span>
+                                    (<span id="provider-reviews">0</span> avis)
+                                    <span class="ms-3">
+                                        <i class="fas fa-check-circle" id="verification-icon"></i> 
+                                        <span id="verification-status">Non vérifié</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <div class="mb-3">
+                                    <a href="/provider-profile" class="btn btn-light btn-sm">
+                                        <i class="fas fa-edit me-2"></i>
+                                        Gérer mon profil
+                                    </a>
+                                </div>
+                                <div class="trust-score">
+                                    <div>Score de confiance</div>
+                                    <div class="h4 mb-0" id="trust-score">0%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card text-center">
+                                <div class="stats-number text-primary" id="today-requests">0</div>
+                                <div class="stats-label">Demandes aujourd'hui</div>
+                                <div class="stats-change positive" id="today-change">+0% vs hier</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card text-center">
+                                <div class="stats-number text-success" id="week-earnings">0 XAF</div>
+                                <div class="stats-label">Revenus cette semaine</div>
+                                <div class="stats-change positive" id="earnings-change">+0% vs semaine précédente</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card text-center">
+                                <div class="stats-number text-warning" id="acceptance-rate">0%</div>
+                                <div class="stats-label">Taux d'acceptation</div>
+                                <div class="stats-change positive" id="acceptance-change">Excellent</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="stats-card text-center">
+                                <div class="stats-number text-info" id="response-time">0 min</div>
+                                <div class="stats-label">Temps de réponse moyen</div>
+                                <div class="stats-change positive" id="response-change">Rapide</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="chart-container">
+                                <h5><i class="fas fa-chart-area"></i> Revenus des 7 derniers jours</h5>
+                                <canvas id="revenueChart" height="80"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <h5><i class="fas fa-chart-pie"></i> Répartition des services</h5>
+                                <canvas id="serviceChart" height="160"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Requests Section -->
+                <div id="requests-section" class="content-section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-clipboard-list"></i> Gestion des demandes</h3>
+                        <div>
+                            <select class="form-select" id="status-filter">
+                                <option value="">Tous les statuts</option>
+                                <option value="PENDING">En attente</option>
+                                <option value="ASSIGNED">Assignées</option>
+                                <option value="IN_PROGRESS">En cours</option>
+                                <option value="COMPLETED">Terminées</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="requests-list">
+                        <div class="loading-spinner">
+                            <div class="spinner-border spinner-border-custom" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-2">Chargement des demandes...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div id="analytics-section" class="content-section" style="display: none;">
+                    <h3><i class="fas fa-chart-line"></i> Analytiques détaillées</h3>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="period" id="week" value="week" checked>
+                                <label class="btn btn-outline-primary" for="week">7 jours</label>
+                                
+                                <input type="radio" class="btn-check" name="period" id="month" value="month">
+                                <label class="btn btn-outline-primary" for="month">30 jours</label>
+                                
+                                <input type="radio" class="btn-check" name="period" id="year" value="year">
+                                <label class="btn btn-outline-primary" for="year">1 an</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="chart-container">
+                                <h5>Revenus détaillés</h5>
+                                <canvas id="detailedRevenueChart" height="60"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="chart-container">
+                                <h5>Carte de chaleur d'activité</h5>
+                                <div id="activity-heatmap" style="height: 300px;">
+                                    <!-- Activity heatmap will be rendered here -->
+                                    <canvas id="activityChart" height="60"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div id="notifications-section" class="content-section" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3><i class="fas fa-bell"></i> Notifications</h3>
+                        <button class="btn btn-outline-primary btn-sm" onclick="markAllAsRead()">
+                            <i class="fas fa-check-double"></i> Tout marquer comme lu
+                        </button>
+                    </div>
+
+                    <div id="notifications-list">
+                        <div class="loading-spinner">
+                            <div class="spinner-border spinner-border-custom" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-2">Chargement des notifications...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Section -->
+                <div id="profile-section" class="content-section" style="display: none;">
+                    <h3><i class="fas fa-user-cog"></i> Paramètres du profil</h3>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="stats-card">
+                                <h5>Informations personnelles</h5>
+                                <form id="profile-form">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nom complet</label>
+                                        <input type="text" class="form-control" id="profile-name" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Numéro de téléphone</label>
+                                        <input type="text" class="form-control" id="profile-phone" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Services offerts</label>
+                                        <div id="profile-services"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Zones de couverture</label>
+                                        <div id="profile-areas"></div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <h5>Statistiques du profil</h5>
+                                <div class="mb-3">
+                                    <strong>Membre depuis</strong>
+                                    <div id="member-since">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Total des interventions</strong>
+                                    <div id="total-jobs">0</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Note moyenne</strong>
+                                    <div id="average-rating">0.0 / 5.0</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Statut de vérification</strong>
+                                    <div id="verification-status">
+                                        <span class="badge bg-success">Vérifié</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let authToken = localStorage.getItem('provider_auth_token');
+        let currentProvider = null;
+        let revenueChart = null;
+        let serviceChart = null;
+        let detailedRevenueChart = null;
+        let activityChart = null;
+        let serverConfig = null;
+        
+        // Get server configuration
+        async function getServerConfig() {
+            if (serverConfig) return serverConfig;
+            
+            try {
+                const response = await fetch('/api/config');
+                serverConfig = await response.json();
+                console.log('Server config loaded:', serverConfig);
+                return serverConfig;
+            } catch (error) {
+                console.error('Failed to load server config:', error);
+                // Default to production mode if config fails to load
+                return { demo_mode: false, app_name: 'Djobea AI' };
+            }
+        }
+        
+        // Get appropriate API endpoints based on server config
+        async function getApiEndpoints() {
+            const config = await getServerConfig();
+            
+            if (config.demo_mode) {
+                return {
+                    stats: '/api/demo/dashboard/stats',
+                    requests: '/api/demo/dashboard/requests',
+                    notifications: '/api/demo/dashboard/notifications',
+                    chartData: '/api/demo/dashboard/chart-data'
+                };
+            } else {
+                return {
+                    stats: '/api/provider/dashboard/stats',
+                    requests: '/api/provider/dashboard/requests',
+                    notifications: '/api/provider/dashboard/notifications',
+                    chartData: '/api/provider/dashboard/chart-data'
+                };
+            }
+        }
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!authToken) {
+                window.location.href = '/provider-login';
+                return;
+            }
+            
+            // Show current authentication mode
+            await showAuthModeIndicator();
+            
+            initializeDashboard();
+            setupEventListeners();
+        });
+        
+        // Show authentication mode indicator
+        async function showAuthModeIndicator() {
+            const config = await getServerConfig();
+            const indicator = document.createElement('div');
+            indicator.id = 'auth-mode-indicator';
+            indicator.className = `badge ${config.demo_mode ? 'bg-info' : 'bg-success'} position-fixed`;
+            indicator.style.cssText = 'top: 10px; right: 10px; z-index: 1050; font-size: 0.8rem;';
+            indicator.innerHTML = `
+                <i class="fas ${config.demo_mode ? 'fa-play-circle' : 'fa-shield-alt'}"></i>
+                Mode ${config.demo_mode ? 'Démo' : 'Réel'}
+            `;
+            document.body.appendChild(indicator);
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-link[data-section]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showSection(this.dataset.section);
+                    
+                    // Update active nav
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Status filter
+            document.getElementById('status-filter').addEventListener('change', function() {
+                loadRequests(this.value);
+            });
+
+            // Period filter for analytics
+            document.querySelectorAll('input[name="period"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    loadAnalytics(this.value);
+                });
+            });
+        }
+
+        // Initialize dashboard
+        async function initializeDashboard() {
+            try {
+                await loadDashboardStats();
+                await loadRequests();
+                await loadNotifications();
+                await loadAnalytics('week');
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showError('Erreur lors du chargement du tableau de bord');
+            }
+        }
+
+        // Load dashboard statistics
+        async function loadDashboardStats() {
+            try {
+                const endpoints = await getApiEndpoints();
+                const response = await fetch(endpoints.stats, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load dashboard stats');
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    updateDashboardStats(data.stats);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+                showError('Erreur lors du chargement des statistiques');
+            }
+        }
+
+        // Update dashboard stats display
+        function updateDashboardStats(stats) {
+            // Update main stats
+            document.getElementById('today-requests').textContent = stats.today.new_requests;
+            document.getElementById('week-earnings').textContent = formatCurrency(stats.week.net_earnings);
+            document.getElementById('acceptance-rate').textContent = stats.week.acceptance_rate + '%';
+            document.getElementById('response-time').textContent = stats.performance.response_time_avg + ' min';
+
+            // Update provider info
+            // Load provider profile information
+            loadProviderProfile();
+            document.getElementById('provider-rating').textContent = stats.performance.average_rating.toFixed(1);
+            document.getElementById('trust-score').textContent = Math.round(stats.performance.trust_score) + '%';
+
+            // Update notification badges
+            document.getElementById('new-requests-badge').textContent = stats.today.new_requests;
+            document.getElementById('notifications-badge').textContent = stats.notifications.unread_count;
+
+            // Create revenue chart
+            createRevenueChart();
+            createServiceChart();
+        }
+
+        // Load provider profile information for header
+        async function loadProviderProfile() {
+            try {
+                const authToken = getAuthToken();
+                if (!authToken) return;
+
+                const endpoints = await getApiEndpoints();
+                const response = await fetch(endpoints.profile, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load provider profile');
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    updateProfileHeader(data.profile);
+                } else {
+                    console.error('Profile load error:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading provider profile:', error);
+            }
+        }
+
+        // Update profile header with provider information
+        function updateProfileHeader(profile) {
+            // Update provider name
+            document.getElementById('provider-name').textContent = profile.name || 'Prestataire';
+            
+            // Update profile picture
+            const avatarImg = document.getElementById('header-profile-avatar');
+            if (profile.profile_picture && profile.profile_picture !== '') {
+                avatarImg.src = profile.profile_picture;
+                avatarImg.onerror = function() {
+                    this.src = '/static/images/default-avatar.svg';
+                };
+            } else {
+                avatarImg.src = '/static/images/default-avatar.svg';
+            }
+            
+            // Update services
+            if (profile.service_type) {
+                document.getElementById('provider-services').textContent = `Service: ${profile.service_type}`;
+            }
+            
+            // Update location
+            if (profile.location || profile.coverage_area) {
+                const location = profile.location || profile.coverage_area;
+                document.getElementById('provider-location').textContent = location;
+            }
+            
+            // Update rating and reviews
+            document.getElementById('provider-rating').textContent = profile.rating ? profile.rating.toFixed(1) : '0.0';
+            document.getElementById('provider-reviews').textContent = profile.total_reviews || '0';
+            
+            // Update verification status
+            const verificationIcon = document.getElementById('verification-icon');
+            const verificationStatus = document.getElementById('verification-status');
+            if (profile.verification_status) {
+                verificationIcon.className = 'fas fa-check-circle text-success';
+                verificationStatus.textContent = 'Vérifié';
+                verificationStatus.className = 'text-success';
+            } else {
+                verificationIcon.className = 'fas fa-times-circle text-muted';
+                verificationStatus.textContent = 'Non vérifié';
+                verificationStatus.className = 'text-muted';
+            }
+            
+            // Update trust score
+            document.getElementById('trust-score').textContent = Math.round(profile.trust_score || 0) + '%';
+        }
+
+        // Load requests
+        async function loadRequests(status = '') {
+            try {
+                const endpoints = await getApiEndpoints();
+                const url = `${endpoints.requests}?status=${status}&limit=20`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load requests');
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    displayRequests(data.requests);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                showError('Erreur lors du chargement des demandes');
+            }
+        }
+
+        // Display requests
+        function displayRequests(requests) {
+            const container = document.getElementById('requests-list');
+            
+            if (requests.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5>Aucune demande</h5>
+                        <p class="text-muted">Aucune demande ne correspond aux critères sélectionnés.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = requests.map(request => `
+                <div class="request-card ${request.urgency === 'urgent' ? 'urgent' : ''} ${request.status.toLowerCase()}">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6>${request.service_type}</h6>
+                            <p class="text-muted mb-1">
+                                <i class="fas fa-map-marker-alt"></i> ${request.location}
+                            </p>
+                            <p class="mb-1">${request.description}</p>
+                            <small class="text-muted">${request.time_ago}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-2">
+                                <span class="status-badge status-${request.status.toLowerCase().replace('_', '-')}">${getStatusText(request.status)}</span>
+                            </div>
+                            <div class="text-muted small">
+                                <strong>${request.user.name}</strong><br>
+                                ${request.user.phone}
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <div class="mb-2">
+                                <strong>${formatCurrency(request.estimated_price.min)} - ${formatCurrency(request.estimated_price.max)}</strong>
+                            </div>
+                            ${getRequestActions(request)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get request actions based on status
+        function getRequestActions(request) {
+            switch (request.status) {
+                case 'PENDING':
+                case 'PROVIDER_NOTIFIED':
+                    return `
+                        <button class="action-btn btn-accept" onclick="acceptRequest(${request.id})">
+                            <i class="fas fa-check"></i> Accepter
+                        </button>
+                        <button class="action-btn btn-decline" onclick="declineRequest(${request.id})">
+                            <i class="fas fa-times"></i> Décliner
+                        </button>
+                    `;
+                case 'ASSIGNED':
+                    return `
+                        <button class="action-btn" style="background: var(--warning-color); color: #000;" onclick="startWork(${request.id})">
+                            <i class="fas fa-play"></i> Commencer
+                        </button>
+                    `;
+                case 'IN_PROGRESS':
+                    return `
+                        <button class="action-btn" style="background: var(--success-color); color: white;" onclick="completeWork(${request.id})">
+                            <i class="fas fa-check-circle"></i> Terminer
+                        </button>
+                    `;
+                default:
+                    return `<span class="text-muted">Aucune action</span>`;
+            }
+        }
+
+        // Get status text in French
+        function getStatusText(status) {
+            const statusMap = {
+                'PENDING': 'En attente',
+                'PROVIDER_NOTIFIED': 'Notifié',
+                'ASSIGNED': 'Assignée',
+                'IN_PROGRESS': 'En cours',
+                'COMPLETED': 'Terminée',
+                'CANCELLED': 'Annulée'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Request actions
+        async function acceptRequest(requestId) {
+            try {
+                const response = await fetch(`/api/provider/requests/${requestId}/accept`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showSuccess('Demande acceptée avec succès!');
+                    loadRequests();
+                    loadDashboardStats();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error accepting request:', error);
+                showError('Erreur lors de l\'acceptation de la demande');
+            }
+        }
+
+        async function declineRequest(requestId) {
+            const reason = prompt('Raison du refus (optionnel):');
+            
+            try {
+                const response = await fetch(`/api/provider/requests/${requestId}/decline`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'decline',
+                        reason: reason
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showSuccess('Demande déclinée');
+                    loadRequests();
+                    loadDashboardStats();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error declining request:', error);
+                showError('Erreur lors du refus de la demande');
+            }
+        }
+
+        async function startWork(requestId) {
+            try {
+                const response = await fetch(`/api/provider/requests/${requestId}/update-status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'IN_PROGRESS',
+                        notes: 'Travail commencé'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showSuccess('Travail commencé!');
+                    loadRequests();
+                    loadDashboardStats();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error starting work:', error);
+                showError('Erreur lors du démarrage du travail');
+            }
+        }
+
+        async function completeWork(requestId) {
+            const finalPrice = prompt('Prix final de l\'intervention (XAF):');
+            if (!finalPrice || isNaN(finalPrice)) {
+                showError('Veuillez entrer un prix valide');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/provider/requests/${requestId}/update-status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: 'COMPLETED',
+                        final_price: parseFloat(finalPrice),
+                        notes: 'Travail terminé'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showSuccess('Intervention terminée avec succès!');
+                    loadRequests();
+                    loadDashboardStats();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error completing work:', error);
+                showError('Erreur lors de la finalisation du travail');
+            }
+        }
+
+        // Load notifications
+        async function loadNotifications() {
+            try {
+                const endpoints = await getApiEndpoints();
+                const response = await fetch(`${endpoints.notifications}?limit=20`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    displayNotifications(data.notifications);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                showError('Erreur lors du chargement des notifications');
+            }
+        }
+
+        // Display notifications
+        function displayNotifications(notifications) {
+            const container = document.getElementById('notifications-list');
+            
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                        <h5>Aucune notification</h5>
+                        <p class="text-muted">Vous n'avez aucune nouvelle notification.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = notifications.map(notification => `
+                <div class="request-card ${!notification.is_read ? 'new' : ''}">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3">
+                            <i class="fas ${getNotificationIcon(notification.type)} fa-2x text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6>${notification.title}</h6>
+                            <p class="mb-1">${notification.message}</p>
+                            <small class="text-muted">${formatDateTime(notification.created_at)}</small>
+                        </div>
+                        ${notification.is_urgent ? '<span class="badge bg-danger">Urgent</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get notification icon
+        function getNotificationIcon(type) {
+            const iconMap = {
+                'new_request': 'fa-plus-circle',
+                'payment_received': 'fa-money-bill-wave',
+                'rating_received': 'fa-star',
+                'system': 'fa-cog',
+                'default': 'fa-bell'
+            };
+            return iconMap[type] || iconMap.default;
+        }
+
+        // Load analytics
+        async function loadAnalytics(period) {
+            try {
+                const endpoints = await getApiEndpoints();
+                const response = await fetch(`${endpoints.chartData}/${period}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    updateAnalyticsCharts(data);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                showError('Erreur lors du chargement des analytiques');
+            }
+        }
+
+        // Update analytics charts
+        function updateAnalyticsCharts(data) {
+            createDetailedRevenueChart(data.revenue_chart);
+            createActivityChart(data.activity_heatmap);
+        }
+
+        // Create revenue chart
+        function createRevenueChart() {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            if (revenueChart) {
+                revenueChart.destroy();
+            }
+            
+            revenueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                    datasets: [{
+                        label: 'Revenus nets (XAF)',
+                        data: [12000, 15000, 8000, 22000, 18000, 25000, 16000],
+                        borderColor: '#25D366',
+                        backgroundColor: 'rgba(37, 211, 102, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create service chart
+        function createServiceChart() {
+            const ctx = document.getElementById('serviceChart').getContext('2d');
+            
+            if (serviceChart) {
+                serviceChart.destroy();
+            }
+            
+            serviceChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Plomberie', 'Électricité', 'Électroménager'],
+                    datasets: [{
+                        data: [45, 35, 20],
+                        backgroundColor: ['#25D366', '#075E54', '#128C7E'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create detailed revenue chart
+        function createDetailedRevenueChart(data) {
+            const ctx = document.getElementById('detailedRevenueChart').getContext('2d');
+            
+            if (detailedRevenueChart) {
+                detailedRevenueChart.destroy();
+            }
+            
+            detailedRevenueChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: 'Revenus bruts',
+                        data: data.map(d => d.gross),
+                        backgroundColor: '#128C7E',
+                        borderRadius: 4
+                    }, {
+                        label: 'Revenus nets',
+                        data: data.map(d => d.net),
+                        backgroundColor: '#25D366',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create activity chart
+        function createActivityChart(data) {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            
+            if (activityChart) {
+                activityChart.destroy();
+            }
+            
+            // Simple representation of activity data
+            const hourlyData = new Array(24).fill(0);
+            data.forEach(item => {
+                hourlyData[item.hour] += item.count;
+            });
+            
+            activityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}h`),
+                    datasets: [{
+                        label: 'Activité',
+                        data: hourlyData,
+                        backgroundColor: '#25D366',
+                        borderRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Utility functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Load section-specific data
+            switch (sectionName) {
+                case 'requests':
+                    loadRequests();
+                    break;
+                case 'notifications':
+                    loadNotifications();
+                    break;
+                case 'analytics':
+                    loadAnalytics('week');
+                    break;
+                case 'profile':
+                    loadProfile();
+                    break;
+            }
+        }
+
+        function loadProfile() {
+            // This would load provider profile data
+            console.log('Loading profile...');
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'XAF',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function formatDateTime(dateString) {
+            return new Date(dateString).toLocaleString('fr-FR');
+        }
+
+        function showSuccess(message) {
+            // Simple success notification
+            alert('✓ ' + message);
+        }
+
+        function showError(message) {
+            // Simple error notification
+            alert('✗ ' + message);
+        }
+
+        function markAllAsRead() {
+            // Mark all notifications as read
+            console.log('Marking all notifications as read...');
+            loadNotifications();
+        }
+
+        function logout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
+                localStorage.removeItem('provider_auth_token');
+                window.location.href = '/provider-login';
+            }
+        }
+    </script>
+</body>
+</html>

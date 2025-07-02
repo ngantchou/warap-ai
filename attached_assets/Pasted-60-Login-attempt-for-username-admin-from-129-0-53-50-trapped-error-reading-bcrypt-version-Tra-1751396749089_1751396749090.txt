@@ -1,0 +1,25 @@
+60 - Login attempt for username: admin from 129.0.53.50
+(trapped) error reading bcrypt version
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/passlib/handlers/bcrypt.py", line 620, in _load_backend_mixin
+    version = _bcrypt.__about__.__version__
+              ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bcrypt' has no attribute '__about__'
+2025-07-01 19:10:53.519 | INFO     | app.api.auth:login_for_access_token:203 - User admin logged in successfully from 129.0.53.50
+INFO:     172.31.128.55:43500 - "POST /auth/login HTTP/1.1" 303 See Other
+2025-07-01 19:10:54 - app.services.request_service - ERROR - Error getting request statistics: (psycopg2.errors.UndefinedColumn) column service_requests.scheduling_preference does not exist
+LINE 2: ...ice_requests.urgency AS service_requests_urgency, service_re...
+                                                             ^
+
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT service_requests.id AS service_requests_id, service_requests.user_id AS service_requests_user_id, service_requests.provider_id AS service_requests_provider_id, service_requests.service_type AS service_requests_service_type, service_requests.description AS service_requests_description, service_requests.location AS service_requests_location, service_requests.preferred_time AS service_requests_preferred_time, service_requests.urgency AS service_requests_urgency, service_requests.scheduling_preference AS service_requests_scheduling_preference, service_requests.preferred_time_start AS service_requests_preferred_time_start, service_requests.preferred_time_end AS service_requests_preferred_time_end, service_requests.urgency_supplement AS service_requests_urgency_supplement, service_requests.landmark_references AS service_requests_landmark_references, service_requests.location_confirmed AS service_requests_location_confirmed, service_requests.location_coordinates AS service_requests_location_coordinates, service_requests.location_accuracy AS service_requests_location_accuracy, service_requests.status AS service_requests_status, service_requests.created_at AS service_requests_created_at, service_requests.updated_at AS service_requests_updated_at, service_requests.accepted_at AS service_requests_accepted_at, service_requests.completed_at AS service_requests_completed_at, service_requests.scheduled_at AS service_requests_scheduled_at, service_requests.estimated_cost AS service_requests_estimated_cost, service_requests.final_cost AS service_requests_final_cost, service_requests.commission_amount AS service_requests_commission_amount 
+FROM service_requests) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-07-01 19:10:54 - app.api.admin - ERROR - Error in admin dashboard: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+
+[SQL: SELECT service_requests.id AS service_requests_id, service_requests.user_id AS service_requests_user_id, service_requests.provider_id AS service_requests_provider_id, service_requests.service_type AS service_requests_service_type, service_requests.description AS service_requests_description, service_requests.location AS service_requests_location, service_requests.preferred_time AS service_requests_preferred_time, service_requests.urgency AS service_requests_urgency, service_requests.scheduling_preference AS service_requests_scheduling_preference, service_requests.preferred_time_start AS service_requests_preferred_time_start, service_requests.preferred_time_end AS service_requests_preferred_time_end, service_requests.urgency_supplement AS service_requests_urgency_supplement, service_requests.landmark_references AS service_requests_landmark_references, service_requests.location_confirmed AS service_requests_location_confirmed, service_requests.location_coordinates AS service_requests_location_coordinates, service_requests.location_accuracy AS service_requests_location_accuracy, service_requests.status AS service_requests_status, service_requests.created_at AS service_requests_created_at, service_requests.updated_at AS service_requests_updated_at, service_requests.accepted_at AS service_requests_accepted_at, service_requests.completed_at AS service_requests_completed_at, service_requests.scheduled_at AS service_requests_scheduled_at, service_requests.estimated_cost AS service_requests_estimated_cost, service_requests.final_cost AS service_requests_final_cost, service_requests.commission_amount AS service_requests_commission_amount 
+FROM service_requests ORDER BY service_requests.created_at DESC 
+ LIMIT %(param_1)s]
+[parameters: {'param_1': 10}]
+(Background on this error at: https://sqlalche.me/e/20/2j85)
+INFO:     172.31.128.55:43500 - "GET /admin/ HTTP/1.1" 500 Internal Server

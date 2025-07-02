@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Djobea Pro - Connexion Prestataire</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #25D366;
+            --secondary-color: #075E54;
+            --accent-color: #128C7E;
+            --whatsapp-bg: #ECE5DD;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .login-header h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+
+        .login-body {
+            padding: 40px 30px;
+        }
+
+        .form-floating {
+            margin-bottom: 20px;
+        }
+
+        .form-floating .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            height: 60px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-floating .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25);
+        }
+
+        .form-floating label {
+            color: #6c757d;
+        }
+
+        .btn-login {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            font-weight: bold;
+            height: 50px;
+            border-radius: 12px;
+            transition: all 0.3s;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .btn-login:hover {
+            background: #20b957;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+        }
+
+        .btn-login:disabled {
+            background: #6c757d;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .otp-section {
+            display: none;
+        }
+
+        .otp-input {
+            font-size: 1.5rem;
+            text-align: center;
+            letter-spacing: 0.5rem;
+            font-weight: bold;
+        }
+
+        .timer {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner-border-custom {
+            color: var(--primary-color);
+        }
+
+        .alert {
+            border-radius: 12px;
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .whatsapp-icon {
+            color: var(--primary-color);
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: bold;
+            color: white;
+            position: relative;
+        }
+
+        .step.active {
+            background: var(--primary-color);
+        }
+
+        .step.inactive {
+            background: #dee2e6;
+            color: #6c757d;
+        }
+
+        .step.completed {
+            background: #28a745;
+        }
+
+        .step-line {
+            width: 50px;
+            height: 2px;
+            background: #dee2e6;
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            transform: translateY(-50%);
+        }
+
+        .step-line.completed {
+            background: #28a745;
+        }
+
+        @media (max-width: 576px) {
+            .login-card {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .login-header {
+                padding: 30px 20px;
+            }
+            
+            .login-body {
+                padding: 30px 20px;
+            }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <i class="fab fa-whatsapp whatsapp-icon"></i>
+                <h1>Djobea Pro</h1>
+                <p>Espace Prestataire</p>
+            </div>
+
+            <!-- Body -->
+            <div class="login-body">
+                <!-- Demo Notice -->
+                <div id="demo-notice" class="alert alert-info" style="border-radius: 12px; border: none; background: #e7f3ff; color: #0066cc; margin-bottom: 25px;">
+                    <h6 style="margin-bottom: 10px; font-weight: 600;"><i class="fas fa-info-circle"></i> Mode Démonstration</h6>
+                    <p style="margin-bottom: 8px; font-size: 0.9rem;">Utilisez un de ces numéros pour tester:</p>
+                    <div style="font-family: monospace; font-size: 0.85rem; line-height: 1.3;">
+                        • +237690000003 (Paul Réparateur)<br>
+                        • +237677123456 (Jean-Claude Mbida)<br>
+                        • +237681234567 (Marie Fotso)
+                    </div>
+                    <p style="margin-top: 8px; margin-bottom: 0; font-size: 0.85rem; opacity: 0.8;">Le code OTP sera affiché dans les logs.</p>
+                </div>
+                <!-- Step Indicator -->
+                <div class="step-indicator">
+                    <div class="step active" id="step-1">
+                        1
+                        <div class="step-line" id="line-1"></div>
+                    </div>
+                    <div class="step inactive" id="step-2">2</div>
+                </div>
+
+                <!-- Alerts -->
+                <div id="alert-container"></div>
+
+                <!-- Phone Number Step -->
+                <div id="phone-section">
+                    <div class="text-center mb-4">
+                        <h4>Connexion sécurisée</h4>
+                        <p class="text-muted">Entrez votre numéro de téléphone pour recevoir un code de vérification via WhatsApp</p>
+                    </div>
+
+                    <!-- Authentication Mode Toggle -->
+                    <div id="auth-mode-toggle" class="row mb-4">
+                        <div class="col-12">
+                            <div class="btn-group w-100" role="group" aria-label="Mode d'authentification">
+                                <input type="radio" class="btn-check" name="authMode" id="demo-mode" value="demo" checked>
+                                <label class="btn btn-outline-primary" for="demo-mode">
+                                    <i class="fas fa-play-circle me-2"></i>Mode Démo
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="authMode" id="real-mode" value="real">
+                                <label class="btn btn-outline-primary" for="real-mode">
+                                    <i class="fas fa-shield-alt me-2"></i>Authentification Réelle
+                                </label>
+                            </div>
+                            <div class="form-text text-center mt-2">
+                                <span id="mode-description">Mode démo: OTP fixe 123456 pour test</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="phone-form">
+                        <div class="form-floating">
+                            <input type="tel" class="form-control" id="phone-number" placeholder="Numéro de téléphone" required>
+                            <label for="phone-number">
+                                <i class="fas fa-phone me-2"></i>Numéro de téléphone
+                            </label>
+                            <div class="form-text">Format: 237XXXXXXXXX (avec indicatif pays)</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-login" id="send-otp-btn">
+                            <i class="fab fa-whatsapp me-2"></i>
+                            Recevoir le code par WhatsApp
+                        </button>
+                    </form>
+                </div>
+
+                <!-- OTP Verification Step -->
+                <div id="otp-section" class="otp-section">
+                    <div class="text-center mb-4">
+                        <h4>Code de vérification</h4>
+                        <p class="text-muted">
+                            Nous avons envoyé un code à 6 chiffres sur votre WhatsApp
+                            <br><span id="phone-display" class="fw-bold"></span>
+                        </p>
+                    </div>
+
+                    <form id="otp-form">
+                        <div class="form-floating">
+                            <input type="text" class="form-control otp-input" id="otp-code" placeholder="000000" maxlength="6" required>
+                            <label for="otp-code">
+                                <i class="fas fa-lock me-2"></i>Code de vérification
+                            </label>
+                        </div>
+
+                        <div class="text-center mb-3">
+                            <small class="text-muted">
+                                Le code expire dans <span class="timer" id="countdown">05:00</span>
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-login" id="verify-otp-btn">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Se connecter
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-link" id="resend-code-btn" disabled>
+                                <i class="fas fa-redo me-2"></i>Renvoyer le code
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="loading-spinner" class="loading-spinner">
+                    <div class="spinner-border spinner-border-custom" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="mt-2" id="loading-text">Envoi du code en cours...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Global variables
+        let sessionToken = null;
+        let otpHash = null;
+        let countdownTimer = null;
+        let timeLeft = 300; // 5 minutes
+
+        // DOM elements
+        const phoneSection = document.getElementById('phone-section');
+        const otpSection = document.getElementById('otp-section');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const alertContainer = document.getElementById('alert-container');
+        
+        const phoneForm = document.getElementById('phone-form');
+        const otpForm = document.getElementById('otp-form');
+        const phoneNumberInput = document.getElementById('phone-number');
+        const otpCodeInput = document.getElementById('otp-code');
+        
+        const sendOtpBtn = document.getElementById('send-otp-btn');
+        const verifyOtpBtn = document.getElementById('verify-otp-btn');
+        const resendCodeBtn = document.getElementById('resend-code-btn');
+        
+        const phoneDisplay = document.getElementById('phone-display');
+        const countdown = document.getElementById('countdown');
+        const loadingText = document.getElementById('loading-text');
+
+        // Get server configuration
+        async function getServerConfig() {
+            try {
+                const response = await fetch('/api/config');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching server config:', error);
+                return { demo_mode: false }; // Default to production mode on error
+            }
+        }
+
+        // Hide demo elements when demo mode is disabled
+        async function configureDemoElements() {
+            const config = await getServerConfig();
+            
+            if (!config.demo_mode) {
+                // Hide demo notice
+                const demoNotice = document.getElementById('demo-notice');
+                if (demoNotice) {
+                    demoNotice.style.display = 'none';
+                }
+                
+                // Hide authentication mode toggle
+                const authModeToggle = document.getElementById('auth-mode-toggle');
+                if (authModeToggle) {
+                    authModeToggle.style.display = 'none';
+                }
+                
+                // Force real mode
+                const realModeRadio = document.getElementById('real-mode');
+                if (realModeRadio) {
+                    realModeRadio.checked = true;
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Check if already logged in
+            if (localStorage.getItem('provider_auth_token')) {
+                window.location.href = '/provider-dashboard';
+                return;
+            }
+
+            // Configure demo elements based on server configuration
+            await configureDemoElements();
+
+            setupEventListeners();
+            formatPhoneNumber();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            phoneForm.addEventListener('submit', handlePhoneSubmit);
+            otpForm.addEventListener('submit', handleOtpSubmit);
+            resendCodeBtn.addEventListener('click', handleResendCode);
+            
+            // Auto-format phone number
+            phoneNumberInput.addEventListener('input', formatPhoneNumber);
+            
+            // Auto-submit OTP when 6 digits entered
+            otpCodeInput.addEventListener('input', function() {
+                if (this.value.length === 6) {
+                    setTimeout(() => handleOtpSubmit(new Event('submit')), 500);
+                }
+            });
+            
+            // Authentication mode toggle
+            document.querySelectorAll('input[name="authMode"]').forEach(radio => {
+                radio.addEventListener('change', handleAuthModeChange);
+            });
+        }
+        
+        // Handle authentication mode change
+        function handleAuthModeChange() {
+            const selectedMode = document.querySelector('input[name="authMode"]:checked').value;
+            const modeDescription = document.getElementById('mode-description');
+            
+            if (selectedMode === 'demo') {
+                modeDescription.textContent = 'Mode démo: OTP fixe 123456 pour test';
+                modeDescription.className = 'form-text text-center mt-2 text-info';
+            } else {
+                modeDescription.textContent = 'Authentification réelle: OTP via WhatsApp';
+                modeDescription.className = 'form-text text-center mt-2 text-success';
+            }
+        }
+        
+        // Get authentication endpoints based on server configuration
+        async function getAuthEndpoints() {
+            const config = await getServerConfig();
+            
+            if (config.demo_mode) {
+                return {
+                    sendOtp: '/api/demo/auth/send-otp',
+                    verifyOtp: '/api/demo/auth/verify-otp',
+                    dashboardStats: '/api/demo/dashboard/stats',
+                    dashboardRequests: '/api/demo/dashboard/requests',
+                    dashboardNotifications: '/api/demo/dashboard/notifications',
+                    dashboardChartData: '/api/demo/dashboard/chart-data'
+                };
+            } else {
+                return {
+                    sendOtp: '/api/provider/auth/send-otp',
+                    verifyOtp: '/api/provider/auth/verify-otp',
+                    dashboardStats: '/api/provider/dashboard/stats',
+                    dashboardRequests: '/api/provider/requests',
+                    dashboardNotifications: '/api/provider/dashboard/notifications',
+                    dashboardChartData: '/api/provider/dashboard/chart-data'
+                };
+            }
+        }
+
+        // Format phone number with Cameroon prefix
+        function formatPhoneNumber() {
+            let value = phoneNumberInput.value;
+            
+            // Remove all non-digit characters except +
+            value = value.replace(/[^\d+]/g, '');
+            
+            // Handle different input formats
+            if (value.startsWith('+237')) {
+                // Already properly formatted
+                phoneNumberInput.value = value;
+            } else if (value.startsWith('237')) {
+                // Add + prefix
+                phoneNumberInput.value = '+' + value;
+            } else if (value.startsWith('+')) {
+                // Keep as is (might be entering + first)
+                phoneNumberInput.value = value;
+            } else {
+                // Local number, add full prefix
+                let cleanValue = value.replace(/\D/g, '');
+                if (cleanValue.length > 0 && !cleanValue.startsWith('237')) {
+                    if (cleanValue.startsWith('6') || cleanValue.startsWith('2')) {
+                        phoneNumberInput.value = '+237' + cleanValue;
+                    } else {
+                        phoneNumberInput.value = '+' + cleanValue;
+                    }
+                } else if (cleanValue.length > 0) {
+                    phoneNumberInput.value = '+' + cleanValue;
+                }
+            }
+        }
+
+        // Handle phone number submission
+        async function handlePhoneSubmit(e) {
+            e.preventDefault();
+            
+            const phoneNumber = phoneNumberInput.value.trim();
+            
+            if (!validatePhoneNumber(phoneNumber)) {
+                showAlert('Veuillez entrer un numéro de téléphone camerounais valide (237XXXXXXXXX)', 'error');
+                return;
+            }
+
+            showLoading('Envoi du code de vérification...');
+            sendOtpBtn.disabled = true;
+
+            try {
+                const endpoints = await getAuthEndpoints();
+                const response = await fetch(endpoints.sendOtp, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        phone_number: phoneNumber
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    sessionToken = data.session_token;
+                    otpHash = data.otp_hash;
+                    
+                    phoneDisplay.textContent = phoneNumber;
+                    showOtpSection();
+                    startCountdown();
+                    
+                    showAlert('Code envoyé avec succès sur votre WhatsApp!', 'success');
+                } else {
+                    throw new Error(data.detail || 'Erreur lors de l\'envoi du code');
+                }
+            } catch (error) {
+                console.error('Error sending OTP:', error);
+                showAlert(error.message, 'error');
+            } finally {
+                hideLoading();
+                sendOtpBtn.disabled = false;
+            }
+        }
+
+        // Handle OTP verification
+        async function handleOtpSubmit(e) {
+            e.preventDefault();
+            
+            const otpCode = otpCodeInput.value.trim();
+            
+            if (otpCode.length !== 6) {
+                showAlert('Veuillez entrer le code à 6 chiffres', 'error');
+                return;
+            }
+
+            showLoading('Vérification du code...');
+            verifyOtpBtn.disabled = true;
+
+            try {
+                const endpoints = await getAuthEndpoints();
+                const response = await fetch(endpoints.verifyOtp, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        session_token: sessionToken,
+                        otp_code: otpCode,
+                        otp_hash: otpHash
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store auth token
+                    localStorage.setItem('provider_auth_token', data.auth_token);
+                    
+                    showAlert('Connexion réussie! Redirection...', 'success');
+                    
+                    // Update step indicator
+                    updateStepIndicator(2, 'completed');
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/provider-dashboard';
+                    }, 1500);
+                } else {
+                    throw new Error(data.detail || 'Code de vérification incorrect');
+                }
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                showAlert(error.message, 'error');
+                otpCodeInput.value = '';
+                otpCodeInput.focus();
+            } finally {
+                hideLoading();
+                verifyOtpBtn.disabled = false;
+            }
+        }
+
+        // Handle resend code
+        async function handleResendCode() {
+            await handlePhoneSubmit(new Event('submit'));
+        }
+
+        // Validate phone number
+        function validatePhoneNumber(phone) {
+            // Accept both +237XXXXXXXXX and 237XXXXXXXXX formats
+            const cameroonPhoneRegex = /^\+?237[26][0-9]{8}$/;
+            return cameroonPhoneRegex.test(phone);
+        }
+
+        // Show OTP section
+        function showOtpSection() {
+            phoneSection.style.display = 'none';
+            otpSection.style.display = 'block';
+            
+            updateStepIndicator(1, 'completed');
+            updateStepIndicator(2, 'active');
+            
+            setTimeout(() => {
+                otpCodeInput.focus();
+            }, 300);
+        }
+
+        // Update step indicator
+        function updateStepIndicator(step, status) {
+            const stepElement = document.getElementById(`step-${step}`);
+            const lineElement = document.getElementById(`line-${step}`);
+            
+            stepElement.className = `step ${status}`;
+            
+            if (lineElement) {
+                lineElement.className = `step-line ${status === 'completed' ? 'completed' : ''}`;
+            }
+        }
+
+        // Start countdown timer
+        function startCountdown() {
+            timeLeft = 300; // 5 minutes
+            resendCodeBtn.disabled = true;
+            
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                countdown.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimer);
+                    countdown.textContent = '00:00';
+                    resendCodeBtn.disabled = false;
+                    showAlert('Le code a expiré. Veuillez demander un nouveau code.', 'warning');
+                }
+            }, 1000);
+        }
+
+        // Show loading state
+        function showLoading(text) {
+            loadingText.textContent = text;
+            loadingSpinner.style.display = 'block';
+            phoneSection.style.display = 'none';
+            otpSection.style.display = 'none';
+        }
+
+        // Hide loading state
+        function hideLoading() {
+            loadingSpinner.style.display = 'none';
+            
+            if (sessionToken) {
+                otpSection.style.display = 'block';
+            } else {
+                phoneSection.style.display = 'block';
+            }
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alertClass = type === 'success' ? 'alert-success' : 
+                            type === 'error' ? 'alert-danger' : 
+                            type === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            const icon = type === 'success' ? 'fas fa-check-circle' : 
+                        type === 'error' ? 'fas fa-exclamation-circle' : 
+                        type === 'warning' ? 'fas fa-exclamation-triangle' : 'fas fa-info-circle';
+            
+            alertContainer.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="${icon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Auto-dismiss success alerts
+            if (type === 'success') {
+                setTimeout(() => {
+                    const alert = alertContainer.querySelector('.alert');
+                    if (alert) {
+                        alert.remove();
+                    }
+                }, 5000);
+            }
+        }
+
+        // Clear alerts
+        function clearAlerts() {
+            alertContainer.innerHTML = '';
+        }
+    </script>
+</body>
+</html>

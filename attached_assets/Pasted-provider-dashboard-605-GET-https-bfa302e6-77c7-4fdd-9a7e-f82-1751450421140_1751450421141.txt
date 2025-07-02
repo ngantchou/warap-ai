@@ -1,0 +1,49 @@
+provider-dashboard:605 
+            
+            
+           GET https://bfa302e6-77c7-4fdd-9a7e-f8275bb6ebfa-00-2u4eoz437pgvo.janeway.replit.dev/api/provider/dashboard/stats 401 (Unauthorized)
+loadDashboardStats @ provider-dashboard:605
+initializeDashboard @ provider-dashboard:592
+(anonymous) @ provider-dashboard:558Understand this error
+provider-dashboard:623 Error loading dashboard stats: 
+loadDashboardStats @ provider-dashboard:623
+await in loadDashboardStats
+initializeDashboard @ provider-dashboard:592
+(anonymous) @ provider-dashboard:558Understand this error
+provider-dashboard:654 
+            
+            
+           GET https://bfa302e6-77c7-4fdd-9a7e-f8275bb6ebfa-00-2u4eoz437pgvo.janeway.replit.dev/api/provider/requests?status=&limit=20 401 (Unauthorized)
+loadRequests @ provider-dashboard:654
+initializeDashboard @ provider-dashboard:593
+await in initializeDashboard
+(anonymous) @ provider-dashboard:558Understand this error
+provider-dashboard:672 Error loading requests: 
+loadRequests @ provider-dashboard:672
+await in loadRequests
+initializeDashboard @ provider-dashboard:593
+await in initializeDashboard
+(anonymous) @ provider-dashboard:558Understand this error
+provider-dashboard:887 
+            
+            
+           GET https://bfa302e6-77c7-4fdd-9a7e-f8275bb6ebfa-00-2u4eoz437pgvo.janeway.replit.dev/api/provider/dashboard/notifications?limit=20 401 (Unauthorized)
+loadNotifications @ provider-dashboard:887
+initializeDashboard @ provider-dashboard:594
+await in initializeDashboard
+(anonymous) @ provider-dashboard:558Understand this error
+provider-dashboard:901 Error loading notifications: 
+loadNotifications @ provider-dashboard:901
+await in loadNotifications
+initializeDashboard @ provider-dashboard:594
+await in initializeDashboard
+(anonymous) @ provider-dashboard:558Understand this error
+provider-dashboard:953 
+            
+            
+           GET https://bfa302e6-77c7-4fdd-9a7e-f8275bb6ebfa-00-2u4eoz437pgvo.janeway.replit.dev/api/provider/dashboard/chart-data/week 401 (Unauthorized)
+loadAnalytics @ provider-dashboard:953
+initializeDashboard @ provider-dashboard:595
+await in initializeDashboard
+(anonymous) @ provider-dashboard:558Understand this error
+provider-dashboard:967 Error loading analytics: 

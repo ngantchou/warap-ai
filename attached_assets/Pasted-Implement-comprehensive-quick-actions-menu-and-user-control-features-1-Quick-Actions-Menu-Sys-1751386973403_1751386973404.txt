@@ -1,0 +1,52 @@
+Implement comprehensive quick actions menu and user control features:
+
+1. **Quick Actions Menu System**:
+   - Add action menu after every request confirmation
+   - Create standardized menu format with numbers and keywords
+   - Implement keyword recognition in conversation_manager
+   - Support both French and English action commands
+
+2. **Action Commands Implementation**:
+   - STATUT/STATUS: Check current request status with detailed info
+   - MODIFIER/MODIFY: Allow users to change request details
+   - ANNULER/CANCEL: Cancel active requests (with confirmations)
+   - AIDE/HELP: Get assistance and contact support
+   - PROFIL: View assigned provider profile
+   - CONTACT: Direct contact with provider
+
+3. **Status Checking Enhancement**:
+   - Extend existing UserJourneyManager.handle_status_request()
+   - Add detailed status responses with timeline and next steps
+   - Include provider information when available
+   - Show estimated completion time
+
+4. **Request Modification System**:
+   - Allow users to modify description, location, urgency
+   - Create modification workflow with confirmations
+   - Re-run provider matching if needed
+   - Track modification history in database
+
+5. **Smart Cancellation System**:
+   - Check request status before allowing cancellation
+   - Different cancellation flows for different statuses
+   - Notify providers if request already assigned
+   - Implement cancellation fees policy (if applicable)
+
+6. **Help & Support System**:
+   - Create support ticket system for complex issues
+   - Provide FAQ-style responses for common questions
+   - Escalation to human support when needed
+   - Track support interactions for improvement
+
+7. **Database Schema Extensions**:
+   - Add request_modifications table
+   - Add support_tickets table
+   - Add user_actions tracking
+   - Add communication_log table
+
+Integration Requirements:
+- Extend app/services/conversation_manager.py for action recognition
+- Update app/services/user_journey_manager.py for enhanced status/cancellation
+- Work with existing database models
+- Maintain conversation context and memory
+- Add new API endpoints for admin to track user actions

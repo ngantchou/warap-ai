@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion Admin - Djobea AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 400px;
+            padding: 0;
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #25d366 0%, #1ea952 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .login-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .login-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .login-form {
+            padding: 2rem;
+        }
+        
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+        
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #25d366;
+            box-shadow: 0 0 0 0.2rem rgba(37, 211, 102, 0.25);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #25d366 0%, #1ea952 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+            color: white;
+        }
+        
+        .btn-login:disabled {
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 1rem;
+        }
+        
+        .security-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .security-info i {
+            color: #25d366;
+            margin-right: 0.5rem;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #6c757d;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        .form-floating {
+            position: relative;
+        }
+        
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .login-footer {
+            text-align: center;
+            padding: 1rem 2rem 2rem;
+            border-top: 1px solid #e9ecef;
+            margin-top: 1rem;
+        }
+        
+        .login-footer small {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <i class="bi bi-shield-lock" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+            <h1>Administration</h1>
+            <p>Connexion sécurisée à Djobea AI</p>
+        </div>
+        
+        <form class="login-form" method="post" action="/auth/login" id="loginForm">
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <div class="form-floating">
+                <input type="text" class="form-control" id="username" name="username" placeholder="Nom d'utilisateur" required>
+                <label for="username">
+                    <i class="bi bi-person"></i> Nom d'utilisateur
+                </label>
+            </div>
+            
+            <div class="form-floating">
+                <input type="password" class="form-control" id="password" name="password" placeholder="Mot de passe" required>
+                <label for="password">
+                    <i class="bi bi-lock"></i> Mot de passe
+                </label>
+                <button type="button" class="password-toggle" onclick="togglePassword()">
+                    <i class="bi bi-eye" id="passwordToggleIcon"></i>
+                </button>
+            </div>
+            
+            <button type="submit" class="btn btn-login" id="loginBtn">
+                <span class="loading-spinner" id="loadingSpinner"></span>
+                <span id="loginText">Se connecter</span>
+            </button>
+            
+            <div class="security-info">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-shield-check"></i>
+                    <strong>Connexion sécurisée</strong>
+                </div>
+                <ul class="mb-0 ps-3">
+                    <li>Authentification JWT avec chiffrement</li>
+                    <li>Protection contre les attaques par force brute</li>
+                    <li>Sessions sécurisées avec expiration automatique</li>
+                </ul>
+            </div>
+        </form>
+        
+        <div class="login-footer">
+            <small>
+                <i class="bi bi-geo-alt"></i>
+                Djobea AI &copy; 2025 - Service sécurisé pour Douala, Cameroun
+            </small>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('passwordToggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.className = 'bi bi-eye-slash';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.className = 'bi bi-eye';
+            }
+        }
+        
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const loginBtn = document.getElementById('loginBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const loginText = document.getElementById('loginText');
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loadingSpinner.style.display = 'inline-block';
+            loginText.textContent = 'Connexion en cours...';
+        });
+        
+        // Auto-focus on username field
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('username').focus();
+        });
+        
+        // Handle enter key
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').submit();
+            }
+        });
+        
+        // Security: Clear form on page unload
+        window.addEventListener('beforeunload', function() {
+            document.getElementById('password').value = '';
+        });
+    </script>
+</body>
+</html>

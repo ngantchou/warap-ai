@@ -1,0 +1,47 @@
+Implement enhanced communication flow with proactive status updates for Djobea AI:
+
+1. **Instant Confirmation System**:
+   - Send confirmation within 30 seconds of request receipt
+   - Include service type, estimated pricing, and expected timeline
+   - Add reassuring messaging with next steps
+   - Format messages with WhatsApp markdown and emojis
+
+2. **Proactive Update Service**:
+   - Create background task for sending progress updates every 2-3 minutes
+   - Track provider notification status and response times
+   - Send contextual updates based on current request status
+   - Implement intelligent update frequency (more frequent for urgent requests)
+
+3. **Timeline Management**:
+   - Set clear expectations: "Réponse sous 5 minutes", "Recherche sous 10 minutes"
+   - Send countdown updates: "Plus que 3 minutes pour une réponse"
+   - Escalation messaging when timeouts approach
+   - Fallback provider notifications with explanations
+
+4. **Enhanced Message Templates**:
+   - Confirmation template with pricing estimates per service type
+   - Progress update templates for different stages
+   - Provider acceptance/decline templates
+   - Timeout and fallback templates
+   - Error handling templates with helpful suggestions
+
+5. **Pricing Transparency**:
+   - Add pricing estimates to app/config.py:
+     * Plomberie: 5,000 - 15,000 XAF
+     * Électricité: 3,000 - 10,000 XAF  
+     * Réparation électroménager: 2,000 - 8,000 XAF
+   - Include pricing in initial confirmation
+   - Add pricing disclaimers and factors affecting cost
+
+6. **Background Task Implementation**:
+   - Create FastAPI background tasks for proactive updates
+   - Use Redis for managing update schedules
+   - Implement rate limiting to avoid spam
+   - Add database logging for all communication
+
+Integration Requirements:
+- Work with existing WhatsAppService and conversation_manager
+- Extend existing message templates in webhook.py
+- Add new database fields for tracking communication timestamps
+- Maintain compatibility with current provider notification system
+- Use existing Loguru logging for tracking communication flow

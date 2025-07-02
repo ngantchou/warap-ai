@@ -1,0 +1,128 @@
+Implement comprehensive visual problem description with image/video analysis:
+
+Visual Problem Analysis System:
+
+Integrate Claude Vision API for image/video analysis
+Implement intelligent problem severity assessment from visuals
+Create automated problem categorization from images
+Generate detailed problem descriptions from visual content
+Estimate repair complexity and time from visual inspection
+
+
+WhatsApp Media Integration:
+
+Handle image uploads (JPG, PNG, HEIC) up to 16MB
+Support video uploads (MP4, 3GP) up to 64MB
+Implement multiple image support for different angles
+Create before/after photo comparison system
+Add image compression and optimization
+
+
+Intelligent Visual Processing:
+
+Problem type detection: electrical, plumbing, appliance issues
+Severity assessment: minor, moderate, major, emergency
+Required tools and materials identification
+Safety hazard detection and warnings
+Cost estimation based on visual complexity
+
+
+Enhanced User Experience:
+
+Guide users on taking effective problem photos
+Suggest multiple angles for better assessment
+Provide lighting and focus tips
+Request additional images when needed
+Offer video recording for complex issues
+
+
+Provider Visual Briefing:
+
+Send analyzed images to matched providers
+Include AI assessment and recommendations
+Provide visual evidence of problem complexity
+Enable informed decision-making for providers
+Attach visual report to service request
+
+
+Smart Problem Description Enhancement:
+python# Example AI-enhanced description
+visual_analysis = {
+    "detected_problem": "Significant water leak under kitchen sink",
+    "severity": "urgent",
+    "estimated_damage": "moderate - cabinet water damage visible",
+    "required_expertise": "experienced plumber",
+    "tools_needed": ["pipe wrench", "replacement joints", "sealant"],
+    "estimated_cost": "8,000 - 12,000 XAF",
+    "estimated_time": "2-3 hours"
+}
+
+Advanced Visual Features:
+
+Multiple problem detection in single image
+Progress tracking with before/during/after photos
+Visual quality assurance for completed work
+Damage assessment for insurance purposes
+Visual service history and maintenance records
+
+
+Interactive Visual Workflow:
+
+Photo upload confirmation with analysis preview
+AI-generated questions based on visual assessment
+Visual problem severity explanations
+Provider matching based on visual complexity
+Visual progress updates during service
+
+
+Media Storage & Security:
+
+Secure cloud storage (AWS S3/Google Cloud Storage)
+Image encryption and privacy protection
+Automatic media cleanup after service completion
+Backup and recovery for important visual records
+GDPR-compliant image handling
+
+
+Voice + Video Integration:
+
+Voice narration over video for complex problems
+Speech-to-text for video commentary
+Combined audio-visual problem description
+Video call support for remote assistance
+Screen recording for appliance interface issues
+
+
+
+Database Schema Extensions:
+
+Create media_uploads table (request_id, file_url, analysis_result, upload_date)
+Add visual_analysis table (media_id, detected_problems, severity, recommendations)
+Create problem_photos table (request_id, photo_type, analysis_confidence, ai_description)
+Add visual_progress table (request_id, stage, photo_url, timestamp)
+
+Technical Implementation:
+
+Integrate Claude Vision API for image analysis
+Implement secure media upload pipeline
+Create AI-powered visual assessment service
+Add visual media handling to WhatsApp webhook
+Extend conversation_manager for visual context
+Create visual problem templates and responses
+
+Integration Requirements:
+
+Work with existing Twilio WhatsApp Business API
+Extend current AI conversation system
+Integrate with provider matching algorithm
+Add visual elements to admin interface
+Maintain performance with large media files
+Ensure mobile-optimized image processing
+
+Expected Impact:
+
+90% reduction in problem description ambiguity
+75% improvement in provider job acceptance rate
+40% more accurate pricing estimates
+60% reduction in provider surprise visits
+85% customer satisfaction with visual service

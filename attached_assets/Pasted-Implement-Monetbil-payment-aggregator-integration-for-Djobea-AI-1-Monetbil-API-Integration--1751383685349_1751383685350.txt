@@ -1,0 +1,68 @@
+Implement Monetbil payment aggregator integration for Djobea AI:
+
+1. **Monetbil API Integration**:
+   - Monetbil Python SDK setup and configuration
+   - Payment widget integration for web interface
+   - Mobile Money payment initiation (Orange Money, MTN MoMo, Express Union, etc.)
+   - Payment status checking and confirmation
+   - Webhook handling for real-time payment notifications
+   - Refund and cancellation support through Monetbil
+
+2. **Payment Flow Implementation**:
+   - Customer payment initiation from service completion
+   - Provider commission automatic calculation (15% from config)
+   - Multi-step payment process (customer pays → platform fee deducted → provider payout)
+   - Payment retry mechanism for failed transactions
+   - Currency handling (XAF - Central African CFA Franc)
+
+3. **WhatsApp Payment Integration**:
+   - Send payment links via WhatsApp after service completion
+   - Payment confirmation messages to customers
+   - Provider payment notification system
+   - Payment status updates in conversation flow
+
+4. **Database Schema Extension**:
+   - Transaction table with Monetbil transaction IDs
+   - Commission tracking and calculation
+   - Provider payout management
+   - Payment status lifecycle (PENDING → PROCESSING → COMPLETED → FAILED)
+   - Financial reporting and reconciliation data
+
+5. **Admin Interface Extension**:
+   - Payment dashboard with Monetbil transaction data
+   - Commission reports and analytics
+   - Provider payout management interface
+   - Transaction monitoring and reconciliation tools
+   - Financial KPIs and revenue tracking
+
+6. **Security & Monetbil Compliance**:
+   - Monetbil webhook signature verification
+   - Secure API key management for Monetbil
+   - Transaction data encryption
+   - PCI compliance through Monetbil's infrastructure
+   - Fraud detection and prevention
+   - Financial audit trails and compliance reporting
+
+7. **Cameroon-specific Features**:
+   - Support for all major Cameroon mobile money operators via Monetbil
+   - Local currency formatting (XAF)
+   - French language payment interface
+   - SMS and WhatsApp payment confirmations
+   - Local business compliance requirements
+
+8. **Testing & Validation**:
+   - Monetbil sandbox environment integration
+   - Payment flow testing with test credentials
+   - Webhook testing and validation
+   - Commission calculation verification
+   - Error handling and edge case testing
+
+Requirements:
+- Use Monetbil as the single payment aggregator
+- Integrate with existing service request workflow
+- Work with current database schema and extend it
+- Extend existing admin interface
+- Maintain 15% commission rate from app/config.py
+- Support all Cameroon mobile money operators through Monetbil
+- Ensure seamless WhatsApp payment experience
+- Implement proper error handling and retry mechanisms
