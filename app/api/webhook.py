@@ -11,6 +11,7 @@ from app.services.whatsapp_service import whatsapp_service
 from app.services.provider_service import ProviderService
 from app.services.request_service import RequestService
 from app.services.conversation_manager import conversation_manager
+from app.services.enhanced_conversation_manager import enhanced_conversation_manager
 from app.services.communication_service import CommunicationService
 from app.services.quick_actions_service import QuickActionsService
 from app.services.scheduling_service import SchedulingService
@@ -88,6 +89,84 @@ async def whatsapp_webhook(
         
     except Exception as e:
         logger.error(f"Error in WhatsApp webhook: {e}")
+        return PlainTextResponse("", status_code=500)
+
+@router.post("/whatsapp-enhanced")
+async def whatsapp_enhanced_webhook(
+    request: Request,
+    AccountSid: str = Form(...),
+    MessageSid: str = Form(...),
+    From: str = Form(...),
+    To: str = Form(...),
+    Body: str = Form(""),
+    NumMedia: int = Form(0),
+    MediaUrl0: str = Form(None),
+    MediaContentType0: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    """Enhanced WhatsApp webhook using multi-LLM orchestration"""
+    
+    try:
+        # Parse the incoming message
+        webhook_data = {
+            "AccountSid": AccountSid,
+            "MessageSid": MessageSid,
+            "From": From,
+            "To": To,
+            "Body": Body,
+            "NumMedia": NumMedia,
+            "MediaUrl0": MediaUrl0,
+            "MediaContentType0": MediaContentType0
+        }
+        
+        message_data = whatsapp_service.parse_incoming_message(webhook_data)
+        
+        if not message_data:
+            logger.error("Failed to parse incoming WhatsApp message")
+            return PlainTextResponse("", status_code=200)
+        
+        user_phone = message_data["from"]
+        message_body = message_data["body"].strip()
+        has_media = NumMedia > 0 and MediaUrl0
+        
+        logger.info(f"Enhanced webhook: Received message from {user_phone}: {message_body}")
+        
+        # Check if this is a provider responding
+        provider_service = ProviderService(db)
+        provider = provider_service.get_provider_by_whatsapp_id(user_phone)
+        
+        if provider:
+            # Handle provider response with enhanced processing
+            result = await enhanced_conversation_manager.handle_provider_response(
+                provider_phone=user_phone,
+                message=message_body,
+                db=db
+            )
+            
+            logger.info(f"Provider response processed: {result}")
+        else:
+            # Process client message with enhanced multi-LLM system
+            result = await enhanced_conversation_manager.process_message(
+                phone_number=user_phone,
+                message=message_body,
+                media_url=MediaUrl0 if has_media else None,
+                db=db
+            )
+            
+            # Send response via WhatsApp
+            if result and result.get("response"):
+                await whatsapp_service.send_message(user_phone, result["response"])
+                
+                # Log enhanced processing results
+                logger.info(f"Enhanced processing completed: "
+                          f"State={result.get('state')}, "
+                          f"Confidence={result.get('confidence')}, "
+                          f"LLM={result.get('llm_provider')}")
+        
+        return PlainTextResponse("", status_code=200)
+        
+    except Exception as e:
+        logger.error(f"Error in enhanced WhatsApp webhook: {e}")
         return PlainTextResponse("", status_code=500)
 
 async def handle_media_upload(user_id: int, media_url: str, content_type: str, user_phone: str, db: Session):

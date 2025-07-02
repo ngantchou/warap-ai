@@ -146,13 +146,35 @@
     // ===== MESSAGE HANDLING =====
     const messageHandler = {
         // Create message element
-        createMessageElement(content, isUser = false, time = null) {
+        createMessageElement(content, isUser = false, time = null, buttons = []) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'message--sent' : 'message--received'}`;
             
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message__content';
             contentDiv.innerHTML = utils.sanitizeHtml(content);
+            
+            // Add buttons if provided
+            if (buttons && buttons.length > 0 && !isUser) {
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'message-buttons';
+                buttonsDiv.style.cssText = 'margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;';
+                
+                buttons.forEach(button => {
+                    const buttonElement = document.createElement('button');
+                    buttonElement.textContent = button.text;
+                    buttonElement.className = this.getButtonClass(button.style || 'primary');
+                    buttonElement.style.cssText = 'padding: 8px 15px; border: none; border-radius: 15px; cursor: pointer; font-size: 13px; flex-shrink: 0;';
+                    
+                    buttonElement.onclick = () => {
+                        this.handleButtonClick(button.value, button.action || 'select', buttonElement);
+                    };
+                    
+                    buttonsDiv.appendChild(buttonElement);
+                });
+                
+                contentDiv.appendChild(buttonsDiv);
+            }
             
             const timeDiv = document.createElement('div');
             timeDiv.className = 'message__time';
@@ -164,9 +186,47 @@
             return messageDiv;
         },
 
+        // Get button CSS class based on style
+        getButtonClass(style) {
+            switch(style) {
+                case 'primary': return 'btn-primary';
+                case 'secondary': return 'btn-secondary';
+                case 'success': return 'btn-success';
+                case 'danger': return 'btn-danger';
+                default: return 'btn-primary';
+            }
+        },
+
+        // Handle button click
+        handleButtonClick(value, action, buttonElement) {
+            // Disable all buttons in the same message to prevent double-clicking
+            const messageButtons = buttonElement.parentElement.querySelectorAll('button');
+            messageButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+            });
+            
+            // Highlight selected button
+            buttonElement.style.backgroundColor = '#25D366';
+            buttonElement.style.color = 'white';
+            
+            // Send button value as message
+            this.sendButtonMessage(value, action);
+        },
+
+        // Send button selection as message
+        sendButtonMessage(value, action) {
+            // Add user message showing their selection
+            const buttonText = value.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            this.addMessage(buttonText, true, false);
+            
+            // Send to backend with button_value parameter
+            chatApi.sendMessage('', value);
+        },
+
         // Add message to chat
-        addMessage(content, isUser = false, animate = true) {
-            const messageElement = this.createMessageElement(content, isUser);
+        addMessage(content, isUser = false, animate = true, buttons = []) {
+            const messageElement = this.createMessageElement(content, isUser, null, buttons);
             
             if (animate) {
                 messageElement.style.opacity = '0';
@@ -329,14 +389,15 @@
     // ===== API COMMUNICATION =====
     const api = {
         // Send message to backend
-        async sendMessage(message) {
+        async sendMessage(message, buttonValue = null) {
             const payload = {
                 message: message.trim(),
                 session_id: utils.getSessionId(),
                 phone_number: state.phoneNumber,
                 source: 'web_chat',
                 timestamp: new Date().toISOString(),
-                conversation_history: state.messageHistory.slice(-10) // Last 10 messages for context
+                conversation_history: state.messageHistory.slice(-10), // Last 10 messages for context
+                button_value: buttonValue // Add button value for step management
             };
 
             try {
@@ -370,7 +431,10 @@
                 requestId: data.request_id || null,
                 suggestions: data.suggestions || [],
                 needsInfo: data.needs_info || [],
-                status: data.status || 'active'
+                status: data.status || 'active',
+                buttons: data.buttons || [],
+                systemAction: data.system_action || null,
+                nextStep: data.next_step || null
             };
 
             // Update session if provided
@@ -463,7 +527,7 @@
                 
                 if (response.message) {
                     const processedMessage = messageHandler.processMessage(response.message);
-                    messageHandler.addMessage(processedMessage, false);
+                    messageHandler.addMessage(processedMessage, false, true, response.buttons || []);
                     
                     // Play notification sound if window is not visible
                     if (document.hidden) {

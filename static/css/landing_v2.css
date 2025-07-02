@@ -1387,6 +1387,71 @@ ul {
   }
 }
 
+/* ===== CHAT WIDGET BUTTONS ===== */
+.message-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.message-button {
+  background: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message-button:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.message-button:active {
+  transform: translateY(0);
+}
+
+.message-button.secondary {
+  background: var(--gray-100);
+  color: var(--text-dark);
+  border: 1px solid var(--gray-300);
+}
+
+.message-button.secondary:hover {
+  background: var(--gray-200);
+  border-color: var(--gray-400);
+}
+
+.message-button.success {
+  background: #10b981;
+}
+
+.message-button.success:hover {
+  background: #059669;
+}
+
+.message-button.danger {
+  background: #ef4444;
+}
+
+.message-button.danger:hover {
+  background: #dc2626;
+}
+
+.message-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
 /* ===== HIGH CONTRAST MODE ===== */
 @media (prefers-contrast: high) {
   :root {
