@@ -416,30 +416,30 @@
                 return;
             }
             
-            container.innerHTML = cases.map(case => `
-                <div class="case-item urgency-${case.urgency_level} p-3 mb-3 border rounded" 
-                     onclick="openCaseModal('${case.case_id}')">
+            container.innerHTML = cases.map(caseItem => `
+                <div class="case-item urgency-${caseItem.urgency_level} p-3 mb-3 border rounded" 
+                     onclick="openCaseModal('${caseItem.case_id}')">
                     <div class="row">
                         <div class="col-md-8">
                             <h6 class="mb-1">
                                 <i class="fas fa-tools me-2"></i>
-                                ${case.service_type} - ${case.problem_category}
+                                ${caseItem.service_type} - ${caseItem.problem_category}
                             </h6>
                             <p class="mb-1 text-muted small">
-                                ${case.problem_description.substring(0, 100)}...
+                                ${caseItem.problem_description.substring(0, 100)}...
                             </p>
                             <small class="text-muted">
                                 <i class="fas fa-clock me-1"></i>
-                                ${formatDate(case.created_at)}
+                                ${formatDate(caseItem.created_at)}
                             </small>
                         </div>
                         <div class="col-md-4 text-end">
-                            <span class="badge bg-${getUrgencyColor(case.urgency_level)} mb-2">
-                                ${case.urgency_level.toUpperCase()}
+                            <span class="badge bg-${getUrgencyColor(caseItem.urgency_level)} mb-2">
+                                ${caseItem.urgency_level.toUpperCase()}
                             </span>
                             <br>
                             <small class="text-muted">
-                                ID: ${case.case_id}
+                                ID: ${caseItem.case_id}
                             </small>
                         </div>
                     </div>
