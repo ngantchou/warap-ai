@@ -659,7 +659,8 @@ class ErrorManagementService:
         """Attempt to reconnect to database"""
         try:
             # Test database connection
-            db.execute("SELECT 1")
+            from sqlalchemy import text
+            db.execute(text("SELECT 1"))
             return True
         except:
             return False
