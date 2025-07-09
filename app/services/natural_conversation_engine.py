@@ -21,7 +21,7 @@ from app.utils.conversation_state import ConversationState, ConversationPhase
 from app.models.database_models import User, ServiceRequest, Conversation, RequestStatus
 from app.services.provider_service import ProviderService
 from app.services.whatsapp_service import WhatsAppService
-from app.services.notification_service import WhatsAppNotificationService
+# from app.services.notification_service import NotificationService
 from loguru import logger
 
 settings = get_settings()
@@ -64,7 +64,7 @@ class NaturalConversationEngine:
         self.response_generator = NaturalResponseGenerator()
         self.provider_service = ProviderService(db)
         self.whatsapp_service = WhatsAppService()
-        self.notification_service = WhatsAppNotificationService(db)
+        # self.notification_service = NotificationService()
         
         # Conversation memory - maintains context across messages
         self.active_conversations: Dict[str, ConversationState] = {}
