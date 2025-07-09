@@ -91,6 +91,24 @@ class IntentAnalyzer:
                 "détails demande", "plus d'infos", "more info", "show details",
                 "voir plus", "see more", "informations détaillées",
                 "je veux voir", "i want to see", "montrer détails"
+            ],
+            "info_requests": [
+                "faq", "help", "aide", "information", "infos", "renseignements",
+                "que pouvez-vous faire", "what can you do", "vos services",
+                "quels services", "what services", "how does it work",
+                "comment ça marche", "tarifs", "prix", "prices", "cost",
+                "coût", "combien", "how much", "en savoir plus",
+                "plus d'informations", "more information", "about you",
+                "à propos", "qui êtes-vous", "who are you", "explain",
+                "expliquer", "comment", "how", "pourquoi", "why"
+            ],
+            "human_contact_requests": [
+                "parler à quelqu'un", "talk to someone", "human", "humain",
+                "personne", "person", "agent", "operateur", "operator",
+                "assistance", "support", "call", "appeler", "téléphone",
+                "phone", "contact", "speak to", "parler avec",
+                "je veux parler", "i want to speak", "customer service",
+                "service client", "real person", "vraie personne"
             ]
         }
     
@@ -188,6 +206,22 @@ class IntentAnalyzer:
                 "method": "pattern_matching"
             }
         
+        # Check for information requests (FAQ, help, etc.)
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["info_requests"]):
+            return {
+                "primary_intent": "info_request",
+                "confidence": 0.9,
+                "method": "pattern_matching"
+            }
+        
+        # Check for human contact requests
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["human_contact_requests"]):
+            return {
+                "primary_intent": "human_contact",
+                "confidence": 0.9,
+                "method": "pattern_matching"
+            }
+        
         # Check for service type mentions
         detected_services = []
         for service_type, patterns in self.cameroon_patterns["service_types"].items():
@@ -227,34 +261,32 @@ class IntentAnalyzer:
             ])
         
         system_prompt = f"""
-        Tu es un analyste d'intentions pour Djobea AI, un service camerounais de mise en relation pour services à domicile.
+        Tu es l'IA conversationnelle de Djobea AI, service camerounais de mise en relation pour services à domicile.
         
-        CONTEXTE CAMEROUNAIS:
-        - Services: plomberie, électricité, réparation électroménager
-        - Zone: Bonamoussadi, Douala
-        - Langues: français, anglais, pidgin english
+        SERVICES DISPONIBLES:
+        - Plomberie: fuites, robinets, WC, tuyaux
+        - Électricité: pannes, prises, interrupteurs
+        - Électroménager: frigo, machine à laver, four
         
-        INTENTIONS POSSIBLES:
-        1. new_service_request - Nouvelle demande de service
-        2. status_inquiry - Demande de statut
-        3. view_my_requests - Voir mes demandes existantes
-        4. view_request_details - Voir détails d'une demande spécifique
-        5. modify_request - Modification de demande
-        6. cancel_request - Demande d'annulation
-        7. emergency - Situation d'urgence
-        8. continue_previous - Suite d'une conversation
-        9. general_inquiry - Question générale
+        ZONE DE COUVERTURE: Bonamoussadi, Douala
         
-        PHASE ACTUELLE: {current_phase or 'unknown'}
+        INTENTIONS PRINCIPALES:
+        1. "info_request" - FAQ, aide, informations sur services/tarifs/fonctionnement
+        2. "human_contact" - Demande de contact humain, parler à quelqu'un
+        3. "view_my_requests" - Voir demandes existantes
+        4. "new_service_request" - Nouvelle demande de service
+        5. "status_inquiry" - Statut d'une demande
+        6. "cancel_request" - Annulation
+        7. "emergency" - Urgence
+        8. "general_inquiry" - Conversation générale
+        
+        PHASE ACTUELLE: {current_phase or 'greeting'}
         
         CONTEXTE CONVERSATION:
         {context}
         
-        Analyse le message et extrais:
-        - L'intention principale
-        - Les informations de service (type, localisation, description, urgence)
-        - Le niveau de confiance
-        - Les informations manquantes
+        Analyse le message naturellement et détermine l'intention la plus appropriée.
+        Priorise "info_request" pour FAQ/aide/services et "human_contact" pour contact humain.
         
         Réponds en JSON strict.
         """

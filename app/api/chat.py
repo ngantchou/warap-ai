@@ -12,6 +12,7 @@ from datetime import datetime
 
 from app.database import get_db
 from app.services.natural_conversation_engine import NaturalConversationEngine
+from app.services.llm_conversation_manager import LLMConversationManager
 from app.models.database_models import User, Conversation
 from app.config import get_settings
 
@@ -161,6 +162,99 @@ async def handle_web_chat(
     except Exception as e:
         # Log error for debugging
         print(f"Chat API error: {str(e)}")
+        
+        # Return user-friendly error response
+        return ChatResponse(
+            response=get_error_response(str(e)),
+            session_id=chat_message.session_id,
+            request_complete=False,
+            status="error"
+        )
+
+@router.post("/chat-llm", response_model=ChatResponse)
+async def chat_llm_endpoint(
+    chat_message: ChatMessage,
+    db: Session = Depends(get_db)
+):
+    """
+    LLM-driven chat endpoint with natural intent detection and action codes
+    
+    Args:
+        chat_message: The chat message data
+        db: Database session
+    
+    Returns:
+        ChatResponse: Structured response with AI message and metadata
+    """
+    try:
+        # Check if phone number is provided - if not, prompt for it
+        if not chat_message.phone_number:
+            return ChatResponse(
+                response="Bonjour! 👋 Bienvenue sur Djobea AI.<br><br>Pour mieux vous aider, veuillez d'abord entrer votre numéro de téléphone dans le champ prévu à cet effet.",
+                session_id=chat_message.session_id,
+                request_complete=False,
+                needs_info=["phone_number"],
+                status="phone_required"
+            )
+        
+        # Initialize LLM conversation manager
+        llm_manager = LLMConversationManager(db)
+        
+        # Get or create user based on session ID and phone number
+        user = get_or_create_web_user(db, chat_message.session_id, chat_message.phone_number)
+        
+        # Process message through LLM conversation manager
+        try:
+            # Use the actual phone number or session-based identifier
+            user_identifier = chat_message.phone_number or f"web_{chat_message.session_id}"
+            
+            # Process message with LLM-driven approach
+            result = await llm_manager.process_message(
+                user_identifier, 
+                chat_message.message,
+                chat_message.session_id
+            )
+            
+            # Format response for web chat
+            formatted_response = format_web_response(result['response'])
+            
+            # Log conversation for analytics
+            try:
+                log_web_conversation(db, user.id, chat_message.message, formatted_response)
+            except Exception as log_error:
+                print(f"Error logging conversation: {log_error}")
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+            
+            return ChatResponse(
+                response=formatted_response,
+                session_id=result['session_id'],
+                request_complete=result['request_complete'],
+                request_id=result['request_id'],
+                suggestions=result['suggestions'],
+                needs_info=result['needs_info'],
+                status=result['status'],
+                user_id=result['user_id'] or user.id,
+                buttons=result['buttons'],
+                system_action=result['system_action'],
+                next_step=result['next_step']
+            )
+            
+        except Exception as e:
+            # Fallback to simple response if LLM manager fails
+            print(f"LLM conversation manager error: {str(e)}")
+            return ChatResponse(
+                response=get_simple_response(chat_message.message),
+                session_id=chat_message.session_id,
+                request_complete=False,
+                status="fallback"
+            )
+        
+    except Exception as e:
+        # Log error for debugging
+        print(f"Chat LLM API error: {str(e)}")
         
         # Return user-friendly error response
         return ChatResponse(

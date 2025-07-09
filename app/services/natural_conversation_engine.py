@@ -221,10 +221,24 @@ class NaturalConversationEngine:
                          ConversationIntent.MODIFY_REQUEST, ConversationIntent.CANCEL_REQUEST, 
                          ConversationIntent.STATUS_INQUIRY]
         
+        # Prioritize info and human contact intents - they should bypass continuation logic
+        primary_intent = intent_analysis.get("primary_intent")
+        is_priority_intent = primary_intent in ["info_request", "human_contact"]
+        
         logger.info(f"Exempt intents: {exempt_intents}")
         logger.info(f"Intent in exempt list: {intent in exempt_intents}")
+        logger.info(f"Primary intent: {primary_intent}")
+        logger.info(f"Is priority intent: {is_priority_intent}")
         
-        if (intent not in exempt_intents and
+        # Skip continuation logic for priority intents
+        if is_priority_intent:
+            logger.info(f"Processing priority intent: {primary_intent}")
+            # Clear any ongoing conversation for priority intents
+            conversation_state.current_phase = ConversationPhase.GREETING
+            conversation_state.pending_request_data = None
+            if user_identifier in self.conversation_data:
+                self.conversation_data[user_identifier]['collected_info'] = {}
+        elif (intent not in exempt_intents and
             (conversation_state.current_phase == ConversationPhase.INFORMATION_GATHERING or 
              conversation_state.pending_request_data is not None or
              (user_identifier in self.conversation_data and 
@@ -284,6 +298,12 @@ class NaturalConversationEngine:
         
         elif intent == ConversationIntent.EMERGENCY:
             return await self._handle_emergency(user_identifier, message, intent_analysis, conversation_state)
+        
+        elif intent_analysis.get("primary_intent") == "info_request":
+            return await self._handle_info_request(user_identifier, message, conversation_state)
+        
+        elif intent_analysis.get("primary_intent") == "human_contact":
+            return await self._handle_human_contact_request(user_identifier, message, conversation_state)
         
         else:
             return await self._handle_general_inquiry(user_identifier, message, conversation_state)
@@ -737,6 +757,45 @@ class NaturalConversationEngine:
         return {
             "action": "show_modifiable_requests",
             "modifiable_requests": [self._format_request_info(req) for req in modifiable_requests],
+            "system_actions": []
+        }
+    
+    async def _handle_info_request(
+        self, 
+        user_identifier: str, 
+        message: str,
+        conversation_state: ConversationState
+    ) -> Dict[str, Any]:
+        """Handle information requests (FAQ, help, service info)"""
+        
+        # Clear any ongoing conversation state for info requests
+        conversation_state.current_phase = ConversationPhase.GREETING
+        conversation_state.pending_request_data = None
+        if user_identifier in self.conversation_data:
+            self.conversation_data[user_identifier]['collected_info'] = {}
+        
+        return {
+            "action": "info_response",
+            "info_type": "service_info",
+            "system_actions": []
+        }
+    
+    async def _handle_human_contact_request(
+        self, 
+        user_identifier: str, 
+        message: str,
+        conversation_state: ConversationState
+    ) -> Dict[str, Any]:
+        """Handle requests to speak with a human"""
+        
+        # Clear any ongoing conversation state for human contact requests
+        conversation_state.current_phase = ConversationPhase.GREETING
+        conversation_state.pending_request_data = None
+        if user_identifier in self.conversation_data:
+            self.conversation_data[user_identifier]['collected_info'] = {}
+        
+        return {
+            "action": "human_contact_response",
             "system_actions": []
         }
     

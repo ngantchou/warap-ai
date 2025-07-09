@@ -76,6 +76,40 @@ class NaturalResponseGenerator:
                 "Je peux vous aider avec la plomberie, l'électricité, ou la réparation d'électroménager. Que puis-je faire pour vous ?",
                 "Djobea AI couvre tous vos besoins : plomberie, électricité, électroménager. Dites-moi tout !",
                 "Services à domicile - plomberie, électricité, réparations - je suis là pour vous aider !",
+            ],
+            "service_info": [
+                "🔧 **Djobea AI - Services à domicile** 🏠\n\n" +
+                "💧 **Plomberie** : Fuites, WC bloqués, robinets, tuyaux\n" +
+                "⚡ **Électricité** : Pannes, prises, interrupteurs, installations\n" +
+                "🔌 **Électroménager** : Réparation frigo, machine à laver, four, etc.\n\n" +
+                "📍 **Zone couverte** : Bonamoussadi, Douala\n" +
+                "⏰ **Disponible** : 24h/24, 7j/7\n" +
+                "💰 **Prix** : Devis gratuit, paiement après service\n\n" +
+                "💬 Dites-moi simplement votre problème et je vous trouve un expert !",
+                
+                "🛠️ **Nos services Djobea AI** :\n\n" +
+                "• **Plomberie** : Débouchage, réparations, installations\n" +
+                "• **Électricité** : Dépannage, câblage, mise aux normes\n" +
+                "• **Électroménager** : Diagnostic et réparation\n\n" +
+                "📞 **Comment ça marche** :\n" +
+                "1. Décrivez votre problème\n" +
+                "2. Je trouve un expert près de chez vous\n" +
+                "3. Intervention rapide et professionnelle\n\n" +
+                "Alors, quel est votre problème aujourd'hui ?"
+            ],
+            "human_contact": [
+                "Je suis votre assistant IA Djobea et je peux vous aider avec tous vos besoins de services à domicile ! 🤖\n\n" +
+                "Pour un contact humain :\n" +
+                "📞 **Urgences** : +237 6XX XX XX XX\n" +
+                "📧 **Email** : support@djobea.ai\n" +
+                "🕐 **Heures** : Lun-Ven 8h-17h\n\n" +
+                "Mais avant, laissez-moi vous aider ! Décrivez votre problème et je peux vous mettre en relation avec un expert immédiatement.",
+                
+                "Je comprends que vous préfériez parler à une personne ! 👥\n\n" +
+                "**Support client** : +237 6XX XX XX XX\n" +
+                "**Disponible** : Lun-Sam 8h-18h\n\n" +
+                "En attendant, puis-je vous aider avec votre problème ? " +
+                "Je peux vous connecter directement avec un plombier, électricien ou réparateur dans votre quartier !"
             ]
         }
         
@@ -142,6 +176,12 @@ class NaturalResponseGenerator:
                 return await self._handle_continuation_response(
                     intent_analysis, processing_result, conversation_state
                 )
+            
+            elif intent == "info_request":
+                return self._handle_info_response(processing_result, conversation_state)
+            
+            elif intent == "human_contact":
+                return self._handle_human_contact_response(processing_result, conversation_state)
             
             else:
                 return self._handle_general_response(user_message, conversation_state)
@@ -630,6 +670,18 @@ class NaturalResponseGenerator:
                 
         except Exception:
             return "récemment"
+    
+    def _handle_info_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
+        """Handle information requests responses"""
+        
+        # Return detailed service information
+        return random.choice(self.response_templates["service_info"])
+    
+    def _handle_human_contact_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
+        """Handle human contact requests responses"""
+        
+        # Return contact information and encourage trying AI first
+        return random.choice(self.response_templates["human_contact"])
     
     def _get_fallback_response(self) -> str:
         """Fallback response when generation fails"""
