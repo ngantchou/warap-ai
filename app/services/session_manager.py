@@ -148,7 +148,7 @@ class SessionManager:
         
         return None
     
-    async def get_user_active_session(self, user_id: str, db: Session = None) -> Optional[ConversationSession]:
+    async def get_user_active_session(self, user_id: int, db: Session = None) -> Optional[ConversationSession]:
         """
         Get active session for user
         """
@@ -502,7 +502,7 @@ class SessionManager:
             # Create session object
             session = ConversationSession(
                 session_id=db_session.session_id,
-                user_id=str(db_session.user_id),
+                user_id=db_session.user_id,
                 phone_number=db_session.phone_number,
                 initial_state=ConversationState(db_session.current_state)
             )

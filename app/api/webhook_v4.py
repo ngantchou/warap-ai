@@ -43,7 +43,21 @@ async def whatsapp_webhook_v4(request: Request, db: Session = Depends(get_db)):
         
         # Clean phone number
         phone_number = from_number.replace("+", "").replace(" ", "")
-        user_id = f"whatsapp_{phone_number}"
+        
+        # Find or create user first to get integer user_id
+        from app.models.database_models import User
+        user = db.query(User).filter(User.whatsapp_id == f"whatsapp_{phone_number}").first()
+        if not user:
+            user = User(
+                whatsapp_id=f"whatsapp_{phone_number}",
+                phone_number=phone_number,
+                name=f"User {phone_number}"
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        user_id = user.id
         
         logger.info(f"Processing WhatsApp message from {phone_number}: {message_body}")
         
@@ -114,7 +128,21 @@ async def chat_webhook_v4(request: Request, db: Session = Depends(get_db)):
         
         # Clean phone number
         phone_number = phone_number.replace("+", "").replace(" ", "")
-        user_id = f"chat_{phone_number}"
+        
+        # Find or create user for chat interface
+        from app.models.database_models import User
+        user = db.query(User).filter(User.whatsapp_id == f"chat_{phone_number}").first()
+        if not user:
+            user = User(
+                whatsapp_id=f"chat_{phone_number}",
+                phone_number=phone_number,
+                name=f"User {phone_number}"
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+        
+        user_id = user.id
         
         logger.info(f"Processing chat message from {phone_number}: {message}")
         

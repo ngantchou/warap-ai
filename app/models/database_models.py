@@ -605,6 +605,9 @@ def init_db(engine):
     # Import provider models to ensure their tables are created
     from app.models import provider_models
     
+    # Import dynamic services models to register them
+    from app.models.dynamic_services import Zone, ServiceCategory, Service, ServiceZone, DynamicServiceRequest, ServiceSearchLog
+    
     Base.metadata.create_all(bind=engine)
     
     # Create some initial data if needed

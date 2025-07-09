@@ -65,7 +65,7 @@ class EnhancedConversationManagerV4:
         self,
         message: str,
         phone_number: str,
-        user_id: str,
+        user_id: int,
         db: Session
     ) -> Dict[str, Any]:
         """
@@ -163,17 +163,17 @@ class EnhancedConversationManagerV4:
     async def _get_or_create_session(
         self,
         phone_number: str,
-        user_id: str,
+        user_id: int,
         db: Session
     ) -> ConversationSession:
         """Get or create conversation session"""
         from app.models.database_models import User, ConversationSession
         
         # Find or create user
-        user = db.query(User).filter(User.whatsapp_id == user_id).first()
+        user = db.query(User).filter(User.id == user_id).first()
         if not user:
             user = User(
-                whatsapp_id=user_id,
+                whatsapp_id=f"whatsapp_{phone_number}",
                 phone_number=phone_number,
                 name=f"User {phone_number}"
             )
@@ -556,7 +556,7 @@ class EnhancedConversationManagerV4:
     async def reset_conversation(
         self,
         phone_number: str,
-        user_id: str,
+        user_id: int,
         db: Session
     ) -> Dict[str, Any]:
         """Reset conversation for testing"""
