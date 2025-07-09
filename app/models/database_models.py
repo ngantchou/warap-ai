@@ -421,7 +421,7 @@ class ServiceRequest(Base):
     media_uploads = relationship("MediaUpload", back_populates="service_request")
 
 class Conversation(Base):
-    """Conversation log for debugging and improvement"""
+    """Enhanced conversation log with action code system for debugging and improvement"""
     __tablename__ = "conversations"
     
     id = Column(Integer, primary_key=True, index=True)
@@ -432,6 +432,14 @@ class Conversation(Base):
     message_content = Column(Text, nullable=False)
     ai_response = Column(Text, nullable=True)
     extracted_data = Column(JSON, nullable=True)
+    
+    # Action code system fields
+    action_code = Column(String(50), nullable=True)  # Action code executed
+    conversation_state = Column(String(50), nullable=True)  # Current conversation state
+    confidence_score = Column(Float, nullable=True)  # LLM confidence score
+    action_success = Column(Boolean, default=True)  # Whether action executed successfully
+    execution_time = Column(Float, nullable=True)  # Action execution time in seconds
+    action_metadata = Column(JSON, nullable=True)  # Additional metadata from action execution
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
