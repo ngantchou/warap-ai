@@ -178,7 +178,11 @@ class NaturalResponseGenerator:
                 )
             
             elif intent == "info_request":
-                return self._handle_info_response(processing_result, conversation_state)
+                # Check if it's an LLM-generated response
+                if processing_result.get("action") == "llm_info_response":
+                    return self._handle_llm_info_response(processing_result, conversation_state)
+                else:
+                    return self._handle_info_response(processing_result, conversation_state)
             
             elif intent == "human_contact":
                 return self._handle_human_contact_response(processing_result, conversation_state)
@@ -676,6 +680,10 @@ class NaturalResponseGenerator:
         
         # Return detailed service information
         return random.choice(self.response_templates["service_info"])
+    
+    def _handle_llm_info_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
+        """Handle LLM-generated information responses"""
+        return processing_result.get("response", "Je peux vous aider avec vos questions.")
     
     def _handle_human_contact_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
         """Handle human contact requests responses"""

@@ -43,6 +43,7 @@ class ConversationIntent(Enum):
     GENERAL_INQUIRY = "general_inquiry"
     CONTINUE_PREVIOUS = "continue_previous"
     EMERGENCY = "emergency"
+    INFO_REQUEST = "info_request"  # For FAQ, pricing, service info, etc.
 
 
 @dataclass
@@ -224,6 +225,16 @@ class NaturalConversationEngine:
         # Prioritize info and human contact intents - they should bypass continuation logic
         primary_intent = intent_analysis.get("primary_intent")
         is_priority_intent = primary_intent in ["info_request", "human_contact"]
+        
+        # Handle INFO_REQUEST intent by redirecting to the LLM conversation manager
+        if intent == ConversationIntent.INFO_REQUEST:
+            logger.info(f"Routing INFO_REQUEST to LLM conversation manager for user {user_identifier}")
+            # Clear conversation state for informational intents
+            conversation_state.current_phase = ConversationPhase.GREETING
+            conversation_state.pending_request_data = None
+            if user_identifier in self.conversation_data:
+                self.conversation_data[user_identifier]['collected_info'] = {}
+            return await self._handle_info_request(user_identifier, message, conversation_state)
         
         logger.info(f"Exempt intents: {exempt_intents}")
         logger.info(f"Intent in exempt list: {intent in exempt_intents}")
@@ -766,7 +777,7 @@ class NaturalConversationEngine:
         message: str,
         conversation_state: ConversationState
     ) -> Dict[str, Any]:
-        """Handle information requests (FAQ, help, service info)"""
+        """Handle information requests (FAQ, help, service info) using LLM system"""
         
         # Clear any ongoing conversation state for info requests
         conversation_state.current_phase = ConversationPhase.GREETING
@@ -774,11 +785,53 @@ class NaturalConversationEngine:
         if user_identifier in self.conversation_data:
             self.conversation_data[user_identifier]['collected_info'] = {}
         
-        return {
-            "action": "info_response",
-            "info_type": "service_info",
-            "system_actions": []
-        }
+        # Import here to avoid circular import
+        from app.services.llm_conversation_manager import LLMConversationManager
+        
+        # Create LLM conversation manager
+        llm_manager = LLMConversationManager(self.db)
+        
+        # Process the message through the LLM system
+        try:
+            llm_result = await llm_manager.process_message(
+                user_identifier=user_identifier,
+                message=message,
+                session_id=f"info_request_{user_identifier}"
+            )
+            
+            # Extract the response from LLM result
+            response_text = llm_result.get('response', 'Je peux vous aider avec vos questions.')
+            
+            return {
+                "action": "llm_info_response",
+                "response": response_text,
+                "system_actions": []
+            }
+        except Exception as e:
+            logger.error(f"Error in LLM info request processing: {e}")
+            # Fallback to basic info handling
+            message_lower = message.lower()
+            
+            if "faq" in message_lower or "aide" in message_lower:
+                return {
+                    "action": "provide_faq",
+                    "system_actions": []
+                }
+            elif "tarif" in message_lower or "prix" in message_lower:
+                return {
+                    "action": "provide_pricing",
+                    "system_actions": []
+                }
+            elif "service" in message_lower:
+                return {
+                    "action": "provide_services",
+                    "system_actions": []
+                }
+            else:
+                return {
+                    "action": "provide_general_info",
+                    "system_actions": []
+                }
     
     async def _handle_human_contact_request(
         self, 
