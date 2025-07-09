@@ -89,6 +89,8 @@ from app.api.knowledge_base_api import router as knowledge_base_router
 from app.api.tracking_api import router as tracking_router
 from app.api.escalation_detection_api import router as escalation_router
 from app.api.human_escalation_api import router as human_escalation_router
+from app.api.gestionnaire_chat import router as gestionnaire_chat_router
+from app.api.simple_gestionnaire_chat import router as simple_gestionnaire_chat_router
 
 # Include routers
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
@@ -111,6 +113,8 @@ app.include_router(knowledge_base_router, tags=["knowledge-base"])
 app.include_router(tracking_router, tags=["tracking"])
 app.include_router(escalation_router, tags=["escalation"])
 app.include_router(human_escalation_router, tags=["human-escalation"])
+app.include_router(gestionnaire_chat_router, tags=["gestionnaire-chat"])
+app.include_router(simple_gestionnaire_chat_router, tags=["simple-gestionnaire-chat"])
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)
