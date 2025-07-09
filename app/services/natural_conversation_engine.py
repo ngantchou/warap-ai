@@ -969,11 +969,18 @@ class NaturalConversationEngine:
                 logger.info(f"Providers notified for request {service_request.id}, keeping status as PENDING")
                 
                 # Notify providers using WhatsApp service
+                notification_errors = 0
                 for provider_score in best_providers:
                     provider = provider_score.provider
-                    asyncio.create_task(
-                        self._notify_provider(provider, service_request)
-                    )
+                    try:
+                        await self._notify_provider(provider, service_request)
+                    except Exception as e:
+                        notification_errors += 1
+                        logger.error(f"Provider notification failed for {provider.id}: {e}")
+                
+                # If all provider notifications failed, notify user about delays
+                if notification_errors == len(best_providers):
+                    await self._notify_user_about_internal_error(service_request, all_providers_failed=True)
             else:
                 logger.warning(f"No providers found for request {service_request.id}")
                 # Send no providers message immediately
@@ -1021,9 +1028,13 @@ class NaturalConversationEngine:
                 logger.info(f"Provider {provider.id} notified successfully for request {service_request.id}")
             else:
                 logger.error(f"Failed to notify provider {provider.id} for request {service_request.id}")
+                # Notify user about internal service error causing delays
+                await self._notify_user_about_internal_error(service_request)
                 
         except Exception as e:
             logger.error(f"Error notifying provider {provider.id}: {e}")
+            # Notify user about internal service error causing delays
+            await self._notify_user_about_internal_error(service_request)
     
     def _get_price_estimate(self, service_type: str) -> str:
         """Get price estimate for a service type"""
@@ -1033,6 +1044,60 @@ class NaturalConversationEngine:
             max_price = pricing.get("max", 0)
             return f"{min_price:,} - {max_price:,} XAF".replace(",", " ")
         return "À négocier"
+    
+    async def _notify_user_about_internal_error(self, service_request: ServiceRequest, all_providers_failed: bool = False):
+        """Notify user about internal service errors causing delays"""
+        try:
+            user = service_request.user
+            if not user:
+                logger.error(f"No user found for request {service_request.id} to notify about internal error")
+                return
+            
+            # Generate appropriate error message based on context
+            if all_providers_failed:
+                error_message = f"""⚠️ *Important - Délai Temporaire*
+
+Votre demande de {service_request.service_type} à {service_request.location} est bien enregistrée.
+
+🔧 *Problème technique temporaire* : Nous rencontrons actuellement des difficultés avec notre service de notification interne.
+
+⏰ *Délai estimé* : Le traitement de votre demande pourrait prendre un peu plus de temps que prévu (15-20 minutes au lieu de 5-10 minutes).
+
+✅ *Pas d'inquiétude* : 
+- Votre demande reste prioritaire
+- Nous recherchons activement un prestataire
+- Vous serez informé dès qu'un professionnel accepte
+
+💰 *Tarif estimé* : {self._get_price_estimate(service_request.service_type)}
+
+Merci de votre patience ! 🙏
+
+📞 *Djobea AI* - Service de mise en relation"""
+            else:
+                error_message = f"""⚠️ *Information - Délai Technique*
+
+Votre demande de {service_request.service_type} est en cours de traitement.
+
+🔧 *Notification* : Nous rencontrons un petit problème technique qui peut retarder légèrement le processus de notification aux prestataires.
+
+⏰ *Délai estimé* : +5-10 minutes supplémentaires
+
+✅ *Nous continuons* : La recherche de prestataires se poursuit normalement.
+
+Je vous tiendrai informé dès qu'un professionnel accepte votre demande.
+
+📞 *Djobea AI* - Service de mise en relation"""
+            
+            # Send error notification to user
+            success = self.whatsapp_service.send_message(user.whatsapp_id, error_message)
+            
+            if success:
+                logger.info(f"User {user.id} notified about internal service error for request {service_request.id}")
+            else:
+                logger.error(f"Failed to notify user {user.id} about internal service error for request {service_request.id}")
+                
+        except Exception as e:
+            logger.error(f"Error notifying user about internal service error for request {service_request.id}: {e}")
     
     async def _initiate_emergency_provider_matching(self, service_request: ServiceRequest):
         """Priority provider matching for emergencies"""

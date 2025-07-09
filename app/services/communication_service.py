@@ -77,11 +77,20 @@ class CommunicationService:
                 await self.start_proactive_updates(request_id, db)
             else:
                 logger.error(f"Failed to send confirmation for request {request_id}")
+                # Notify user about internal service error if confirmation fails
+                await self._notify_user_about_confirmation_error(request, user)
             
             return success
             
         except Exception as e:
             logger.error(f"Error sending instant confirmation for request {request_id}: {e}")
+            # Try to notify user about confirmation error
+            try:
+                request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+                if request and request.user:
+                    await self._notify_user_about_confirmation_error(request, request.user)
+            except Exception as notify_error:
+                logger.error(f"Failed to notify user about confirmation error: {notify_error}")
             return False
     
     async def start_proactive_updates(self, request_id: int, db: Session) -> None:
@@ -493,3 +502,50 @@ Je ne trouve pas de prestataires dans cette zone pour le moment.
         except Exception as e:
             logger.error(f"Error sending error message to {user_whatsapp_id}: {e}")
             return False
+    
+    async def _notify_user_about_confirmation_error(self, request: ServiceRequest, user: User) -> bool:
+        """Notify user about confirmation message delivery failure"""
+        try:
+            error_message = f"""⚠️ *Information - Problème de Notification*
+
+Votre demande de {request.service_type} à {request.location} est bien enregistrée et en cours de traitement.
+
+🔧 *Problème technique temporaire* : Nous rencontrons actuellement des difficultés avec notre service de notification automatique.
+
+✅ *Situation actuelle* :
+- Votre demande est prioritaire
+- Nous recherchons activement un prestataire
+- Le traitement continue normalement
+
+⏰ *Délai estimé* : La recherche de prestataires peut prendre quelques minutes supplémentaires (10-15 minutes au lieu de 5-10 minutes).
+
+💰 *Tarif estimé* : {self._get_price_estimate(request.service_type)}
+
+Vous serez informé dès qu'un professionnel accepte votre demande.
+
+Merci de votre patience ! 🙏
+
+📞 *Djobea AI* - Service de mise en relation"""
+            
+            # Try to send via WhatsApp (this might also fail, but it's worth trying)
+            success = self.whatsapp_service.send_message(user.whatsapp_id, error_message)
+            
+            if success:
+                logger.info(f"User {user.id} notified about confirmation error for request {request.id}")
+            else:
+                logger.error(f"Failed to notify user {user.id} about confirmation error - WhatsApp service unavailable")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error notifying user about confirmation error: {e}")
+            return False
+    
+    def _get_price_estimate(self, service_type: str) -> str:
+        """Get price estimate for a service type"""
+        pricing = self.settings.service_pricing.get(service_type.lower(), {})
+        if pricing:
+            min_price = pricing.get("min", 0)
+            max_price = pricing.get("max", 0)
+            return f"{min_price:,} - {max_price:,} XAF".replace(",", " ")
+        return "À négocier"
