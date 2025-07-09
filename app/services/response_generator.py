@@ -150,6 +150,13 @@ class NaturalResponseGenerator:
         logger.info(f"Response generator - intent: {intent}, action: {processing_result.get('action')}")
         
         try:
+            # Check for service request completion actions regardless of intent
+            action = processing_result.get("action", "")
+            if action in ["request_created", "request_completed", "continue_conversation", "continue_gathering"]:
+                return await self._handle_service_request_response(
+                    intent_analysis, processing_result, conversation_state
+                )
+            
             if intent == "new_service_request":
                 return await self._handle_service_request_response(
                     intent_analysis, processing_result, conversation_state
