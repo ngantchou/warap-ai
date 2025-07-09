@@ -36,6 +36,7 @@ class ConversationIntent(Enum):
     NEW_SERVICE_REQUEST = "new_service_request"
     STATUS_INQUIRY = "status_inquiry"
     VIEW_MY_REQUESTS = "view_my_requests"
+    VIEW_REQUEST_DETAILS = "view_request_details"
     MODIFY_REQUEST = "modify_request"
     CANCEL_REQUEST = "cancel_request"
     PROVIDER_FEEDBACK = "provider_feedback"
@@ -216,8 +217,9 @@ class NaturalConversationEngine:
         
         # Check if we're in an ongoing conversation and should continue gathering information
         # BUT allow specific intents to override this behavior
-        exempt_intents = [ConversationIntent.VIEW_MY_REQUESTS, ConversationIntent.MODIFY_REQUEST, 
-                         ConversationIntent.CANCEL_REQUEST, ConversationIntent.STATUS_INQUIRY]
+        exempt_intents = [ConversationIntent.VIEW_MY_REQUESTS, ConversationIntent.VIEW_REQUEST_DETAILS, 
+                         ConversationIntent.MODIFY_REQUEST, ConversationIntent.CANCEL_REQUEST, 
+                         ConversationIntent.STATUS_INQUIRY]
         
         logger.info(f"Exempt intents: {exempt_intents}")
         logger.info(f"Intent in exempt list: {intent in exempt_intents}")
@@ -259,6 +261,20 @@ class NaturalConversationEngine:
             if user_identifier in self.conversation_data:
                 self.conversation_data[user_identifier]['collected_info'] = {}
             return await self._handle_view_my_requests(user_identifier, conversation_state)
+        
+        elif intent == ConversationIntent.VIEW_REQUEST_DETAILS:
+            logger.info(f"Routing to view_request_details handler for user {user_identifier}")
+            request_ref = intent_analysis.get("request_reference")
+            logger.info(f"DEBUG - request_ref from intent_analysis: {request_ref}")
+            # Use the original message for better handling
+            original_message = message.strip()
+            logger.info(f"DEBUG - original_message: {original_message}")
+            # Clear conversation state for specific intents
+            conversation_state.current_phase = ConversationPhase.GREETING
+            conversation_state.pending_request_data = None
+            if user_identifier in self.conversation_data:
+                self.conversation_data[user_identifier]['collected_info'] = {}
+            return await self._handle_view_request_details(user_identifier, original_message, conversation_state)
         
         elif intent == ConversationIntent.CANCEL_REQUEST:
             return await self._handle_cancellation(user_identifier, message, conversation_state)
@@ -604,6 +620,75 @@ class NaturalConversationEngine:
             logger.error(f"DEBUG - Traceback: {traceback.format_exc()}")
             raise
     
+    async def _handle_view_request_details(
+        self, 
+        user_identifier: str, 
+        request_reference: str,
+        conversation_state: ConversationState
+    ) -> Dict[str, Any]:
+        """Handle viewing details of a specific request"""
+        
+        try:
+            user = await self._get_or_create_user(user_identifier)
+            
+            # Get user's requests ordered by creation date (newest first)
+            all_requests = self.db.query(ServiceRequest)\
+                .filter(ServiceRequest.user_id == user.id)\
+                .order_by(ServiceRequest.created_at.desc())\
+                .all()
+            
+            if not all_requests:
+                return {
+                    "action": "request_not_found",
+                    "request_reference": request_reference,
+                    "system_actions": []
+                }
+            
+            request = None
+            
+            # Try to find request by different reference formats
+            if request_reference.startswith("DJB-"):
+                # Direct DJB-XXX format
+                request_id = int(request_reference.split('-')[-1])
+                request = self.db.query(ServiceRequest)\
+                    .filter(ServiceRequest.user_id == user.id)\
+                    .filter(ServiceRequest.id == request_id)\
+                    .first()
+            else:
+                # Simple number - treat as position in user's request list
+                try:
+                    position = int(request_reference)
+                    if 1 <= position <= len(all_requests):
+                        request = all_requests[position - 1]  # Convert to 0-based index
+                except ValueError:
+                    pass
+            
+            if not request:
+                return {
+                    "action": "request_not_found",
+                    "request_reference": request_reference,
+                    "system_actions": []
+                }
+            
+            # Format detailed request information
+            request_details = self._format_detailed_request_info(request)
+            
+            return {
+                "action": "show_request_details",
+                "request_details": request_details,
+                "system_actions": []
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in _handle_view_request_details: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return {
+                "action": "error",
+                "error_message": "Erreur lors de la récupération des détails de la demande",
+                "system_actions": []
+            }
+    
     async def _handle_modification(
         self, 
         user_identifier: str, 
@@ -784,6 +869,64 @@ class NaturalConversationEngine:
             "status": request.status,
             "created_at": request.created_at.isoformat(),
             "urgency": request.urgency
+        }
+    
+    def _format_detailed_request_info(self, request: ServiceRequest) -> Dict[str, Any]:
+        """Format detailed request information for specific request view"""
+        
+        # Simple time display without timezone complications
+        time_display = "Récemment"
+        
+        # Try to format creation time safely
+        try:
+            if hasattr(request, 'created_at') and request.created_at:
+                # Convert to string and extract date/time part
+                created_str = str(request.created_at)
+                if ' ' in created_str:
+                    date_part, time_part = created_str.split(' ', 1)
+                    time_display = f"Créé: {date_part} {time_part[:8]}"  # Show only HH:MM:SS
+                else:
+                    time_display = f"Créé: {created_str[:19]}"
+        except Exception:
+            time_display = "Récemment"
+        
+        # Get status display
+        status_display = {
+            "en attente": "⏳ En attente",
+            "assigned": "👤 Assigné",
+            "in_progress": "🔧 En cours",
+            "completed": "✅ Terminé",
+            "cancelled": "❌ Annulé"
+        }.get(request.status, request.status)
+        
+        # Get urgency display
+        urgency_display = {
+            "urgent": "🚨 Urgent",
+            "normal": "📋 Normal",
+            "low": "⏰ Faible"
+        }.get(request.urgency, request.urgency)
+        
+        # Get service type display
+        service_display = {
+            "plomberie": "🔧 Plomberie",
+            "électricité": "⚡ Électricité",
+            "réparation électroménager": "🏠 Électroménager"
+        }.get(request.service_type, request.service_type)
+        
+        return {
+            "id": request.id,
+            "request_code": f"DJB-{str(request.id).zfill(3)}",
+            "service_type": request.service_type,
+            "service_display": service_display,
+            "description": request.description,
+            "location": request.location,
+            "status": request.status,
+            "status_display": status_display,
+            "urgency": request.urgency,
+            "urgency_display": urgency_display,
+            "created_at": request.created_at.isoformat(),
+            "time_since_creation": time_display,
+            "updated_at": request.updated_at.isoformat() if request.updated_at else None
         }
     
     async def _log_conversation_analytics(

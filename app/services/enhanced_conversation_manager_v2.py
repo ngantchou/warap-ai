@@ -104,8 +104,8 @@ class EnhancedConversationManagerV2:
             user = db.query(User).filter(User.phone_number == phone_number).first()
             if not user:
                 user = User(
+                    whatsapp_id=phone_number,
                     phone_number=phone_number,
-                    is_active=True,
                     created_at=datetime.now()
                 )
                 db.add(user)

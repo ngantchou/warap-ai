@@ -77,6 +77,20 @@ class IntentAnalyzer:
                 "modifier", "modify", "changer", "change", "corriger", "correct",
                 "ajuster", "adjust", "update", "mettre à jour", "edit", "éditer",
                 "je veux changer", "i want to change", "peut-on modifier", "can we modify"
+            ],
+            "request_reference_patterns": [
+                r"^djb-?\d{3}$",  # DJB-001, DJB001, djb-001, etc.
+                r"^\d{1,3}$",     # 1, 2, 3, etc. (simple numbers)
+                r"^#\d{1,3}$",    # #1, #2, #3, etc.
+                r"^demande\s*\d{1,3}$",  # "demande 1", "demande1", etc.
+                r"^numero\s*\d{1,3}$",   # "numero 1", "numero1", etc.
+                r"^request\s*\d{1,3}$"   # "request 1", "request1", etc.
+            ],
+            "request_details_patterns": [
+                "voir les détails", "détails de la demande", "voir détails",
+                "détails demande", "plus d'infos", "more info", "show details",
+                "voir plus", "see more", "informations détaillées",
+                "je veux voir", "i want to see", "montrer détails"
             ]
         }
     
@@ -132,6 +146,16 @@ class IntentAnalyzer:
                 "primary_intent": "view_my_requests",
                 "confidence": 0.9,
                 "method": "pattern_matching"
+            }
+        
+        # Check for request reference (numbers like "4" for DJB-004)
+        request_ref = self._extract_request_reference(message)
+        if request_ref:
+            return {
+                "primary_intent": "view_request_details",
+                "confidence": 0.95,
+                "method": "pattern_matching",
+                "request_reference": message.strip()  # Pass original message for flexible handling
             }
         
         # Check for modification requests
@@ -214,11 +238,12 @@ class IntentAnalyzer:
         1. new_service_request - Nouvelle demande de service
         2. status_inquiry - Demande de statut
         3. view_my_requests - Voir mes demandes existantes
-        4. modify_request - Modification de demande
-        5. cancel_request - Demande d'annulation
-        6. emergency - Situation d'urgence
-        7. continue_previous - Suite d'une conversation
-        8. general_inquiry - Question générale
+        4. view_request_details - Voir détails d'une demande spécifique
+        5. modify_request - Modification de demande
+        6. cancel_request - Demande d'annulation
+        7. emergency - Situation d'urgence
+        8. continue_previous - Suite d'une conversation
+        9. general_inquiry - Question générale
         
         PHASE ACTUELLE: {current_phase or 'unknown'}
         
@@ -385,6 +410,23 @@ class IntentAnalyzer:
         for landmark in landmarks:
             if landmark in message_lower:
                 return f"Près de {landmark}, Bonamoussadi"
+        
+        return None
+    
+    def _extract_request_reference(self, message: str) -> Optional[str]:
+        """Extract request reference from message (e.g., '4' -> 'DJB-004')"""
+        
+        message_clean = message.strip().lower()
+        
+        # Check each pattern
+        for pattern in self.cameroon_patterns["request_reference_patterns"]:
+            if re.match(pattern, message_clean):
+                # Extract the number
+                number_match = re.search(r'\d+', message_clean)
+                if number_match:
+                    number = int(number_match.group())
+                    # Format as DJB-XXX
+                    return f"DJB-{number:03d}"
         
         return None
     

@@ -123,6 +123,9 @@ class NaturalResponseGenerator:
                 response = self._handle_view_requests_response(processing_result, conversation_state)
                 return response if response else self._get_fallback_response()
             
+            elif intent == "view_request_details":
+                return self._handle_view_request_details_response(processing_result, conversation_state)
+            
             elif intent == "modify_request":
                 response = self._handle_modify_request_response(processing_result, conversation_state)
                 return response if response else self._get_fallback_response()
@@ -379,6 +382,64 @@ class NaturalResponseGenerator:
             response += "💬 Tapez le numéro de demande pour plus de détails ou dites-moi ce que vous voulez faire."
             
             return response
+    
+    def _handle_view_request_details_response(
+        self, 
+        processing_result: Dict[str, Any],
+        conversation_state: ConversationState
+    ) -> str:
+        """Handle view request details responses"""
+        
+        action = processing_result.get("action", "")
+        
+        if action == "request_not_found":
+            request_ref = processing_result.get("request_reference", "")
+            return f"Désolé, je ne trouve pas la demande {request_ref}. Vérifiez le numéro ou tapez 'voir mes demandes' pour la liste complète."
+        
+        elif action == "show_request_details":
+            request_details = processing_result.get("request_details", {})
+            
+            # Build detailed response
+            response = f"📋 **Détails de la demande {request_details.get('request_code', '')}**\n\n"
+            
+            # Service information
+            response += f"{request_details.get('service_display', '')} **Service**\n"
+            response += f"📍 **Zone** : {request_details.get('location', 'Non spécifié')}\n"
+            response += f"📝 **Description** : {request_details.get('description', 'Non spécifié')}\n"
+            response += f"{request_details.get('urgency_display', '')} **Urgence**\n"
+            response += f"{request_details.get('status_display', '')} **Statut**\n\n"
+            
+            # Timing information
+            response += f"⏰ **Créée** : {request_details.get('time_since_creation', 'Récemment')}\n"
+            
+            # Add contextual information based on status
+            status = request_details.get("status", "")
+            if status == "en attente":
+                response += "\n🔍 **Recherche** : Je cherche activement un prestataire pour vous.\n"
+            elif status == "assigned":
+                response += "\n✅ **Assignée** : Un prestataire a accepté votre demande.\n"
+            elif status == "in_progress":
+                response += "\n🔧 **En cours** : Le prestataire travaille sur votre demande.\n"
+            elif status == "completed":
+                response += "\n✅ **Terminée** : Service complété avec succès.\n"
+            elif status == "cancelled":
+                response += "\n❌ **Annulée** : Cette demande a été annulée.\n"
+            
+            # Add available actions
+            response += "\n💬 **Actions disponibles** :\n"
+            if status in ["en attente"]:
+                response += "• Tapez 'modifier' pour changer les détails\n"
+                response += "• Tapez 'annuler' pour annuler la demande\n"
+            response += "• Tapez 'voir mes demandes' pour la liste complète\n"
+            response += "• Tapez 'statut' pour un résumé rapide\n"
+            
+            return response
+        
+        elif action == "error":
+            error_msg = processing_result.get("error_message", "")
+            return f"Oops ! {error_msg}. Essayez de nouveau ou tapez 'voir mes demandes' pour la liste complète."
+        
+        return "Désolé, je n'ai pas pu récupérer les détails de cette demande. Essayez de nouveau."
     
     def _handle_modify_request_response(
         self, 
