@@ -21,7 +21,7 @@ from app.utils.conversation_state import ConversationState, ConversationPhase
 from app.models.database_models import User, ServiceRequest, Conversation, RequestStatus
 from app.services.provider_service import ProviderService
 from app.services.whatsapp_service import WhatsAppService
-# from app.services.notification_service import NotificationService
+from app.services.communication_service import CommunicationService
 from loguru import logger
 
 settings = get_settings()
@@ -948,17 +948,91 @@ class NaturalConversationEngine:
         # This will be handled by the existing provider matching system
         # in the background without user awareness
         try:
-            if hasattr(self, 'notification_service') and self.notification_service:
-                asyncio.create_task(
-                    self.notification_service.notify_providers_for_request(service_request)
-                )
+            # Initialize communication service and start background tasks
+            communication_service = CommunicationService()
+            
+            # Send instant confirmation with pricing estimate
+            await communication_service.send_instant_confirmation(service_request.id, self.db)
+            
+            # Start provider matching and notification process
+            from app.services.provider_matcher import ProviderMatcher
+            provider_matcher = ProviderMatcher(self.db)
+            
+            # Find and notify providers
+            best_providers = provider_matcher.get_best_providers(service_request, limit=3)
+            
+            if best_providers:
+                logger.info(f"Found {len(best_providers)} providers for request {service_request.id}")
+                
+                # Keep request in PENDING status until provider accepts
+                # service_request.status remains PENDING
+                logger.info(f"Providers notified for request {service_request.id}, keeping status as PENDING")
+                
+                # Notify providers using WhatsApp service
+                for provider_score in best_providers:
+                    provider = provider_score.provider
+                    asyncio.create_task(
+                        self._notify_provider(provider, service_request)
+                    )
             else:
-                # Fallback: Log that provider matching would start here
-                logger.info(f"Provider matching initiated for request {service_request.id}")
-                # The existing provider matching system will pick this up
+                logger.warning(f"No providers found for request {service_request.id}")
+                # Send no providers message immediately
+                await communication_service.send_error_message(
+                    service_request.user.whatsapp_id, 
+                    "no_providers"
+                )
+                
         except Exception as e:
             logger.error(f"Error initiating provider matching: {e}")
             # Continue without failing the conversation
+
+    async def _notify_provider(self, provider, service_request: ServiceRequest):
+        """Notify a provider about a new service request"""
+        try:
+            # Generate provider notification message
+            service_emoji = {
+                "plomberie": "🔧",
+                "électricité": "⚡",
+                "réparation électroménager": "🏠"
+            }.get(service_request.service_type.lower(), "🛠")
+            
+            message = f"""🚨 *NOUVELLE DEMANDE DE SERVICE*
+
+{service_emoji} *Service* : {service_request.service_type.title()}
+📍 *Localisation* : {service_request.location}
+📝 *Description* : {service_request.description}
+⏰ *Urgence* : {service_request.urgency or 'Normale'}
+
+💰 *Tarif estimé* : {self._get_price_estimate(service_request.service_type)}
+
+🤝 *Souhaitez-vous accepter cette demande ?*
+
+✅ Répondez *OUI* pour accepter
+❌ Répondez *NON* pour refuser
+
+⚠️ *Vous avez 10 minutes pour répondre*
+
+📞 *Djobea AI* - Service de mise en relation"""
+
+            # Send notification via WhatsApp
+            success = self.whatsapp_service.send_message(provider.whatsapp_id, message)
+            
+            if success:
+                logger.info(f"Provider {provider.id} notified successfully for request {service_request.id}")
+            else:
+                logger.error(f"Failed to notify provider {provider.id} for request {service_request.id}")
+                
+        except Exception as e:
+            logger.error(f"Error notifying provider {provider.id}: {e}")
+    
+    def _get_price_estimate(self, service_type: str) -> str:
+        """Get price estimate for a service type"""
+        pricing = settings.service_pricing.get(service_type.lower(), {})
+        if pricing:
+            min_price = pricing.get("min", 0)
+            max_price = pricing.get("max", 0)
+            return f"{min_price:,} - {max_price:,} XAF".replace(",", " ")
+        return "À négocier"
     
     async def _initiate_emergency_provider_matching(self, service_request: ServiceRequest):
         """Priority provider matching for emergencies"""

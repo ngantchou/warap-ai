@@ -65,7 +65,7 @@ class CommunicationService:
             )
             
             # Send confirmation
-            success = await self.whatsapp_service.send_message(
+            success = self.whatsapp_service.send_message(
                 user.whatsapp_id,
                 confirmation_message
             )
@@ -279,7 +279,7 @@ Aucun prestataire n'a répondu dans les temps pour votre demande de {request.ser
             
             message = "\n".join(message_parts)
             
-            success = await self.whatsapp_service.send_message(user.whatsapp_id, message)
+            success = self.whatsapp_service.send_message(user.whatsapp_id, message)
             
             if success:
                 # Stop proactive updates

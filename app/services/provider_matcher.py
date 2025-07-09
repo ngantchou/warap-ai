@@ -8,7 +8,7 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, String
 
 from app.models.database_models import Provider, ServiceRequest, User
 from app.config import get_settings
@@ -35,7 +35,7 @@ class ProviderMatcher:
     
     def __init__(self, db: Session):
         self.db = db
-        self.min_rating_threshold = 3.0
+        self.min_rating_threshold = 0.0  # Allow new providers with 0 rating
         self.max_providers_to_notify = 3
         
         # Scoring weights
@@ -75,17 +75,23 @@ class ProviderMatcher:
             
             # Filter by service type
             service_type = request.service_type.lower()
+            logger.info(f"Filtering providers by service type: {service_type}")
+            
+            # Check if services array contains the service type
             query = query.filter(
-                Provider.services.op('->>')(0).contains(service_type)
+                func.json_array_length(Provider.services) > 0
+            ).filter(
+                func.cast(Provider.services.op('->')(0), String).ilike(f'%{service_type}%')
             )
             
             # Filter by geographic coverage
             location_keywords = self._extract_location_keywords(request.location)
+            logger.info(f"Filtering providers by location keywords: {location_keywords}")
             if location_keywords:
                 coverage_conditions = []
                 for keyword in location_keywords:
                     coverage_conditions.append(
-                        Provider.coverage_areas.op('->>')(0).contains(keyword)
+                        func.cast(Provider.coverage_areas.op('->')(0), String).ilike(f'%{keyword}%')
                     )
                 query = query.filter(or_(*coverage_conditions))
             
