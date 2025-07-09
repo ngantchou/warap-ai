@@ -114,7 +114,7 @@ async def handle_web_chat(
         
         # Debug: Log extracted information
         print(f"Debug - Request info: {request_info}")
-        print(f"Debug - Service type detected: {request_info.get('service_type') if hasattr(request_info, 'get') else getattr(request_info, 'service_type', None)}")
+        print(f"Debug - Conversation phase: {request_info.get('phase', 'unknown')}")
         
         # Convert RequestInfo object to dict if needed
         if hasattr(request_info, '__dict__'):
