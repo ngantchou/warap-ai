@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard - Djobea AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+        .status-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+        }
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+        .status-busy { background-color: #ffc107; }
+        .status-away { background-color: #6c757d; }
+        
+        .urgency-critical { border-left: 5px solid #dc3545; }
+        .urgency-high { border-left: 5px solid #fd7e14; }
+        .urgency-medium { border-left: 5px solid #ffc107; }
+        .urgency-low { border-left: 5px solid #28a745; }
+        
+        .case-item {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .case-item:hover {
+            background-color: #f8f9fa;
+            transform: translateX(5px);
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        
+        .performance-chart {
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .chat-bubble {
+            background: #e9ecef;
+            border-radius: 15px;
+            padding: 12px;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
+        
+        .chat-bubble.agent {
+            background: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+        
+        .action-btn {
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .handover-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dee2e6;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #007bff;
+        }
+        
+        .auto-refresh {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 0.8rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-headset me-2"></i>
+                Agent Dashboard - Djobea AI
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item">
+                    <span class="navbar-text me-3">
+                        <i class="fas fa-user me-2"></i>
+                        <span id="agent-name">Agent</span>
+                    </span>
+                </div>
+                <div class="nav-item">
+                    <span class="status-badge" id="agent-status">Online</span>
+                </div>
+                <div class="nav-item ms-3">
+                    <div class="notification-bell">
+                        <i class="fas fa-bell fa-lg"></i>
+                        <span class="notification-badge" id="notification-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Agent Status Controls -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-toggle-on me-2"></i>
+                            Contrôles d'Agent
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Statut:</label>
+                                <select class="form-select" id="status-select">
+                                    <option value="online">En ligne</option>
+                                    <option value="offline">Hors ligne</option>
+                                    <option value="busy">Occupé</option>
+                                    <option value="away">Absent</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Disponibilité:</label>
+                                <select class="form-select" id="availability-select">
+                                    <option value="available">Disponible</option>
+                                    <option value="busy">Occupé</option>
+                                    <option value="unavailable">Indisponible</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-primary action-btn" onclick="updateAgentStatus()">
+                                <i class="fas fa-save me-2"></i>
+                                Mettre à jour le statut
+                            </button>
+                            <button class="btn btn-success auto-refresh ms-2" onclick="toggleAutoRefresh()">
+                                <i class="fas fa-sync me-2"></i>
+                                Auto-refresh: ON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tasks fa-2x mb-3"></i>
+                        <h3 id="active-cases">0</h3>
+                        <p class="mb-0">Cas actifs</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock fa-2x mb-3"></i>
+                        <h3 id="avg-response-time">0</h3>
+                        <p class="mb-0">Temps de réponse (min)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-star fa-2x mb-3"></i>
+                        <h3 id="satisfaction-score">0</h3>
+                        <p class="mb-0">Satisfaction client</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-2x mb-3"></i>
+                        <h3 id="resolution-rate">0%</h3>
+                        <p class="mb-0">Taux de résolution</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Cases -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Cas assignés
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="active-cases-list">
+                            <!-- Cases will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-hourglass-half me-2"></i>
+                            File d'attente
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center">
+                            <h3 id="pending-cases">0</h3>
+                            <p class="text-muted">Cas en attente d'assignation</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            Équipe
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="team-status">
+                            <!-- Team status will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Case Detail Modal -->
+    <div class="modal fade" id="caseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-file-alt me-2"></i>
+                        Détails du cas
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="case-details">
+                        <!-- Case details will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" onclick="takeAction()">
+                        <i class="fas fa-play me-2"></i>
+                        Prendre en charge
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentAgentId = 'agent_demo_001';
+        let autoRefreshInterval = null;
+        let selectedCaseId = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAgentDashboard();
+            startAutoRefresh();
+        });
+
+        // Load agent dashboard data
+        async function loadAgentDashboard() {
+            try {
+                const response = await fetch(`/api/v1/escalation/agents/${currentAgentId}/dashboard`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateAgentInfo(data.agent_info);
+                    updateMetrics(data.performance_metrics);
+                    updateActiveCases(data.assigned_cases);
+                    updatePendingCases(data.pending_cases_count);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Update agent information
+        function updateAgentInfo(agentInfo) {
+            document.getElementById('agent-name').textContent = agentInfo.name || 'Agent';
+            
+            const statusElement = document.getElementById('agent-status');
+            statusElement.textContent = agentInfo.status === 'online' ? 'En ligne' : 'Hors ligne';
+            statusElement.className = `status-badge status-${agentInfo.status}`;
+            
+            document.getElementById('status-select').value = agentInfo.status;
+            document.getElementById('availability-select').value = agentInfo.availability_status;
+        }
+
+        // Update metrics
+        function updateMetrics(metrics) {
+            document.getElementById('active-cases').textContent = metrics.cases_handled_30_days || 0;
+            document.getElementById('avg-response-time').textContent = metrics.avg_response_time_minutes || 0;
+            document.getElementById('satisfaction-score').textContent = (metrics.customer_satisfaction_score || 0).toFixed(1);
+            document.getElementById('resolution-rate').textContent = Math.round((metrics.resolution_rate || 0) * 100) + '%';
+        }
+
+        // Update active cases
+        function updateActiveCases(cases) {
+            const container = document.getElementById('active-cases-list');
+            
+            if (cases.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">Aucun cas actif</p>';
+                return;
+            }
+            
+            container.innerHTML = cases.map(case => `
+                <div class="case-item urgency-${case.urgency_level} p-3 mb-3 border rounded" 
+                     onclick="openCaseModal('${case.case_id}')">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6 class="mb-1">
+                                <i class="fas fa-tools me-2"></i>
+                                ${case.service_type} - ${case.problem_category}
+                            </h6>
+                            <p class="mb-1 text-muted small">
+                                ${case.problem_description.substring(0, 100)}...
+                            </p>
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                ${formatDate(case.created_at)}
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-${getUrgencyColor(case.urgency_level)} mb-2">
+                                ${case.urgency_level.toUpperCase()}
+                            </span>
+                            <br>
+                            <small class="text-muted">
+                                ID: ${case.case_id}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update pending cases count
+        function updatePendingCases(count) {
+            document.getElementById('pending-cases').textContent = count;
+        }
+
+        // Open case modal
+        async function openCaseModal(caseId) {
+            selectedCaseId = caseId;
+            
+            try {
+                const response = await fetch(`/api/v1/escalation/cases/${caseId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayCaseDetails(data.case, data.handover_session);
+                    new bootstrap.Modal(document.getElementById('caseModal')).show();
+                }
+            } catch (error) {
+                console.error('Error loading case details:', error);
+            }
+        }
+
+        // Display case details
+        function displayCaseDetails(caseData, handoverSession) {
+            const container = document.getElementById('case-details');
+            
+            container.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Informations du cas</h6>
+                        <p><strong>ID:</strong> ${caseData.case_id}</p>
+                        <p><strong>Service:</strong> ${caseData.service_type}</p>
+                        <p><strong>Urgence:</strong> 
+                            <span class="badge bg-${getUrgencyColor(caseData.urgency_level)}">
+                                ${caseData.urgency_level.toUpperCase()}
+                            </span>
+                        </p>
+                        <p><strong>Statut:</strong> ${caseData.status}</p>
+                        <p><strong>Créé:</strong> ${formatDate(caseData.created_at)}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Contexte client</h6>
+                        <p><strong>Utilisateur:</strong> ${caseData.user_id}</p>
+                        <p><strong>Session:</strong> ${caseData.session_id}</p>
+                        <p><strong>Score escalation:</strong> ${caseData.escalation_score}</p>
+                        <p><strong>Trigger:</strong> ${caseData.escalation_trigger}</p>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Description du problème</h6>
+                    <div class="bg-light p-3 rounded">
+                        ${caseData.problem_description}
+                    </div>
+                </div>
+                
+                ${handoverSession ? `
+                    <div class="handover-section mt-4">
+                        <h6>
+                            <i class="fas fa-handshake me-2"></i>
+                            Handover AI → Agent
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Résumé du cas:</strong></p>
+                                <p class="small">${handoverSession.case_summary}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Actions recommandées:</strong></p>
+                                <ul class="small">
+                                    ${handoverSession.recommended_actions.map(action => 
+                                        `<li>${action.description} (${action.priority})</li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <p><strong>Points clés identifiés:</strong></p>
+                            <div class="row">
+                                ${handoverSession.key_issues.map(issue => 
+                                    `<div class="col-md-4">
+                                        <div class="border rounded p-2 mb-2">
+                                            <small class="text-muted">${issue.type}</small>
+                                            <p class="small mb-0">${issue.description}</p>
+                                        </div>
+                                    </div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Take action on case
+        async function takeAction() {
+            if (!selectedCaseId) return;
+            
+            try {
+                const response = await fetch(`/api/v1/escalation/cases/${selectedCaseId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        status: 'in_progress',
+                        notes: 'Cas pris en charge par l\'agent'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('caseModal')).hide();
+                    loadAgentDashboard();
+                    showNotification('Cas pris en charge avec succès', 'success');
+                }
+            } catch (error) {
+                console.error('Error taking action:', error);
+                showNotification('Erreur lors de la prise en charge', 'error');
+            }
+        }
+
+        // Update agent status
+        async function updateAgentStatus() {
+            const status = document.getElementById('status-select').value;
+            const availability = document.getElementById('availability-select').value;
+            
+            try {
+                const response = await fetch(`/api/v1/escalation/agents/${currentAgentId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        agent_id: currentAgentId,
+                        status: status,
+                        availability_status: availability
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('Statut mis à jour avec succès', 'success');
+                    loadAgentDashboard();
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showNotification('Erreur lors de la mise à jour', 'error');
+            }
+        }
+
+        // Auto-refresh functionality
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(loadAgentDashboard, 30000); // 30 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function toggleAutoRefresh() {
+            const button = document.querySelector('.auto-refresh');
+            
+            if (autoRefreshInterval) {
+                stopAutoRefresh();
+                button.innerHTML = '<i class="fas fa-sync me-2"></i>Auto-refresh: OFF';
+                button.classList.remove('btn-success');
+                button.classList.add('btn-secondary');
+            } else {
+                startAutoRefresh();
+                button.innerHTML = '<i class="fas fa-sync me-2"></i>Auto-refresh: ON';
+                button.classList.remove('btn-secondary');
+                button.classList.add('btn-success');
+            }
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('fr-FR');
+        }
+
+        function getUrgencyColor(urgency) {
+            const colors = {
+                'critical': 'danger',
+                'high': 'warning',
+                'medium': 'info',
+                'low': 'success'
+            };
+            return colors[urgency] || 'secondary';
+        }
+
+        function showNotification(message, type) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

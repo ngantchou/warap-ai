@@ -88,6 +88,7 @@ from app.api.request_management_standalone import router as request_management_r
 from app.api.knowledge_base_api import router as knowledge_base_router
 from app.api.tracking_api import router as tracking_router
 from app.api.escalation_detection_api import router as escalation_router
+from app.api.human_escalation_api import router as human_escalation_router
 
 # Include routers
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
@@ -109,6 +110,7 @@ app.include_router(request_management_router, tags=["request-management"])
 app.include_router(knowledge_base_router, tags=["knowledge-base"])
 app.include_router(tracking_router, tags=["tracking"])
 app.include_router(escalation_router, tags=["escalation"])
+app.include_router(human_escalation_router, tags=["human-escalation"])
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)
@@ -137,6 +139,11 @@ async def admin_redirect():
     """Redirect /admin to /admin/"""
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/admin/", status_code=307)
+
+@app.get("/agent-dashboard", response_class=HTMLResponse)
+async def agent_dashboard_page(request: Request):
+    """Agent dashboard page for human escalation"""
+    return templates.TemplateResponse("agent_dashboard.html", {"request": request})
 
 # Health check endpoint
 @app.get("/health")
