@@ -30,6 +30,17 @@ class Settings(BaseSettings):
     # Provider authentication mode
     demo_mode: bool = os.getenv("DEMO_MODE", "false").lower() == "true"
     
+    # Redis Configuration
+    redis_host: str = os.getenv("REDIS_HOST", "localhost")
+    redis_port: int = int(os.getenv("REDIS_PORT", "6379"))
+    redis_db: int = int(os.getenv("REDIS_DB", "0"))
+    redis_password: str = os.getenv("REDIS_PASSWORD", "")
+    
+    # Session Management
+    session_cache_ttl: int = int(os.getenv("SESSION_CACHE_TTL", "7200"))  # 2 hours
+    session_timeout_minutes: int = int(os.getenv("SESSION_TIMEOUT_MINUTES", "120"))  # 2 hours
+    max_active_sessions: int = int(os.getenv("MAX_ACTIVE_SESSIONS", "1000"))
+    
     # Business rules
     max_concurrent_requests: int = 50
     response_timeout_seconds: int = 5
