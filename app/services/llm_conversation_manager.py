@@ -12,6 +12,7 @@ from datetime import datetime
 
 from app.services.ai_service import AIService
 from app.models.database_models import Conversation, User, ServiceRequest
+from app.models.dynamic_services import Zone, Service, ServiceZone
 from app.utils.conversation_state import ConversationState, ConversationPhase
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,51 @@ class LLMConversationManager:
         self.db = db
         self.ai_service = AIService()
         self.conversation_cache = {}
+    
+    async def _get_dynamic_services(self) -> List[Dict[str, Any]]:
+        """Get available services from database"""
+        try:
+            services = self.db.query(Service).filter(Service.status == "available").all()
+            return [
+                {
+                    "code": service.code,
+                    "name": service.name_fr or service.name,
+                    "description": service.description_fr or service.description,
+                    "category": service.category.name_fr if hasattr(service, 'category') and service.category else None,
+                    "min_price": getattr(service, 'min_price_xaf', None),
+                    "max_price": getattr(service, 'max_price_xaf', None)
+                }
+                for service in services
+            ]
+        except Exception as e:
+            logger.error(f"Error getting dynamic services: {e}")
+            # Fallback to static services
+            return [
+                {"code": "plomberie", "name": "Plomberie", "description": "fuites, robinets, WC, tuyaux", "min_price": 5000, "max_price": 15000},
+                {"code": "electricite", "name": "Électricité", "description": "pannes, prises, interrupteurs", "min_price": 3000, "max_price": 10000},
+                {"code": "electromenager", "name": "Électroménager", "description": "frigo, machine à laver, four", "min_price": 2000, "max_price": 8000}
+            ]
+    
+    async def _get_dynamic_zones(self) -> List[Dict[str, Any]]:
+        """Get available zones from database"""
+        try:
+            zones = self.db.query(Zone).filter(Zone.is_active == True).all()
+            return [
+                {
+                    "code": zone.code,
+                    "name": zone.name_fr or zone.name,
+                    "type": zone.zone_type,
+                    "full_path": zone.full_path
+                }
+                for zone in zones
+            ]
+        except Exception as e:
+            logger.error(f"Error getting dynamic zones: {e}")
+            # Fallback to static zones
+            return [
+                {"code": "bonamoussadi", "name": "Bonamoussadi", "type": "district", "full_path": "/cameroun/littoral/douala/bonamoussadi"},
+                {"code": "douala", "name": "Douala", "type": "city", "full_path": "/cameroun/littoral/douala"}
+            ]
     
     async def process_message(
         self, 
@@ -129,15 +175,27 @@ class LLMConversationManager:
         # Get cached conversation state
         cached_state = self.conversation_cache.get(user_identifier, {})
         
+        # Get dynamic services and zones
+        dynamic_services = await self._get_dynamic_services()
+        dynamic_zones = await self._get_dynamic_zones()
+        
+        # Format services for prompt
+        services_text = "\n".join([
+            f"- {service['name']}: {service['description']}" + 
+            (f" (Prix: {service['min_price']}-{service['max_price']} XAF)" if service['min_price'] and service['max_price'] else "")
+            for service in dynamic_services
+        ])
+        
+        # Format zones for prompt
+        zones_text = ", ".join([zone['name'] for zone in dynamic_zones])
+        
         system_prompt = f"""
         Tu es l'IA conversationnelle de Djobea AI, service camerounais de mise en relation pour services à domicile.
         
         SERVICES DISPONIBLES:
-        - Plomberie: fuites, robinets, WC, tuyaux, canalisations
-        - Électricité: pannes, prises, interrupteurs, éclairage
-        - Électroménager: frigo, machine à laver, four, climatisation
+        {services_text}
         
-        ZONE DE COUVERTURE: Bonamoussadi, Douala, Cameroun
+        ZONES DE COUVERTURE: {zones_text}
         
         ACTION CODES DISPONIBLES:
         
