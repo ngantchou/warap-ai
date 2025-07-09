@@ -66,6 +66,17 @@ class IntentAnalyzer:
             "cancellation_requests": [
                 "annuler", "cancel", "arrêter", "stop", "plus besoin", "don't need",
                 "changer d'avis", "changed mind", "i no want again", "forget am"
+            ],
+            "request_management": [
+                "voir mes demandes", "mes demandes", "my requests", "show requests",
+                "mes commandes", "my orders", "voir commandes", "show orders",
+                "voir ma demande", "my request", "check my request", "voir commande",
+                "vérifier demande", "check request", "what did i request", "qu'est-ce que j'ai demandé"
+            ],
+            "modification_requests": [
+                "modifier", "modify", "changer", "change", "corriger", "correct",
+                "ajuster", "adjust", "update", "mettre à jour", "edit", "éditer",
+                "je veux changer", "i want to change", "peut-on modifier", "can we modify"
             ]
         }
     
@@ -111,6 +122,22 @@ class IntentAnalyzer:
         if any(pattern in message_lower for pattern in self.cameroon_patterns["status_requests"]):
             return {
                 "primary_intent": "status_inquiry",
+                "confidence": 0.9,
+                "method": "pattern_matching"
+            }
+        
+        # Check for request management
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["request_management"]):
+            return {
+                "primary_intent": "view_my_requests",
+                "confidence": 0.9,
+                "method": "pattern_matching"
+            }
+        
+        # Check for modification requests
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["modification_requests"]):
+            return {
+                "primary_intent": "modify_request",
                 "confidence": 0.9,
                 "method": "pattern_matching"
             }
@@ -186,11 +213,12 @@ class IntentAnalyzer:
         INTENTIONS POSSIBLES:
         1. new_service_request - Nouvelle demande de service
         2. status_inquiry - Demande de statut
-        3. cancel_request - Demande d'annulation
+        3. view_my_requests - Voir mes demandes existantes
         4. modify_request - Modification de demande
-        5. emergency - Situation d'urgence
-        6. continue_previous - Suite d'une conversation
-        7. general_inquiry - Question générale
+        5. cancel_request - Demande d'annulation
+        6. emergency - Situation d'urgence
+        7. continue_previous - Suite d'une conversation
+        8. general_inquiry - Question générale
         
         PHASE ACTUELLE: {current_phase or 'unknown'}
         

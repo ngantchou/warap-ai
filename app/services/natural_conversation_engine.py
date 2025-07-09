@@ -35,6 +35,7 @@ class ConversationIntent(Enum):
     """User conversation intentions"""
     NEW_SERVICE_REQUEST = "new_service_request"
     STATUS_INQUIRY = "status_inquiry"
+    VIEW_MY_REQUESTS = "view_my_requests"
     MODIFY_REQUEST = "modify_request"
     CANCEL_REQUEST = "cancel_request"
     PROVIDER_FEEDBACK = "provider_feedback"
@@ -207,13 +208,28 @@ class NaturalConversationEngine:
         intent = ConversationIntent(intent_analysis.get("primary_intent", "general_inquiry"))
         logger.info(f"Processing intent: {intent} for user {user_identifier}")
         
+        # Debug logging
+        logger.info(f"Intent value: {intent}")
+        logger.info(f"Intent type: {type(intent)}")
+        logger.info(f"VIEW_MY_REQUESTS value: {ConversationIntent.VIEW_MY_REQUESTS}")
+        logger.info(f"Intent is VIEW_MY_REQUESTS: {intent == ConversationIntent.VIEW_MY_REQUESTS}")
+        
         # Check if we're in an ongoing conversation and should continue gathering information
-        if (conversation_state.current_phase == ConversationPhase.INFORMATION_GATHERING or 
-            conversation_state.pending_request_data is not None or
-            (user_identifier in self.conversation_data and 
-             self.conversation_data[user_identifier]['collected_info'] and
-             any(self.conversation_data[user_identifier]['collected_info'].values()))):
-            # Force continuation of previous conversation regardless of detected intent
+        # BUT allow specific intents to override this behavior
+        exempt_intents = [ConversationIntent.VIEW_MY_REQUESTS, ConversationIntent.MODIFY_REQUEST, 
+                         ConversationIntent.CANCEL_REQUEST, ConversationIntent.STATUS_INQUIRY]
+        
+        logger.info(f"Exempt intents: {exempt_intents}")
+        logger.info(f"Intent in exempt list: {intent in exempt_intents}")
+        
+        if (intent not in exempt_intents and
+            (conversation_state.current_phase == ConversationPhase.INFORMATION_GATHERING or 
+             conversation_state.pending_request_data is not None or
+             (user_identifier in self.conversation_data and 
+              self.conversation_data[user_identifier]['collected_info'] and
+              any(self.conversation_data[user_identifier]['collected_info'].values())))):
+            # Force continuation of previous conversation for non-specific intents
+            logger.info("Routing to continuation handler")
             return await self._handle_continuation(user_identifier, message, intent_analysis, conversation_state)
         
         # Handle explicit continuation intent first
@@ -233,6 +249,16 @@ class NaturalConversationEngine:
         
         elif intent == ConversationIntent.STATUS_INQUIRY:
             return await self._handle_status_inquiry(user_identifier, conversation_state)
+        
+        elif intent == ConversationIntent.VIEW_MY_REQUESTS:
+            logger.info(f"Routing to view_my_requests handler for user {user_identifier}")
+            # Clear conversation state for specific intents - don't continue previous conversations
+            conversation_state.current_phase = ConversationPhase.GREETING
+            conversation_state.pending_request_data = None
+            # Clear conversation data cache temporarily for this intent
+            if user_identifier in self.conversation_data:
+                self.conversation_data[user_identifier]['collected_info'] = {}
+            return await self._handle_view_my_requests(user_identifier, conversation_state)
         
         elif intent == ConversationIntent.CANCEL_REQUEST:
             return await self._handle_cancellation(user_identifier, message, conversation_state)
@@ -341,10 +367,9 @@ class NaturalConversationEngine:
         current_requests = self.db.query(ServiceRequest)\
             .filter(ServiceRequest.user_id == user.id)\
             .filter(ServiceRequest.status.in_([
-                RequestStatus.PENDING, 
-                RequestStatus.PROVIDER_NOTIFIED, 
-                RequestStatus.ASSIGNED, 
-                RequestStatus.IN_PROGRESS
+                RequestStatus.PENDING.value, 
+                RequestStatus.ASSIGNED.value, 
+                RequestStatus.IN_PROGRESS.value
             ]))\
             .order_by(ServiceRequest.created_at.desc())\
             .all()
@@ -377,8 +402,7 @@ class NaturalConversationEngine:
         active_requests = self.db.query(ServiceRequest)\
             .filter(ServiceRequest.user_id == user.id)\
             .filter(ServiceRequest.status.in_([
-                RequestStatus.PENDING, 
-                RequestStatus.PROVIDER_NOTIFIED
+                RequestStatus.PENDING.value
             ]))\
             .order_by(ServiceRequest.created_at.desc())\
             .all()
@@ -391,7 +415,7 @@ class NaturalConversationEngine:
         
         # Process cancellation
         request_to_cancel = active_requests[0]  # Most recent
-        request_to_cancel.status = RequestStatus.CANCELLED
+        request_to_cancel.status = RequestStatus.CANCELLED.value
         request_to_cancel.updated_at = datetime.utcnow()
         self.db.commit()
         
@@ -513,6 +537,124 @@ class NaturalConversationEngine:
                 "system_actions": []
             }
     
+    async def _handle_view_my_requests(
+        self, 
+        user_identifier: str, 
+        conversation_state: ConversationState
+    ) -> Dict[str, Any]:
+        """Handle viewing user's existing requests"""
+        
+        try:
+            user = await self._get_or_create_user(user_identifier)
+            
+            # Get all user's requests (both active and completed)
+            all_requests = self.db.query(ServiceRequest)\
+                .filter(ServiceRequest.user_id == user.id)\
+                .order_by(ServiceRequest.created_at.desc())\
+                .all()
+            
+            if not all_requests:
+                return {
+                    "action": "no_requests_found",
+                    "system_actions": []
+                }
+            
+            # Separate active and completed requests
+            active_requests = [req for req in all_requests if req.status in [
+                RequestStatus.PENDING.value, RequestStatus.ASSIGNED.value, RequestStatus.IN_PROGRESS.value
+            ]]
+            
+            completed_requests = [req for req in all_requests if req.status in [
+                RequestStatus.COMPLETED.value, RequestStatus.CANCELLED.value
+            ]]
+            
+            # Debug: Log the raw request data
+            logger.info(f"DEBUG - Active requests: {len(active_requests)}")
+            logger.info(f"DEBUG - Completed requests: {len(completed_requests)}")
+            
+            # Format request info carefully
+            active_formatted = []
+            for req in active_requests:
+                try:
+                    formatted = self._format_request_info(req)
+                    active_formatted.append(formatted)
+                    logger.info(f"DEBUG - Formatted active request: {formatted}")
+                except Exception as e:
+                    logger.error(f"DEBUG - Error formatting active request {req.id}: {e}")
+                    
+            completed_formatted = []
+            for req in completed_requests:
+                try:
+                    formatted = self._format_request_info(req)
+                    completed_formatted.append(formatted)
+                    logger.info(f"DEBUG - Formatted completed request: {formatted}")
+                except Exception as e:
+                    logger.error(f"DEBUG - Error formatting completed request {req.id}: {e}")
+            
+            return {
+                "action": "requests_listed",
+                "active_requests": active_formatted,
+                "completed_requests": completed_formatted,
+                "system_actions": []
+            }
+            
+        except Exception as e:
+            logger.error(f"DEBUG - Error in _handle_view_my_requests: {e}")
+            import traceback
+            logger.error(f"DEBUG - Traceback: {traceback.format_exc()}")
+            raise
+    
+    async def _handle_modification(
+        self, 
+        user_identifier: str, 
+        message: str,
+        intent_analysis: Dict[str, Any],
+        conversation_state: ConversationState
+    ) -> Dict[str, Any]:
+        """Handle request modification naturally"""
+        
+        user = await self._get_or_create_user(user_identifier)
+        
+        # Check if there's a specific request ID mentioned
+        request_id = self._extract_request_id(message)
+        
+        # Get modifiable requests
+        modifiable_requests = self.db.query(ServiceRequest)\
+            .filter(ServiceRequest.user_id == user.id)\
+            .filter(ServiceRequest.status.in_([
+                RequestStatus.PENDING.value
+            ]))\
+            .order_by(ServiceRequest.created_at.desc())\
+            .all()
+        
+        if not modifiable_requests:
+            return {
+                "action": "no_modifiable_requests",
+                "system_actions": []
+            }
+        
+        # If specific request ID mentioned, find it
+        if request_id:
+            target_request = next(
+                (req for req in modifiable_requests if str(req.id) == request_id or 
+                 f"DJB-{str(req.id).zfill(3)}" == request_id.upper()), 
+                None
+            )
+            if target_request:
+                return {
+                    "action": "show_request_details",
+                    "request_details": self._format_request_info(target_request),
+                    "modification_options": ["description", "urgency", "location"],
+                    "system_actions": []
+                }
+        
+        # Show all modifiable requests for selection
+        return {
+            "action": "show_modifiable_requests",
+            "modifiable_requests": [self._format_request_info(req) for req in modifiable_requests],
+            "system_actions": []
+        }
+    
     async def _handle_general_inquiry(
         self, 
         user_identifier: str, 
@@ -610,15 +752,36 @@ class NaturalConversationEngine:
             logger.error(f"Error initiating emergency provider matching: {e}")
             # Continue without failing the conversation
     
+    def _extract_request_id(self, message: str) -> Optional[str]:
+        """Extract request ID from user message"""
+        import re
+        
+        # Look for patterns like "DJB-001", "DJB-015", or just "001", "015"
+        patterns = [
+            r'DJB-(\d{3})',
+            r'#(\d{3})',
+            r'(\d{3})',
+            r'demande\s+(\d+)',
+            r'request\s+(\d+)'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, message, re.IGNORECASE)
+            if match:
+                return match.group(1) if pattern.startswith('DJB') or pattern.startswith('#') else match.group(1)
+        
+        return None
+    
     def _format_request_info(self, request: ServiceRequest) -> Dict[str, Any]:
         """Format request information for responses"""
         
         return {
             "id": request.id,
+            "request_code": f"DJB-{str(request.id).zfill(3)}",
             "service_type": request.service_type,
             "description": request.description,
             "location": request.location,
-            "status": request.status.value,
+            "status": request.status,
             "created_at": request.created_at.isoformat(),
             "urgency": request.urgency
         }

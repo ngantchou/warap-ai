@@ -1,0 +1,110 @@
+🤖 SYSTÈME : Session créée (sess_002) | État: INITIAL
+───────────────────────────────────────────────────────────────
+
+📱 CLIENT : "Bonjour, je veux voir mes demandes"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "Bonjour, je veux voir mes demandes",
+  "conversation_state": "INITIAL",
+  "user_requests": [
+    {"id": "DJB-001", "service": "LEAK_REPAIR", "status": "PROVIDER_NOTIFIED"},
+    {"id": "DJB-015", "service": "ELECTRICAL_REPAIR", "status": "COMPLETED"}
+  ]
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "Bonjour ! Voici vos demandes :\n\n📋 **DEMANDES ACTIVES** :\n\n🔧 **#DJB-001** - Réparation fuite\n📍 Bonamoussadi | 📱 Prestataire contacté\n⏰ Créée il y a 10 minutes\n\n📋 **DEMANDES TERMINÉES** :\n\n⚡ **#DJB-015** - Réparation électrique\n📍 Bonamoussadi | ✅ Terminée hier\n⭐ Note : 4.8/5\n\n💬 Tapez le numéro de demande pour plus de détails ou dites-moi ce que vous voulez faire.",
+  "action_code": "LIST_USER_REQUESTS",
+  "session_update": {
+    "conversation_state": "MANAGING_REQUESTS",
+    "available_actions": ["view_details", "modify", "cancel", "track"]
+  },
+  "confidence_score": 0.95
+}
+
+📱 CLIENT : "Je veux modifier la demande DJB-001"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "Je veux modifier la demande DJB-001",
+  "conversation_state": "MANAGING_REQUESTS",
+  "selected_request": {
+    "id": "DJB-001",
+    "service_code": "LEAK_REPAIR",
+    "zone_code": "BMS",
+    "description": "Fuite sous évier cuisine",
+    "urgency": "URGENT",
+    "status": "PROVIDER_NOTIFIED"
+  }
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "Voici les détails de votre demande **#DJB-001** :\n\n🔧 **Service** : Réparation de fuite\n📍 **Zone** : Bonamoussadi\n📝 **Description** : Fuite sous évier cuisine\n⚡ **Urgence** : URGENT\n📱 **Statut** : Prestataire contacté\n\nQue souhaitez-vous modifier ?\n1️⃣ Description du problème\n2️⃣ Niveau d'urgence\n3️⃣ Localisation\n\n⚠️ **Note** : Un prestataire a déjà été contacté, certains changements peuvent nécessiter une nouvelle recherche.",
+  "action_code": "SHOW_REQUEST_DETAILS",
+  "session_update": {
+    "conversation_state": "MODIFYING_REQUEST",
+    "modification_options": ["description", "urgency", "location"]
+  },
+  "confidence_score": 0.94
+}
+
+📱 CLIENT : "Je veux changer l'urgence, finalement c'est pas si urgent"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "Je veux changer l'urgence, finalement c'est pas si urgent",
+  "conversation_state": "MODIFYING_REQUEST",
+  "modification_type": "urgency",
+  "current_value": "URGENT"
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "Compris ! Quel niveau d'urgence préférez-vous maintenant ?\n\n⚡ **URGENT** → Dans l'heure (actuel)\n🌅 **AUJOURD_HUI** → Dans la journée\n🌄 **DEMAIN** → Demain\n📅 **CETTE_SEMAINE** → Cette semaine\n🕐 **FLEXIBLE** → Quand c'est possible\n\nChoisissez l'option qui vous convient.",
+  "action_code": "COLLECT_URGENCY",
+  "extracted_data": {
+    "modification_field": "urgency",
+    "current_urgency": "URGENT"
+  },
+  "session_update": {
+    "conversation_state": "COLLECTING_URGENCY",
+    "next_expected": "new_urgency_level"
+  },
+  "confidence_score": 0.96
+}
+
+📱 CLIENT : "DEMAIN"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "DEMAIN",
+  "conversation_state": "COLLECTING_URGENCY",
+  "modification_data": {
+    "field": "urgency",
+    "old_value": "URGENT",
+    "new_value": "DEMAIN"
+  }
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "✅ **Modification confirmée** !\n\n🔄 **Changement** : Urgence URGENT → DEMAIN\n\n📋 **Nouvelle configuration** :\n🔧 Service : Réparation de fuite\n📍 Zone : Bonamoussadi\n📝 Description : Fuite sous évier cuisine\n⚡ **Urgence** : DEMAIN\n💰 Tarif estimé : 8,000 - 15,000 XAF\n\n⚠️ **Impact** : Le prestataire sera informé du changement d'urgence.\n\n✅ Modification sauvegardée !",
+  "action_code": "MODIFY_REQUEST",
+  "extracted_data": {
+    "request_id": "DJB-001",
+    "field_modified": "urgency",
+    "new_value": "DEMAIN"
+  },
+  "session_update": {
+    "conversation_state": "REQUEST_MODIFIED",
+    "modification_saved": true
+  },
+  "confidence_score": 0.98
+}
+
+🤖 SYSTÈME : Modification sauvegardée → Notification prestataire
+───────────────────────────────────────────────────────────────
+✅ SUCCÈS : 4 tours de conversation | Modification appliquée

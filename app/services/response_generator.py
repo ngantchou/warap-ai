@@ -119,6 +119,14 @@ class NaturalResponseGenerator:
             elif intent == "status_inquiry":
                 return self._handle_status_response(processing_result, conversation_state)
             
+            elif intent == "view_my_requests":
+                response = self._handle_view_requests_response(processing_result, conversation_state)
+                return response if response else self._get_fallback_response()
+            
+            elif intent == "modify_request":
+                response = self._handle_modify_request_response(processing_result, conversation_state)
+                return response if response else self._get_fallback_response()
+            
             elif intent == "cancel_request":
                 return self._handle_cancellation_response(processing_result)
             
@@ -276,10 +284,9 @@ class NaturalResponseGenerator:
             service_type = request.get("service_type", "service")
             
             status_messages = {
-                "PENDING": f"Votre demande de {service_type} est en cours de traitement. Je recherche le meilleur prestataire pour vous.",
-                "PROVIDER_NOTIFIED": f"J'ai trouvé des prestataires pour votre {service_type} et je leur ai transmis votre demande. Attente de leur réponse...",
-                "ASSIGNED": f"Excellente nouvelle ! Un prestataire a accepté votre demande de {service_type}. Il va vous contacter directement.",
-                "IN_PROGRESS": f"Votre service de {service_type} est en cours. Le prestataire devrait être chez vous ou en route."
+                "en attente": f"Votre demande de {service_type} est en cours de traitement. Je recherche le meilleur prestataire pour vous.",
+                "assignée": f"Excellente nouvelle ! Un prestataire a accepté votre demande de {service_type}. Il va vous contacter directement.",
+                "en cours": f"Votre service de {service_type} est en cours. Le prestataire devrait être chez vous ou en route."
             }
             
             return status_messages.get(status, f"Votre demande de {service_type} est en cours de traitement.")
@@ -327,6 +334,107 @@ class NaturalResponseGenerator:
         full_response += "\n\nPour les urgences, nos prestataires répondent généralement dans les 5-10 minutes. Je vous tiens informé !"
         
         return full_response
+    
+    def _handle_view_requests_response(
+        self, 
+        processing_result: Dict[str, Any],
+        conversation_state: ConversationState
+    ) -> str:
+        """Handle view requests responses"""
+        
+        action = processing_result.get("action", "")
+        
+        if action == "no_requests_found":
+            return random.choice([
+                "Vous n'avez pas encore fait de demande de service. Voulez-vous commencer maintenant ?",
+                "Aucune demande trouvée. De quoi avez-vous besoin aujourd'hui ?",
+                "Pas de demande enregistrée. Je peux vous aider avec un problème de plomberie, électricité, ou électroménager !"
+            ])
+        
+        elif action == "requests_listed":
+            active_requests = processing_result.get("active_requests", [])
+            completed_requests = processing_result.get("completed_requests", [])
+            
+            response = "📋 **Voici vos demandes :**\n\n"
+            
+            # Show active requests
+            if active_requests:
+                response += "📋 **DEMANDES ACTIVES :**\n\n"
+                for req in active_requests:
+                    service_emoji = self._get_service_emoji(req.get("service_type", ""))
+                    status_text = self._get_status_text(req.get("status", ""))
+                    response += f"{service_emoji} **#{req.get('request_code', req.get('id'))}** - {req.get('service_type', 'Service')}\n"
+                    response += f"📍 {req.get('location', 'Location')} | {status_text}\n"
+                    response += f"⏰ Créée {self._format_time_ago(req.get('created_at', ''))}\n\n"
+            
+            # Show completed requests
+            if completed_requests:
+                response += "📋 **DEMANDES TERMINÉES :**\n\n"
+                for req in completed_requests:
+                    service_emoji = self._get_service_emoji(req.get("service_type", ""))
+                    status_text = self._get_status_text(req.get("status", ""))
+                    response += f"{service_emoji} **#{req.get('request_code', req.get('id'))}** - {req.get('service_type', 'Service')}\n"
+                    response += f"📍 {req.get('location', 'Location')} | {status_text}\n\n"
+            
+            response += "💬 Tapez le numéro de demande pour plus de détails ou dites-moi ce que vous voulez faire."
+            
+            return response
+    
+    def _handle_modify_request_response(
+        self, 
+        processing_result: Dict[str, Any],
+        conversation_state: ConversationState
+    ) -> str:
+        """Handle modify request responses"""
+        
+        action = processing_result.get("action", "")
+        
+        if action == "no_modifiable_requests":
+            return random.choice([
+                "Vous n'avez pas de demande en cours qui peut être modifiée. Les demandes déjà assignées ne peuvent plus être changées.",
+                "Aucune demande modifiable trouvée. Une fois qu'un prestataire accepte, les modifications sont limitées.",
+                "Pas de demande en cours de modification possible pour le moment."
+            ])
+        
+        elif action == "show_modifiable_requests":
+            requests = processing_result.get("modifiable_requests", [])
+            
+            response = "Voici vos demandes modifiables :\n\n"
+            
+            for req in requests:
+                service_emoji = self._get_service_emoji(req.get("service_type", ""))
+                status_text = self._get_status_text(req.get("status", ""))
+                response += f"{service_emoji} **#{req.get('request_code', req.get('id'))}** - {req.get('service_type', 'Service')}\n"
+                response += f"📍 {req.get('location', 'Location')} | {status_text}\n"
+                response += f"📝 {req.get('description', 'Description')}\n\n"
+            
+            response += "Tapez le numéro de la demande que vous voulez modifier (ex: DJB-001)"
+            
+            return response
+        
+        elif action == "show_request_details":
+            request_details = processing_result.get("request_details", {})
+            modification_options = processing_result.get("modification_options", [])
+            
+            service_emoji = self._get_service_emoji(request_details.get("service_type", ""))
+            status_text = self._get_status_text(request_details.get("status", ""))
+            
+            response = f"Voici les détails de votre demande **#{request_details.get('request_code', request_details.get('id'))}** :\n\n"
+            response += f"{service_emoji} **Service** : {request_details.get('service_type', 'Service')}\n"
+            response += f"📍 **Zone** : {request_details.get('location', 'Location')}\n"
+            response += f"📝 **Description** : {request_details.get('description', 'Description')}\n"
+            response += f"⚡ **Urgence** : {request_details.get('urgency', 'normale')}\n"
+            response += f"📱 **Statut** : {status_text}\n\n"
+            
+            response += "Que souhaitez-vous modifier ?\n"
+            response += "1️⃣ Description du problème\n"
+            response += "2️⃣ Niveau d'urgence\n"
+            response += "3️⃣ Localisation\n\n"
+            
+            if request_details.get("status") == "assignée":
+                response += "⚠️ **Note** : Un prestataire a déjà été assigné, certains changements peuvent nécessiter une nouvelle recherche."
+            
+            return response
     
     async def _handle_continuation_response(
         self, 
@@ -402,14 +510,65 @@ class NaturalResponseGenerator:
         
         return None
     
-    def _get_fallback_response(self) -> str:
-        """Fallback response when generation fails"""
+    def _get_service_emoji(self, service_type: str) -> str:
+        """Get emoji for service type"""
         
-        return random.choice([
-            "Je suis là pour vous aider ! Pouvez-vous me dire de quel service vous avez besoin ?",
-            "Djobea AI à votre service. Décrivez-moi votre problème et je vous trouve la solution !",
-            "Bonjour ! Comment puis-je vous aider avec vos services à domicile aujourd'hui ?"
-        ])
+        emoji_map = {
+            "plomberie": "🔧",
+            "électricité": "⚡",
+            "réparation électroménager": "🏠",
+            "électroménager": "🏠"
+        }
+        
+        return emoji_map.get(service_type, "🔧")
+    
+    def _get_status_text(self, status) -> str:
+        """Get human-readable status text"""
+        
+        # Handle RequestStatus enum
+        if hasattr(status, 'value'):
+            status_str = status.value
+        else:
+            status_str = str(status)
+        
+        status_map = {
+            "en attente": "📱 En attente",
+            "assignée": "✅ Assignée",
+            "en cours": "🔄 En cours",
+            "terminée": "✅ Terminée",
+            "paiement en attente": "💳 Paiement en attente",
+            "paiement terminé": "✅ Paiement terminé",
+            "annulée": "❌ Annulée"
+        }
+        
+        return status_map.get(status_str, "📱 En cours")
+    
+    def _format_time_ago(self, created_at: str) -> str:
+        """Format time ago from ISO string"""
+        
+        try:
+            from datetime import datetime
+            
+            # Parse ISO datetime
+            created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            now = datetime.now()
+            
+            # Calculate time difference
+            diff = now - created_time
+            
+            if diff.days > 0:
+                return f"il y a {diff.days} jour{'s' if diff.days > 1 else ''}"
+            elif diff.seconds > 3600:
+                hours = diff.seconds // 3600
+                return f"il y a {hours} heure{'s' if hours > 1 else ''}"
+            elif diff.seconds > 60:
+                minutes = diff.seconds // 60
+                return f"il y a {minutes} minute{'s' if minutes > 1 else ''}"
+            else:
+                return "il y a quelques secondes"
+                
+        except Exception:
+            return "récemment"
     
     def _get_fallback_response(self) -> str:
         """Fallback response when generation fails"""
