@@ -44,6 +44,7 @@ class ConversationIntent(Enum):
     CONTINUE_PREVIOUS = "continue_previous"
     EMERGENCY = "emergency"
     INFO_REQUEST = "info_request"  # For FAQ, pricing, service info, etc.
+    HUMAN_CONTACT = "human_contact"  # For requesting human support
 
 
 @dataclass
@@ -122,8 +123,13 @@ class NaturalConversationEngine:
             
             # Generate natural response
             logger.info(f"Processing result before response generation: {result}")
+            
+            # Pass intent as string to response generator  
+            intent_analysis_for_response = intent_analysis.copy()
+            intent_analysis_for_response["primary_intent"] = intent_analysis.get("primary_intent", "general_inquiry")
+            
             final_response = await self.response_generator.generate_natural_response(
-                intent_analysis, conversation_state, result, message
+                intent_analysis_for_response, conversation_state, result, message
             )
             logger.info(f"Generated response: {final_response}")
             
@@ -207,27 +213,38 @@ class NaturalConversationEngine:
     ) -> Dict[str, Any]:
         """Process conversation based on detected intent"""
         
-        intent = ConversationIntent(intent_analysis.get("primary_intent", "general_inquiry"))
+        primary_intent = intent_analysis.get("primary_intent", "general_inquiry")
+        
+        # Map string intents to enum values
+        intent_mapping = {
+            "new_service_request": ConversationIntent.NEW_SERVICE_REQUEST,
+            "status_inquiry": ConversationIntent.STATUS_INQUIRY,
+            "view_my_requests": ConversationIntent.VIEW_MY_REQUESTS,
+            "view_request_details": ConversationIntent.VIEW_REQUEST_DETAILS,
+            "modify_request": ConversationIntent.MODIFY_REQUEST,
+            "cancel_request": ConversationIntent.CANCEL_REQUEST,
+            "provider_feedback": ConversationIntent.PROVIDER_FEEDBACK,
+            "general_inquiry": ConversationIntent.GENERAL_INQUIRY,
+            "continue_previous": ConversationIntent.CONTINUE_PREVIOUS,
+            "emergency": ConversationIntent.EMERGENCY,
+            "info_request": ConversationIntent.INFO_REQUEST,
+            "human_contact": ConversationIntent.HUMAN_CONTACT
+        }
+        
+        intent = intent_mapping.get(primary_intent, ConversationIntent.GENERAL_INQUIRY)
         logger.info(f"Processing intent: {intent} for user {user_identifier}")
         
-        # Debug logging
-        logger.info(f"Intent value: {intent}")
-        logger.info(f"Intent type: {type(intent)}")
-        logger.info(f"VIEW_MY_REQUESTS value: {ConversationIntent.VIEW_MY_REQUESTS}")
-        logger.info(f"Intent is VIEW_MY_REQUESTS: {intent == ConversationIntent.VIEW_MY_REQUESTS}")
+        # Direct routing for specific intents
+        if intent == ConversationIntent.HUMAN_CONTACT:
+            logger.info(f"Routing HUMAN_CONTACT to handler for user {user_identifier}")
+            # Clear conversation state for human contact requests
+            conversation_state.current_phase = ConversationPhase.GREETING
+            conversation_state.pending_request_data = None
+            if user_identifier in self.conversation_data:
+                self.conversation_data[user_identifier]['collected_info'] = {}
+            return await self._handle_human_contact_request(user_identifier, message, conversation_state)
         
-        # Check if we're in an ongoing conversation and should continue gathering information
-        # BUT allow specific intents to override this behavior
-        exempt_intents = [ConversationIntent.VIEW_MY_REQUESTS, ConversationIntent.VIEW_REQUEST_DETAILS, 
-                         ConversationIntent.MODIFY_REQUEST, ConversationIntent.CANCEL_REQUEST, 
-                         ConversationIntent.STATUS_INQUIRY]
-        
-        # Prioritize info and human contact intents - they should bypass continuation logic
-        primary_intent = intent_analysis.get("primary_intent")
-        is_priority_intent = primary_intent in ["info_request", "human_contact"]
-        
-        # Handle INFO_REQUEST intent by redirecting to the LLM conversation manager
-        if intent == ConversationIntent.INFO_REQUEST:
+        elif intent == ConversationIntent.INFO_REQUEST:
             logger.info(f"Routing INFO_REQUEST to LLM conversation manager for user {user_identifier}")
             # Clear conversation state for informational intents
             conversation_state.current_phase = ConversationPhase.GREETING
@@ -236,25 +253,18 @@ class NaturalConversationEngine:
                 self.conversation_data[user_identifier]['collected_info'] = {}
             return await self._handle_info_request(user_identifier, message, conversation_state)
         
-        logger.info(f"Exempt intents: {exempt_intents}")
-        logger.info(f"Intent in exempt list: {intent in exempt_intents}")
-        logger.info(f"Primary intent: {primary_intent}")
-        logger.info(f"Is priority intent: {is_priority_intent}")
+        # Check if we're in an ongoing conversation and should continue gathering information
+        # BUT allow specific intents to override this behavior
+        exempt_intents = [ConversationIntent.VIEW_MY_REQUESTS, ConversationIntent.VIEW_REQUEST_DETAILS, 
+                         ConversationIntent.MODIFY_REQUEST, ConversationIntent.CANCEL_REQUEST, 
+                         ConversationIntent.STATUS_INQUIRY]
         
         # Skip continuation logic for priority intents
-        if is_priority_intent:
-            logger.info(f"Processing priority intent: {primary_intent}")
-            # Clear any ongoing conversation for priority intents
-            conversation_state.current_phase = ConversationPhase.GREETING
-            conversation_state.pending_request_data = None
-            if user_identifier in self.conversation_data:
-                self.conversation_data[user_identifier]['collected_info'] = {}
-        elif (intent not in exempt_intents and
-            (conversation_state.current_phase == ConversationPhase.INFORMATION_GATHERING or 
+        if intent not in exempt_intents and (conversation_state.current_phase == ConversationPhase.INFORMATION_GATHERING or 
              conversation_state.pending_request_data is not None or
              (user_identifier in self.conversation_data and 
               self.conversation_data[user_identifier]['collected_info'] and
-              any(self.conversation_data[user_identifier]['collected_info'].values())))):
+              any(self.conversation_data[user_identifier]['collected_info'].values()))):
             # Force continuation of previous conversation for non-specific intents
             logger.info("Routing to continuation handler")
             return await self._handle_continuation(user_identifier, message, intent_analysis, conversation_state)
@@ -309,12 +319,6 @@ class NaturalConversationEngine:
         
         elif intent == ConversationIntent.EMERGENCY:
             return await self._handle_emergency(user_identifier, message, intent_analysis, conversation_state)
-        
-        elif intent_analysis.get("primary_intent") == "info_request":
-            return await self._handle_info_request(user_identifier, message, conversation_state)
-        
-        elif intent_analysis.get("primary_intent") == "human_contact":
-            return await self._handle_human_contact_request(user_identifier, message, conversation_state)
         
         else:
             return await self._handle_general_inquiry(user_identifier, message, conversation_state)
@@ -847,9 +851,33 @@ class NaturalConversationEngine:
         if user_identifier in self.conversation_data:
             self.conversation_data[user_identifier]['collected_info'] = {}
         
+        # Get user information for context
+        user = await self._get_or_create_user(user_identifier)
+        
+        # Check if user has any active requests
+        active_requests = self.db.query(ServiceRequest)\
+            .filter(ServiceRequest.user_id == user.id)\
+            .filter(ServiceRequest.status.in_([
+                RequestStatus.PENDING.value,
+                RequestStatus.ASSIGNED.value,
+                RequestStatus.IN_PROGRESS.value
+            ]))\
+            .order_by(ServiceRequest.created_at.desc())\
+            .all()
+        
+        # Context for human contact
+        context = {
+            "user_phone": user.phone_number,
+            "user_name": user.name,
+            "active_requests_count": len(active_requests),
+            "recent_requests": [self._format_request_info(req) for req in active_requests[:3]] if active_requests else [],
+            "contact_reason": message.lower()
+        }
+        
         return {
             "action": "human_contact_response",
-            "system_actions": []
+            "context": context,
+            "system_actions": ["create_support_ticket"]
         }
     
     async def _handle_general_inquiry(

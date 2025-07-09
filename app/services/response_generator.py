@@ -98,18 +98,19 @@ class NaturalResponseGenerator:
                 "Alors, quel est votre problème aujourd'hui ?"
             ],
             "human_contact": [
-                "Je suis votre assistant IA Djobea et je peux vous aider avec tous vos besoins de services à domicile ! 🤖\n\n" +
-                "Pour un contact humain :\n" +
-                "📞 **Urgences** : +237 6XX XX XX XX\n" +
-                "📧 **Email** : support@djobea.ai\n" +
-                "🕐 **Heures** : Lun-Ven 8h-17h\n\n" +
-                "Mais avant, laissez-moi vous aider ! Décrivez votre problème et je peux vous mettre en relation avec un expert immédiatement.",
+                "🧑‍💼 **Contact avec un gestionnaire**\n\n" +
+                "Je comprends que vous souhaitez parler à une personne.\n" +
+                "Un de nos gestionnaires va vous contacter dans les plus brefs délais.\n\n" +
+                "📞 **Temps d'attente estimé** : 5-10 minutes\n" +
+                "💬 **Nous vous rappelons sur** : {phone_number}\n\n" +
+                "En attendant, je reste disponible pour vous aider avec vos questions !",
                 
-                "Je comprends que vous préfériez parler à une personne ! 👥\n\n" +
-                "**Support client** : +237 6XX XX XX XX\n" +
-                "**Disponible** : Lun-Sam 8h-18h\n\n" +
-                "En attendant, puis-je vous aider avec votre problème ? " +
-                "Je peux vous connecter directement avec un plombier, électricien ou réparateur dans votre quartier !"
+                "👋 **Mise en relation avec un gestionnaire**\n\n" +
+                "Pas de problème ! Je transmets votre demande à notre équipe.\n\n" +
+                "• **Ticket de support créé** : #{ticket_id}\n" +
+                "• **Rappel prévu** : Dans les 10 prochaines minutes\n" +
+                "• **Contact** : {phone_number}\n\n" +
+                "Puis-je vous aider avec autre chose en attendant ?"
             ]
         }
         
@@ -141,6 +142,10 @@ class NaturalResponseGenerator:
         """
         
         intent = intent_analysis.get("primary_intent", "general_inquiry")
+        
+        # Convert enum to string if needed
+        if hasattr(intent, 'value'):
+            intent = intent.value
         
         logger.info(f"Response generator - intent: {intent}, action: {processing_result.get('action')}")
         
@@ -688,8 +693,25 @@ class NaturalResponseGenerator:
     def _handle_human_contact_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
         """Handle human contact requests responses"""
         
-        # Return contact information and encourage trying AI first
-        return random.choice(self.response_templates["human_contact"])
+        context = processing_result.get("context", {})
+        
+        # Generate a ticket ID for tracking
+        import time
+        ticket_id = f"SUP-{int(time.time() % 100000)}"
+        
+        # Get user phone number
+        phone_number = context.get("user_phone", "votre numéro")
+        
+        # Select appropriate template based on context
+        template = random.choice(self.response_templates["human_contact"])
+        
+        # Format template with context
+        response = template.format(
+            phone_number=phone_number,
+            ticket_id=ticket_id
+        )
+        
+        return response
     
     def _get_fallback_response(self) -> str:
         """Fallback response when generation fails"""
