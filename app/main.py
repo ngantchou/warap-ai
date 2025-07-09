@@ -72,6 +72,7 @@ setup_security_middleware(app)
 from app.api.webhook import router as webhook_router
 from app.api.webhook_v2 import router as webhook_v2_router
 from app.api.webhook_v3 import router as webhook_v3_router
+from app.api.webhook_v4 import router as webhook_v4_router
 from app.api.admin import router as admin_router
 from app.api.chat import router as chat_router
 from app.api.auth import router as auth_router
@@ -86,6 +87,7 @@ from app.api.demo_dashboard import router as demo_dashboard_router
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
 app.include_router(webhook_v2_router, prefix="/webhook", tags=["webhook-v2"])
 app.include_router(webhook_v3_router, prefix="/webhook", tags=["webhook-v3"])
+app.include_router(webhook_v4_router, prefix="/webhook", tags=["webhook-v4"])
 app.include_router(chat_router, tags=["chat"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
