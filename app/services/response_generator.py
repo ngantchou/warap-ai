@@ -108,6 +108,8 @@ class NaturalResponseGenerator:
         
         intent = intent_analysis.get("primary_intent", "general_inquiry")
         
+        logger.info(f"Response generator - intent: {intent}, action: {processing_result.get('action')}")
+        
         try:
             if intent == "new_service_request":
                 return await self._handle_service_request_response(
@@ -147,11 +149,16 @@ class NaturalResponseGenerator:
         
         action = processing_result.get("action", "")
         service_info = processing_result.get("service_info", {})
+        partial_data = processing_result.get("partial_data", {})
         missing_fields = processing_result.get("missing_fields", [])
         
-        if action == "continue_conversation":
-            # Need more information
-            return await self._generate_information_request(missing_fields, service_info, conversation_state)
+        logger.info(f"Service request response - action: {action}, service_info: {service_info}, partial_data: {partial_data}")
+        
+        if action == "continue_conversation" or action == "continue_gathering":
+            # Need more information - use partial_data if service_info is empty
+            data_to_use = service_info if service_info else partial_data
+            logger.info(f"Generating information request for missing fields: {missing_fields}")
+            return await self._generate_information_request(missing_fields, data_to_use, conversation_state)
         
         elif action == "request_created":
             # Service request successfully created

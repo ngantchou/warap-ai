@@ -114,9 +114,11 @@ class NaturalConversationEngine:
             )
             
             # Generate natural response
+            logger.info(f"Processing result before response generation: {result}")
             final_response = await self.response_generator.generate_natural_response(
                 intent_analysis, conversation_state, result, message
             )
+            logger.info(f"Generated response: {final_response}")
             
             # Update conversation state
             conversation_state.last_message = message
@@ -199,6 +201,7 @@ class NaturalConversationEngine:
         """Process conversation based on detected intent"""
         
         intent = ConversationIntent(intent_analysis.get("primary_intent", "general_inquiry"))
+        logger.info(f"Processing intent: {intent} for user {user_identifier}")
         
         # Check if we're in an ongoing conversation and should continue gathering information
         if (conversation_state.current_phase == ConversationPhase.INFORMATION_GATHERING or 
@@ -210,7 +213,15 @@ class NaturalConversationEngine:
             return await self._handle_continuation(user_identifier, message, intent_analysis, conversation_state)
         
         if intent == ConversationIntent.NEW_SERVICE_REQUEST:
-            return await self._handle_service_request(user_identifier, message, intent_analysis, conversation_state)
+            # Always process service requests through the continuation logic to handle missing fields
+            result = await self._handle_service_request(user_identifier, message, intent_analysis, conversation_state)
+            
+            # If the service request needs continuation, make sure we set it up correctly
+            if result.get("action") == "continue_conversation":
+                conversation_state.current_phase = ConversationPhase.INFORMATION_GATHERING
+                return result
+            
+            return result
         
         elif intent == ConversationIntent.STATUS_INQUIRY:
             return await self._handle_status_inquiry(user_identifier, conversation_state)
@@ -239,14 +250,19 @@ class NaturalConversationEngine:
     ) -> Dict[str, Any]:
         """Handle new service requests naturally with accumulated data"""
         
+        logger.info(f"Entering _handle_service_request for user {user_identifier}")
+        
         # Extract service information from current message
         current_info = intent_analysis.get("extracted_info", {})
         
         # Merge with accumulated conversation data
         accumulated_info = self.conversation_data.get(user_identifier, {}).get('collected_info', {})
         
-        # Combine all collected information (prioritize new info over old)
-        service_info = {**accumulated_info, **current_info}
+        # Combine all collected information (prioritize new info over old, but filter None values)
+        service_info = {**accumulated_info}
+        for key, value in current_info.items():
+            if value is not None and value != "":
+                service_info[key] = value
         
         # Update persistent data
         if user_identifier in self.conversation_data:
@@ -257,12 +273,24 @@ class NaturalConversationEngine:
         
         # Check if we have enough information using accumulated data
         required_fields = ["service_type", "location", "description"]
-        missing_fields = [field for field in required_fields if not service_info.get(field)]
+        missing_fields = [field for field in required_fields if not service_info.get(field) or service_info.get(field) is None]
+        
+        # Log debug info for troubleshooting
+        logger.info(f"Service info collected: {service_info}")
+        logger.info(f"Missing fields identified: {missing_fields}")
         
         if missing_fields:
             # Continue conversation to gather missing info naturally
             conversation_state.current_phase = ConversationPhase.INFORMATION_GATHERING
             conversation_state.pending_request_data = service_info
+            
+            # Ensure state persistence
+            if user_identifier in self.conversation_data:
+                self.conversation_data[user_identifier]['current_phase'] = 'information_gathering'
+                self.conversation_data[user_identifier]['pending_request_data'] = service_info
+            
+            logger.info(f"Continuing conversation for user {user_identifier} - missing: {missing_fields}")
+            
             return {
                 "action": "continue_conversation",
                 "missing_fields": missing_fields,
