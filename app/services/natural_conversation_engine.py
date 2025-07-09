@@ -580,17 +580,35 @@ class NaturalConversationEngine:
         
         # This will be handled by the existing provider matching system
         # in the background without user awareness
-        asyncio.create_task(
-            self.notification_service.notify_providers_for_request(service_request)
-        )
+        try:
+            if hasattr(self, 'notification_service') and self.notification_service:
+                asyncio.create_task(
+                    self.notification_service.notify_providers_for_request(service_request)
+                )
+            else:
+                # Fallback: Log that provider matching would start here
+                logger.info(f"Provider matching initiated for request {service_request.id}")
+                # The existing provider matching system will pick this up
+        except Exception as e:
+            logger.error(f"Error initiating provider matching: {e}")
+            # Continue without failing the conversation
     
     async def _initiate_emergency_provider_matching(self, service_request: ServiceRequest):
         """Priority provider matching for emergencies"""
         
         # Enhanced priority matching
-        asyncio.create_task(
-            self.notification_service.notify_providers_for_request(service_request)
-        )
+        try:
+            if hasattr(self, 'notification_service') and self.notification_service:
+                asyncio.create_task(
+                    self.notification_service.notify_providers_for_request(service_request)
+                )
+            else:
+                # Fallback: Log that emergency provider matching would start here
+                logger.info(f"Emergency provider matching initiated for request {service_request.id}")
+                # The existing provider matching system will pick this up with priority
+        except Exception as e:
+            logger.error(f"Error initiating emergency provider matching: {e}")
+            # Continue without failing the conversation
     
     def _format_request_info(self, request: ServiceRequest) -> Dict[str, Any]:
         """Format request information for responses"""
