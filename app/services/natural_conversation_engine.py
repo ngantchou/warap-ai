@@ -26,6 +26,10 @@ from loguru import logger
 
 settings = get_settings()
 
+# Global conversation cache to maintain state across instances
+CONVERSATION_CACHE = {}
+CONVERSATION_DATA_CACHE = {}
+
 
 class ConversationIntent(Enum):
     """User conversation intentions"""
@@ -66,10 +70,10 @@ class NaturalConversationEngine:
         self.whatsapp_service = WhatsAppService()
         # self.notification_service = NotificationService()
         
-        # Conversation memory - maintains context across messages
-        self.active_conversations: Dict[str, ConversationState] = {}
-        # Persistent conversation data that accumulates information
-        self.conversation_data: Dict[str, Dict[str, Any]] = {}
+        # Use global cache to maintain state across instances
+        global CONVERSATION_CACHE, CONVERSATION_DATA_CACHE
+        self.active_conversations = CONVERSATION_CACHE
+        self.conversation_data = CONVERSATION_DATA_CACHE
     
     async def process_natural_conversation(
         self, 
@@ -212,6 +216,10 @@ class NaturalConversationEngine:
             # Force continuation of previous conversation regardless of detected intent
             return await self._handle_continuation(user_identifier, message, intent_analysis, conversation_state)
         
+        # Handle explicit continuation intent first
+        if intent == ConversationIntent.CONTINUE_PREVIOUS:
+            return await self._handle_continuation(user_identifier, message, intent_analysis, conversation_state)
+        
         if intent == ConversationIntent.NEW_SERVICE_REQUEST:
             # Always process service requests through the continuation logic to handle missing fields
             result = await self._handle_service_request(user_identifier, message, intent_analysis, conversation_state)
@@ -234,9 +242,6 @@ class NaturalConversationEngine:
         
         elif intent == ConversationIntent.EMERGENCY:
             return await self._handle_emergency(user_identifier, message, intent_analysis, conversation_state)
-        
-        elif intent == ConversationIntent.CONTINUE_PREVIOUS:
-            return await self._handle_continuation(user_identifier, message, intent_analysis, conversation_state)
         
         else:
             return await self._handle_general_inquiry(user_identifier, message, conversation_state)
@@ -267,6 +272,15 @@ class NaturalConversationEngine:
         # Update persistent data
         if user_identifier in self.conversation_data:
             self.conversation_data[user_identifier]['collected_info'].update(service_info)
+        else:
+            # Initialize if not exists
+            self.conversation_data[user_identifier] = {
+                'collected_info': service_info,
+                'pending_request_data': {},
+                'conversation_history': [],
+                'current_phase': 'information_gathering',
+                'message_count': 0
+            }
         
         # Get or create user (invisible to user)
         user = await self._get_or_create_user(user_identifier)
@@ -440,22 +454,38 @@ class NaturalConversationEngine:
         # Get new information from current message
         new_info = intent_analysis.get("extracted_info", {})
         
+        # Log debug info
+        logger.info(f"Continuation - accumulated_info: {accumulated_info}")
+        logger.info(f"Continuation - new_info: {new_info}")
+        
         # Merge all information (prioritize new over old, but keep existing if new is None)
         for key, value in new_info.items():
-            if value is not None:
+            if value is not None and value != "":
                 accumulated_info[key] = value
         
         # Update persistent storage
         if user_identifier in self.conversation_data:
             self.conversation_data[user_identifier]['collected_info'] = accumulated_info
+        else:
+            # Initialize if not exists
+            self.conversation_data[user_identifier] = {
+                'collected_info': accumulated_info,
+                'pending_request_data': {},
+                'conversation_history': [],
+                'current_phase': 'information_gathering',
+                'message_count': 0
+            }
         
         # Update conversation state
         conversation_state.pending_request_data = accumulated_info
         conversation_state.current_phase = ConversationPhase.INFORMATION_GATHERING
         
-        # Check if complete now using accumulated data
-        required_fields = ["service_type", "location", "description"]
-        missing_fields = [field for field in required_fields if not accumulated_info.get(field)]
+        # Check if complete now using accumulated data - relaxed requirement
+        required_fields = ["service_type", "location"]
+        missing_fields = [field for field in required_fields if not accumulated_info.get(field) or accumulated_info.get(field) is None]
+        
+        logger.info(f"Continuation - final accumulated_info: {accumulated_info}")
+        logger.info(f"Continuation - missing_fields: {missing_fields}")
         
         if not missing_fields:
             # Now complete - create request

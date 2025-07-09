@@ -154,13 +154,13 @@ class NaturalResponseGenerator:
         
         logger.info(f"Service request response - action: {action}, service_info: {service_info}, partial_data: {partial_data}")
         
-        if action == "continue_conversation" or action == "continue_gathering":
+        if action in ["continue_conversation", "continue_gathering"]:
             # Need more information - use partial_data if service_info is empty
             data_to_use = service_info if service_info else partial_data
             logger.info(f"Generating information request for missing fields: {missing_fields}")
             return await self._generate_information_request(missing_fields, data_to_use, conversation_state)
         
-        elif action == "request_created":
+        elif action in ["request_created", "request_completed"]:
             # Service request successfully created
             service_type = service_info.get("service_type", "service")
             
