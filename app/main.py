@@ -85,6 +85,7 @@ from app.api.demo_dashboard import router as demo_dashboard_router
 from app.api.dynamic_services_api import router as dynamic_services_router
 from app.api.validation_api import router as validation_router
 from app.api.request_management_standalone import router as request_management_router
+from app.api.knowledge_base_api import router as knowledge_base_router
 
 # Include routers
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
@@ -103,6 +104,7 @@ app.include_router(demo_dashboard_router, prefix="/api", tags=["demo-dashboard"]
 app.include_router(dynamic_services_router, tags=["dynamic-services"])
 app.include_router(validation_router, tags=["validation"])
 app.include_router(request_management_router, tags=["request-management"])
+app.include_router(knowledge_base_router, tags=["knowledge-base"])
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)
