@@ -83,6 +83,7 @@ from app.api.provider_dashboard import router as provider_router
 from app.api.demo_provider_auth import router as demo_auth_router
 from app.api.demo_dashboard import router as demo_dashboard_router
 from app.api.dynamic_services_api import router as dynamic_services_router
+from app.api.validation_api import router as validation_router
 
 # Include routers
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
@@ -99,6 +100,7 @@ app.include_router(provider_router, prefix="/api", tags=["provider-dashboard"])
 app.include_router(demo_auth_router, prefix="/api", tags=["demo-auth"])
 app.include_router(demo_dashboard_router, prefix="/api", tags=["demo-dashboard"])
 app.include_router(dynamic_services_router, tags=["dynamic-services"])
+app.include_router(validation_router, tags=["validation"])
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)

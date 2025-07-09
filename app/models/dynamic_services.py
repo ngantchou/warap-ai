@@ -10,6 +10,12 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Session
 from sqlalchemy.sql import func
 from app.models.database_models import Base
+from app.models.validation_models import (
+    ValidationLog, ErrorLog, RetryAttempt, EscalationRecord,
+    PerformanceMetrics, ImprovementSuggestion, KeywordUpdate,
+    ValidationError, SuggestionFeedback, SystemHealth,
+    UserInteraction, AlertConfiguration, AlertHistory
+)
 
 class ServiceStatus(str, Enum):
     """Service availability status"""
