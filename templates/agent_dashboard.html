@@ -747,20 +747,29 @@
         // Load direct conversations
         async function loadDirectConversations() {
             try {
+                console.log('Loading direct conversations...');
                 const response = await fetch('/api/v1/simple-gestionnaire/conversations');
                 const conversations = await response.json();
                 
+                console.log('Conversations loaded:', conversations);
+                
                 const container = document.getElementById('direct-conversations-list');
+                console.log('Container element:', container);
+                
+                if (!container) {
+                    console.error('Direct conversations container not found!');
+                    return;
+                }
                 
                 if (conversations.length === 0) {
                     container.innerHTML = '<p class="text-muted text-center">Aucune conversation directe</p>';
                     return;
                 }
                 
-                container.innerHTML = conversations.map(conv => `
+                const conversationHtml = conversations.map(conv => `
                     <div class="conversation-item p-3 mb-2 border rounded" 
                          onclick="openConversationModal('${conv.conversation_id}')"
-                         style="cursor: pointer;">
+                         style="cursor: pointer; background-color: #f8f9fa;">
                         <div class="row">
                             <div class="col-md-8">
                                 <h6 class="mb-1">
@@ -770,13 +779,22 @@
                                 <p class="mb-1 text-muted small">
                                     ${conv.messages.length} messages
                                 </p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Dernière activité: ${formatDate(conv.messages[conv.messages.length - 1]?.timestamp)}
+                                </small>
                             </div>
                             <div class="col-md-4 text-end">
                                 <span class="badge bg-${conv.status === 'active' ? 'success' : 'secondary'}">${conv.status}</span>
+                                <br>
+                                <small class="text-muted">Agent: ${conv.agent_name}</small>
                             </div>
                         </div>
                     </div>
                 `).join('');
+                
+                console.log('Setting HTML for conversations:', conversationHtml);
+                container.innerHTML = conversationHtml;
                 
             } catch (error) {
                 console.error('Error loading conversations:', error);
