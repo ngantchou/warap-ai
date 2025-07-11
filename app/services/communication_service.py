@@ -419,7 +419,9 @@ Je contacte les meilleurs prestataires de votre zone.
     
     def _generate_status_update_message(self, request: ServiceRequest) -> str:
         """Generate status update message based on request state"""
-        time_since_creation = datetime.utcnow() - request.created_at
+        # Handle timezone-aware datetime comparisons
+        current_time = datetime.now(request.created_at.tzinfo) if request.created_at.tzinfo else datetime.utcnow()
+        time_since_creation = current_time - request.created_at
         minutes_elapsed = int(time_since_creation.total_seconds() / 60)
         
         if request.status == RequestStatus.PENDING:
