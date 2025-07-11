@@ -11,6 +11,7 @@ from loguru import logger
 from sqlalchemy.orm import Session
 
 from app.services.ai_service import AIService
+from app.services.multi_llm_service import MultiLLMService
 from app.models.database_models import ServiceRequest, Conversation, User
 
 

@@ -118,7 +118,9 @@ app.include_router(communication_router, prefix="/api/communication", tags=["com
 
 # AI Suggestions endpoint
 from app.api.ai_suggestions import router as ai_suggestions_router
+from app.api.llm_status import router as llm_status_router
 app.include_router(ai_suggestions_router, tags=["ai-suggestions"])
+app.include_router(llm_status_router, tags=["llm-management"])
 
 # ==== END CLEAN API STRUCTURE ====
 
