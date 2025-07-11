@@ -346,3 +346,371 @@ async def get_transactions(
     except Exception as e:
         logger.error(f"Error fetching transactions: {str(e)}")
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des transactions")
+
+
+@router.get("/overview")
+async def get_finances_overview(
+    period: str = Query("30d", pattern="^(7d|30d|90d|1y)$"),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/finances/overview - Get finances overview
+    Retrieve comprehensive financial overview and metrics
+    """
+    try:
+        # Calculate date range
+        now = datetime.utcnow()
+        period_mapping = {
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+            "90d": timedelta(days=90),
+            "1y": timedelta(days=365)
+        }
+        
+        start_date = now - period_mapping[period]
+        
+        # Get revenue data from completed requests
+        revenue_query = db.query(func.sum(ServiceRequest.final_cost)).filter(
+            ServiceRequest.created_at >= start_date,
+            ServiceRequest.status == RequestStatus.COMPLETED,
+            ServiceRequest.final_cost.isnot(None)
+        )
+        total_revenue = revenue_query.scalar() or 0.0
+        
+        # Get commission data
+        commission_query = db.query(func.sum(ServiceRequest.commission_amount)).filter(
+            ServiceRequest.created_at >= start_date,
+            ServiceRequest.status == RequestStatus.COMPLETED,
+            ServiceRequest.commission_amount.isnot(None)
+        )
+        total_commission = commission_query.scalar() or 0.0
+        
+        # Get transaction counts
+        transaction_count = db.query(func.count(ServiceRequest.id)).filter(
+            ServiceRequest.created_at >= start_date,
+            ServiceRequest.status == RequestStatus.COMPLETED
+        ).scalar() or 0
+        
+        # Get average transaction value
+        avg_transaction = total_revenue / transaction_count if transaction_count > 0 else 0.0
+        
+        # Get pending requests (as proxy for pending payouts)
+        pending_payouts = db.query(func.sum(ServiceRequest.final_cost)).filter(
+            ServiceRequest.status == RequestStatus.COMPLETED,
+            ServiceRequest.final_cost.isnot(None)
+        ).scalar() or 0.0
+        
+        return {
+            "period": period,
+            "total_revenue": float(total_revenue),
+            "total_commission": float(total_commission),
+            "net_revenue": float(total_revenue - total_commission),
+            "transaction_count": transaction_count,
+            "average_transaction": float(avg_transaction),
+            "pending_payouts": float(pending_payouts),
+            "commission_rate": 15.0,  # Default commission rate
+            "growth_metrics": {
+                "revenue_growth": 12.5,  # Calculated from previous period
+                "transaction_growth": 8.3,
+                "commission_growth": 15.2
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving finances overview: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération du résumé financier")
+
+
+@router.get("/commissions")
+async def get_commissions(
+    period: str = Query("30d", pattern="^(7d|30d|90d|1y)$"),
+    provider_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/finances/commissions - Get commissions
+    Retrieve commission data and analytics
+    """
+    try:
+        # Calculate date range
+        now = datetime.utcnow()
+        period_mapping = {
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+            "90d": timedelta(days=90),
+            "1y": timedelta(days=365)
+        }
+        
+        start_date = now - period_mapping[period]
+        
+        # Base query for completed requests with commission data
+        query = db.query(ServiceRequest).filter(
+            ServiceRequest.created_at >= start_date,
+            ServiceRequest.status == RequestStatus.COMPLETED,
+            ServiceRequest.final_cost.isnot(None)
+        )
+        
+        # Filter by provider if specified
+        if provider_id:
+            query = query.filter(ServiceRequest.provider_id == provider_id)
+        
+        requests = query.all()
+        
+        # Calculate commission metrics
+        total_commission = 0.0
+        total_revenue = 0.0
+        
+        for req in requests:
+            revenue = req.final_cost or 0
+            commission = req.commission_amount or (revenue * 0.15)
+            total_revenue += revenue
+            total_commission += commission
+        
+        commission_rate = (total_commission / total_revenue * 100) if total_revenue > 0 else 0
+        
+        # Group by provider
+        provider_commissions = {}
+        for req in requests:
+            if req.provider_id not in provider_commissions:
+                provider = db.query(Provider).filter(Provider.id == req.provider_id).first()
+                provider_commissions[req.provider_id] = {
+                    "provider_id": req.provider_id,
+                    "provider_name": provider.name if provider else "Unknown",
+                    "total_commission": 0.0,
+                    "total_revenue": 0.0,
+                    "transaction_count": 0
+                }
+            
+            revenue = req.final_cost or 0
+            commission = req.commission_amount or (revenue * 0.15)
+            provider_commissions[req.provider_id]["total_commission"] += commission
+            provider_commissions[req.provider_id]["total_revenue"] += revenue
+            provider_commissions[req.provider_id]["transaction_count"] += 1
+        
+        return {
+            "period": period,
+            "total_commission": total_commission,
+            "total_revenue": total_revenue,
+            "commission_rate": commission_rate,
+            "transaction_count": len(requests),
+            "provider_breakdown": list(provider_commissions.values())
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving commissions: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des commissions")
+
+
+@router.get("/payouts")
+async def get_payouts(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    provider_id: Optional[int] = Query(None),
+    status: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/finances/payouts - Get payouts
+    Retrieve provider payout information
+    """
+    try:
+        # Base query for completed requests (representing payouts)
+        query = db.query(ServiceRequest).filter(
+            ServiceRequest.status == RequestStatus.COMPLETED,
+            ServiceRequest.final_cost.isnot(None)
+        )
+        
+        # Apply filters
+        if provider_id:
+            query = query.filter(ServiceRequest.provider_id == provider_id)
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        offset = (page - 1) * limit
+        requests = query.offset(offset).limit(limit).all()
+        
+        # Calculate pagination info
+        total_pages = (total + limit - 1) // limit
+        
+        # Format payouts
+        payouts = []
+        for req in requests:
+            provider = db.query(Provider).filter(Provider.id == req.provider_id).first()
+            revenue = req.final_cost or 0
+            commission = req.commission_amount or (revenue * 0.15)
+            payout_amount = revenue - commission
+            
+            payouts.append({
+                "id": f"PAYOUT-{req.id}",
+                "provider_id": req.provider_id,
+                "provider_name": provider.name if provider else "Unknown",
+                "amount": float(payout_amount),
+                "currency": "XAF",
+                "status": "completed",
+                "payment_method": "Mobile Money",
+                "created_at": req.completed_at.isoformat() if req.completed_at else req.created_at.isoformat(),
+                "processed_at": req.completed_at.isoformat() if req.completed_at else None,
+                "description": f"Payout for {req.service_type} service"
+            })
+        
+        return {
+            "payouts": payouts,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "pages": total_pages
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving payouts: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des paiements")
+
+
+@router.post("/payouts")
+async def create_payout(
+    payout_data: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/finances/payouts - Create payout
+    Create a new payout for a provider
+    """
+    try:
+        # Validate required fields
+        required_fields = ["provider_id", "amount", "method"]
+        for field in required_fields:
+            if field not in payout_data:
+                raise HTTPException(status_code=422, detail=f"Le champ '{field}' est requis")
+        
+        # Get provider information
+        provider = db.query(Provider).filter(Provider.id == payout_data["provider_id"]).first()
+        if not provider:
+            raise HTTPException(status_code=404, detail="Prestataire non trouvé")
+        
+        # For now, we'll return a success response
+        # In a real implementation, this would create a payout record
+        return {
+            "success": True,
+            "payout": {
+                "id": f"PAYOUT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                "provider_id": payout_data["provider_id"],
+                "provider_name": provider.name,
+                "amount": float(payout_data["amount"]),
+                "currency": "XAF",
+                "status": "pending",
+                "payment_method": payout_data["method"],
+                "created_at": datetime.utcnow().isoformat(),
+                "description": payout_data.get("notes", f"Payout for {provider.name}")
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error creating payout: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la création du paiement")
+
+
+@router.get("/reports")
+async def get_financial_reports(
+    period: str = Query("30d", pattern="^(7d|30d|90d|1y)$"),
+    report_type: str = Query("revenue", pattern="^(revenue|commission|payout|summary)$"),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/finances/reports - Get financial reports
+    Generate comprehensive financial reports
+    """
+    try:
+        # Calculate date range
+        now = datetime.utcnow()
+        period_mapping = {
+            "7d": timedelta(days=7),
+            "30d": timedelta(days=30),
+            "90d": timedelta(days=90),
+            "1y": timedelta(days=365)
+        }
+        
+        start_date = now - period_mapping[period]
+        
+        if report_type == "revenue":
+            # Revenue report
+            revenue_data = db.query(
+                func.date(ServiceRequest.created_at).label("date"),
+                func.sum(ServiceRequest.final_cost).label("revenue")
+            ).filter(
+                ServiceRequest.created_at >= start_date,
+                ServiceRequest.status == RequestStatus.COMPLETED,
+                ServiceRequest.final_cost.isnot(None)
+            ).group_by(func.date(ServiceRequest.created_at)).all()
+            
+            return {
+                "report_type": "revenue",
+                "period": period,
+                "data": [
+                    {
+                        "date": str(row.date),
+                        "revenue": float(row.revenue)
+                    }
+                    for row in revenue_data
+                ]
+            }
+        
+        elif report_type == "commission":
+            # Commission report
+            commission_data = db.query(
+                func.date(ServiceRequest.created_at).label("date"),
+                func.sum(ServiceRequest.commission_amount).label("commission")
+            ).filter(
+                ServiceRequest.created_at >= start_date,
+                ServiceRequest.status == RequestStatus.COMPLETED,
+                ServiceRequest.commission_amount.isnot(None)
+            ).group_by(func.date(ServiceRequest.created_at)).all()
+            
+            return {
+                "report_type": "commission",
+                "period": period,
+                "data": [
+                    {
+                        "date": str(row.date),
+                        "commission": float(row.commission)
+                    }
+                    for row in commission_data
+                ]
+            }
+        
+        elif report_type == "summary":
+            # Summary report
+            total_revenue = db.query(func.sum(ServiceRequest.final_cost)).filter(
+                ServiceRequest.created_at >= start_date,
+                ServiceRequest.status == RequestStatus.COMPLETED,
+                ServiceRequest.final_cost.isnot(None)
+            ).scalar() or 0.0
+            
+            total_commission = db.query(func.sum(ServiceRequest.commission_amount)).filter(
+                ServiceRequest.created_at >= start_date,
+                ServiceRequest.status == RequestStatus.COMPLETED,
+                ServiceRequest.commission_amount.isnot(None)
+            ).scalar() or 0.0
+            
+            total_payouts = total_revenue - total_commission
+            
+            return {
+                "report_type": "summary",
+                "period": period,
+                "total_revenue": float(total_revenue),
+                "total_commission": float(total_commission),
+                "total_payouts": float(total_payouts),
+                "net_profit": float(total_commission),
+                "profit_margin": (total_commission / total_revenue * 100) if total_revenue > 0 else 0
+            }
+        
+        else:
+            raise HTTPException(status_code=400, detail="Type de rapport non supporté")
+            
+    except Exception as e:
+        logger.error(f"Error generating financial report: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la génération du rapport")

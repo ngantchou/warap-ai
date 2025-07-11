@@ -62,7 +62,7 @@ async def get_analytics_overview(
         
         # Get active providers
         active_providers = db.query(Provider).filter(
-            Provider.status == ProviderStatus.ACTIVE
+            Provider.is_active == True
         ).count()
         
         # Get revenue (sum of completed request costs)
@@ -211,7 +211,7 @@ async def get_kpi_metrics(
         # Provider metrics
         total_providers = db.query(Provider).count()
         active_providers = db.query(Provider).filter(
-            Provider.status == ProviderStatus.ACTIVE
+            Provider.is_active == True
         ).count()
         
         response = {
@@ -469,12 +469,17 @@ async def get_geographic_analytics(
         
         # Get provider distribution by zone
         provider_distribution = []
-        providers = db.query(
-            Provider.coverage_zone,
-            func.count(Provider.id).label('count')
-        ).group_by(Provider.coverage_zone).all()
+        providers = db.query(Provider).filter(Provider.is_active == True).all()
         
-        for zone, count in providers:
+        # Count providers by zone (from coverage_areas JSON)
+        zone_counts = {}
+        for provider in providers:
+            if provider.coverage_areas:
+                for area in provider.coverage_areas:
+                    zone = "Bonamoussadi" if "bonamoussadi" in area.lower() else "Douala"
+                    zone_counts[zone] = zone_counts.get(zone, 0) + 1
+        
+        for zone, count in zone_counts.items():
             provider_distribution.append({
                 "zone": zone,
                 "providers": count
@@ -562,7 +567,7 @@ async def get_ai_insights(
         # Provider availability insight
         total_providers = db.query(Provider).count()
         active_providers = db.query(Provider).filter(
-            Provider.status == ProviderStatus.ACTIVE
+            Provider.is_active == True
         ).count()
         
         if total_providers > 0:
