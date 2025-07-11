@@ -187,7 +187,7 @@ class CommunicationService:
             
             message = self._generate_status_update_message(request)
             
-            await self.whatsapp_service.send_message(user.whatsapp_id, message)
+            self.whatsapp_service.send_message(user.whatsapp_id, message)
             logger.info(f"Status update sent for request {request.id}")
             
         except Exception as e:
@@ -208,7 +208,7 @@ Plus que *{minutes_remaining} minutes* pour qu'un prestataire accepte votre dema
 
 💬 Vous pouvez me poser des questions à tout moment !"""
             
-            await self.whatsapp_service.send_message(user.whatsapp_id, message)
+            self.whatsapp_service.send_message(user.whatsapp_id, message)
             logger.info(f"Countdown warning sent for request {request.id}")
             
         except Exception as e:
@@ -232,7 +232,7 @@ Aucun prestataire n'a répondu dans les temps pour votre demande de {request.ser
 
 💬 Écrivez-moi pour que je trouve une solution adaptée !"""
             
-            await self.whatsapp_service.send_message(user.whatsapp_id, message)
+            self.whatsapp_service.send_message(user.whatsapp_id, message)
             logger.info(f"Timeout message sent for request {request.id}")
             
         except Exception as e:
@@ -503,7 +503,7 @@ Je ne trouve pas de prestataires dans cette zone pour le moment.
             
             message = error_messages.get(error_type, error_messages["general"])
             
-            success = await self.whatsapp_service.send_message(user_whatsapp_id, message)
+            success = self.whatsapp_service.send_message(user_whatsapp_id, message)
             logger.info(f"Error message sent to {user_whatsapp_id}")
             
             return success
@@ -537,7 +537,7 @@ Merci de votre patience ! 🙏
 📞 *Djobea AI* - Service de mise en relation"""
             
             # Try to send via WhatsApp (this might also fail, but it's worth trying)
-            success = await self.whatsapp_service.send_message(user.whatsapp_id, error_message)
+            success = self.whatsapp_service.send_message(user.whatsapp_id, error_message)
             
             if success:
                 logger.info(f"User {user.id} notified about confirmation error for request {request.id}")
