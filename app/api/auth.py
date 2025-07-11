@@ -27,20 +27,32 @@ router = APIRouter()
 
 # Pydantic models for request/response
 class LoginRequest(BaseModel):
-    username: str
+    email: str
     password: str
+    rememberMe: bool = False
 
 
 class LoginResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-    expires_in: int
+    success: bool
+    token: str
+    refreshToken: str
     user: dict
+    expiresAt: str
 
 
 class TokenRefreshRequest(BaseModel):
-    refresh_token: str
+    refreshToken: str
+
+
+class TokenRefreshResponse(BaseModel):
+    success: bool
+    token: str
+    expiresAt: str
+
+
+class LogoutResponse(BaseModel):
+    success: bool
+    message: str
 
 
 class CreateUserRequest(BaseModel):
@@ -128,7 +140,7 @@ async def login_for_access_token(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """Authenticate user and return access token"""
+    """Authenticate user and return access token (legacy form-based endpoint)"""
     # Get form data directly from request
     try:
         form_data = await request.form()
@@ -173,6 +185,84 @@ async def login_for_access_token(
     access_token_expires = timedelta(minutes=60)  # Default 60 minutes
     
     token_data = {"sub": str(user.id), "username": user.username, "role": user.role}
+    
+    access_token = auth_service.create_access_token(
+        data=token_data, expires_delta=access_token_expires
+    )
+    
+    refresh_token = auth_service.create_refresh_token(data=token_data)
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": int(access_token_expires.total_seconds())
+    }
+
+
+@router.post("/api/auth/login", response_model=LoginResponse)
+async def api_login(
+    login_data: LoginRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """Authenticate user with email and password for external admin interface"""
+    auth_service = AuthService(db)
+    client_ip, user_agent = get_client_info(request)
+    
+    logger.info(f"API Login attempt for email: {login_data.email} from {client_ip}")
+    
+    # Authenticate user by email
+    user = auth_service.authenticate_user_by_email(
+        login_data.email, 
+        login_data.password, 
+        client_ip, 
+        user_agent
+    )
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    
+    # Create tokens with appropriate expiration
+    access_token_expires = timedelta(hours=24 if login_data.rememberMe else 1)
+    refresh_token_expires = timedelta(days=30 if login_data.rememberMe else 7)
+    
+    token_data = {
+        "sub": str(user.id), 
+        "username": user.username, 
+        "email": user.email,
+        "role": user.role
+    }
+    
+    access_token = auth_service.create_access_token(
+        data=token_data, 
+        expires_delta=access_token_expires
+    )
+    
+    refresh_token = auth_service.create_refresh_token(data=token_data)
+    
+    # Calculate expiration timestamp
+    expires_at = datetime.now(timezone.utc) + access_token_expires
+    
+    # Store refresh token (in production, store in database)
+    # For now, we'll include it in the response
+    
+    return LoginResponse(
+        success=True,
+        token=access_token,
+        refreshToken=refresh_token,
+        user={
+            "id": str(user.id),
+            "name": user.username,
+            "email": user.email,
+            "role": user.role,
+            "avatar": "/avatars/default.jpg"  # Default avatar
+        },
+        expiresAt=expires_at.isoformat()
+    )
     access_token = auth_service.create_access_token(
         data=token_data, expires_delta=access_token_expires
     )
@@ -282,7 +372,7 @@ async def refresh_access_token(
     refresh_request: TokenRefreshRequest,
     db: Session = Depends(get_db)
 ):
-    """Refresh access token using refresh token"""
+    """Refresh access token using refresh token (legacy endpoint)"""
     auth_service = AuthService(db)
     
     # Verify refresh token
@@ -315,6 +405,83 @@ async def refresh_access_token(
         "token_type": "bearer",
         "expires_in": int(access_token_expires.total_seconds())
     }
+
+
+@router.post("/api/auth/refresh", response_model=TokenRefreshResponse)
+async def api_refresh_token(
+    refresh_request: TokenRefreshRequest,
+    db: Session = Depends(get_db)
+):
+    """Refresh access token using refresh token for external admin interface"""
+    auth_service = AuthService(db)
+    
+    # Verify refresh token
+    payload = auth_service.verify_token(refresh_request.refreshToken, "refresh")
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token"
+        )
+    
+    user_id = payload.get("sub")
+    user = auth_service.get_user_by_id(int(user_id))
+    
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive"
+        )
+    
+    # Create new access token
+    access_token_expires = timedelta(hours=1)
+    token_data = {
+        "sub": str(user.id), 
+        "username": user.username, 
+        "email": user.email,
+        "role": user.role
+    }
+    
+    access_token = auth_service.create_access_token(
+        data=token_data, 
+        expires_delta=access_token_expires
+    )
+    
+    # Calculate expiration timestamp
+    expires_at = datetime.now(timezone.utc) + access_token_expires
+    
+    return TokenRefreshResponse(
+        success=True,
+        token=access_token,
+        expiresAt=expires_at.isoformat()
+    )
+
+
+@router.post("/api/auth/logout", response_model=LogoutResponse)
+async def api_logout(
+    request: Request,
+    current_user: AdminUser = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Logout user and revoke tokens for external admin interface"""
+    auth_service = AuthService(db)
+    client_ip, user_agent = get_client_info(request)
+    
+    # Log security event
+    auth_service.log_security_event(
+        "logout_success", 
+        current_user.id, 
+        client_ip, 
+        user_agent
+    )
+    
+    # In production, you would revoke the refresh token from database
+    # For now, we'll just log the logout
+    logger.info(f"User {current_user.email} logged out from {client_ip}")
+    
+    return LogoutResponse(
+        success=True,
+        message="Déconnexion réussie"
+    )
 
 
 @router.get("/me")

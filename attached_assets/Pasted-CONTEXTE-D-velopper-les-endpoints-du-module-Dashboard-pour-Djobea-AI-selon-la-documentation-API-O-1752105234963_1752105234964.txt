@@ -1,0 +1,58 @@
+CONTEXTE: Développer les endpoints du module Dashboard pour Djobea AI selon la documentation API.
+
+OBJECTIF: Implémenter toutes les routes FastAPI pour le module Dashboard avec authentification JWT, base PostgreSQL et réponses selon le format spécifié.
+
+TÂCHES À IMPLÉMENTER:
+
+1. **GET /api/dashboard** - Données principales du tableau de bord
+   - Récupérer statistiques globales (totalRequests, successRate, pendingRequests, activeProviders)
+   - Générer données graphiques (activité 30 derniers jours, répartition services)
+   - Récupérer activité récente (dernières requests, alertes)
+   - Format de réponse exact selon documentation
+
+2. **GET /api/dashboard/stats** - Statistiques en temps réel
+   - Supporter query params: period=24h|7d|30d
+   - Calculer métriques: totalRequests, successRate, averageResponseTime, satisfaction
+   - Inclure tendances par rapport à période précédente
+   - Cache Redis recommandé (5 min)
+
+3. **GET /api/dashboard/activity** - Activité récente
+   - Supporter pagination (limit, offset)
+   - Récupérer dernières demandes avec détails
+   - Inclure alertes système et notifications
+   - Ordre chronologique inverse
+
+REQUIREMENTS TECHNIQUES:
+- FastAPI avec dépendances (Depends)
+- Authentification JWT middleware
+- SQLAlchemy queries optimisées avec jointures
+- Gestion d'erreurs complète (400, 401, 500)
+- Type hints TypeScript-like pour réponses
+- Rate limiting: 60 req/min par utilisateur
+- Logger pour chaque endpoint
+
+MODÈLES DB EXISTANTS:
+- ServiceRequest (status, created_at, provider_id)
+- Provider (is_active, rating)
+- User (last_activity)
+- Conversation (messages)
+
+FORMAT RÉPONSE OBLIGATOIRE selon documentation API.
+
+EXEMPLE CODE STRUCTURE:
+```python
+from fastapi import APIRouter, Depends, HTTPException
+from app.auth import verify_jwt_token
+from app.models import ServiceRequest, Provider
+from sqlalchemy.orm import Session
+
+router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+
+@router.get("/")
+async def get_dashboard(
+    current_user: dict = Depends(verify_jwt_token),
+    db: Session = Depends(get_db)
+):
+    # Implémentation ici
+    pass
+Créer le fichier complet app/api/dashboard.py avec tous les endpoints.

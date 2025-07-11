@@ -79,6 +79,10 @@ class AuthService:
         """Get user by username"""
         return self.db.query(AdminUser).filter(AdminUser.username == username).first()
     
+    def get_user_by_email(self, email: str) -> Optional[AdminUser]:
+        """Get user by email"""
+        return self.db.query(AdminUser).filter(AdminUser.email == email).first()
+    
     def get_user_by_id(self, user_id: int) -> Optional[AdminUser]:
         """Get user by ID"""
         return self.db.query(AdminUser).filter(AdminUser.id == user_id).first()
@@ -122,6 +126,76 @@ class AuthService:
         )
         self.db.add(security_log)
         self.db.commit()
+    
+    def authenticate_user_by_email(self, email: str, password: str, 
+                                  ip_address: Optional[str] = None, 
+                                  user_agent: Optional[str] = None) -> Optional[AdminUser]:
+        """Authenticate user by email and password"""
+        user = self.get_user_by_email(email)
+        
+        if not user:
+            self.log_security_event("login_failed", None, ip_address, user_agent, 
+                                   {"reason": "user_not_found", "email": email})
+            return None
+        
+        if not user.is_active:
+            self.log_security_event("login_failed", user.id, ip_address, user_agent, 
+                                   {"reason": "account_inactive"})
+            return None
+        
+        if self.is_user_locked(user):
+            self.log_security_event("login_failed", user.id, ip_address, user_agent, 
+                                   {"reason": "account_locked"})
+            return None
+        
+        if not self.verify_password(password, user.hashed_password):
+            self.increment_failed_attempts(user)
+            self.log_security_event("login_failed", user.id, ip_address, user_agent, 
+                                   {"reason": "invalid_password"})
+            return None
+        
+        # Successful login
+        self.reset_failed_attempts(user)
+        user.last_login = datetime.now(timezone.utc)
+        self.db.commit()
+        
+        self.log_security_event("login_success", user.id, ip_address, user_agent)
+        return user
+    
+    def authenticate_user(self, username: str, password: str, 
+                         ip_address: Optional[str] = None, 
+                         user_agent: Optional[str] = None) -> Optional[AdminUser]:
+        """Authenticate user by username and password (legacy method)"""
+        user = self.get_user_by_username(username)
+        
+        if not user:
+            self.log_security_event("login_failed", None, ip_address, user_agent, 
+                                   {"reason": "user_not_found", "username": username})
+            return None
+        
+        if not user.is_active:
+            self.log_security_event("login_failed", user.id, ip_address, user_agent, 
+                                   {"reason": "account_inactive"})
+            return None
+        
+        if self.is_user_locked(user):
+            self.log_security_event("login_failed", user.id, ip_address, user_agent, 
+                                   {"reason": "account_locked"})
+            return None
+        
+        if not self.verify_password(password, user.hashed_password):
+            self.increment_failed_attempts(user)
+            self.log_security_event("login_failed", user.id, ip_address, user_agent, 
+                                   {"reason": "invalid_password"})
+            return None
+        
+        # Successful login
+        self.reset_failed_attempts(user)
+        user.last_login = datetime.now(timezone.utc)
+        self.db.commit()
+        
+        self.log_security_event("login_success", user.id, ip_address, user_agent)
+        return user
     
     def authenticate_user(self, username: str, password: str, ip_address: str, 
                          user_agent: str) -> Optional[AdminUser]:
