@@ -137,8 +137,9 @@ class CommunicationService:
                         logger.info(f"Stopping proactive updates for completed/cancelled request {request_id}")
                         break
                     
-                    # Calculate time since request creation
-                    time_since_creation = datetime.utcnow() - request.created_at
+                    # Calculate time since request creation with timezone handling
+                    current_time = datetime.now(request.created_at.tzinfo) if request.created_at.tzinfo else datetime.utcnow()
+                    time_since_creation = current_time - request.created_at
                     minutes_elapsed = int(time_since_creation.total_seconds() / 60)
                     
                     # Determine update frequency based on urgency

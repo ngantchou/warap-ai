@@ -125,11 +125,15 @@ async def handle_web_chat(
         # Format response for web chat (convert to HTML)
         formatted_response = format_web_response(ai_response)
         
-        # Generate contextual suggestions based on conversation state
-        suggestions = generate_contextual_suggestions(request_info_dict, result, ai_response)
-        
         # Determine if request is complete
         is_complete = bool(request_id and request_info.get('all_info_collected', False))
+        
+        # Generate contextual suggestions based on conversation state
+        # Hide suggestions if request is completed
+        if is_complete or request_info.get('phase') == 'request_processing':
+            suggestions = []  # No suggestions when request is completed
+        else:
+            suggestions = generate_contextual_suggestions(request_info_dict, result, ai_response)
         
         # Identify missing information
         needs_info = get_missing_info(request_info)
