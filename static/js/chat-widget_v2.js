@@ -774,8 +774,8 @@
 
             // Input field
             if (elements.input) {
-                elements.input.addEventListener('keypress', this.handleKeyPress);
-                elements.input.addEventListener('input', this.handleInput);
+                elements.input.addEventListener('keypress', events.handleKeyPress);
+                elements.input.addEventListener('input', events.handleInput);
                 elements.input.addEventListener('focus', utils.updateActivity);
             }
 

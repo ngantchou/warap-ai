@@ -191,8 +191,10 @@ CRITICAL: Always respond with valid JSON matching the exact format above.
         
         for attempt in range(max_retries):
             try:
+                # Convert prompt to messages format
+                messages = [{"role": "user", "content": prompt}]
                 response = await self.ai_service.generate_response(
-                    prompt=prompt,
+                    messages=messages,
                     max_tokens=800,
                     temperature=0.1  # Lower temperature for more consistent responses
                 )
