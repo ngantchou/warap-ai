@@ -156,6 +156,30 @@ class NaturalConversationEngine:
             conversation_state.last_response = llm_response.response_text
             conversation_state.message_count += 1
             
+            # Progress conversation phase based on extracted data
+            if llm_response.extracted_data:
+                service_type = llm_response.extracted_data.get('service_type')
+                location = llm_response.extracted_data.get('location')
+                
+                # Update conversation data for persistence
+                if user_identifier in self.conversation_data:
+                    if service_type:
+                        self.conversation_data[user_identifier]['collected_info']['service_type'] = service_type
+                    if location:
+                        self.conversation_data[user_identifier]['collected_info']['location'] = location
+                    
+                    # Update conversation phase
+                    collected_info = self.conversation_data[user_identifier]['collected_info']
+                    if collected_info.get('service_type') and collected_info.get('location'):
+                        conversation_state.current_phase = ConversationPhase.CONFIRMATION
+                        self.conversation_data[user_identifier]['current_phase'] = 'confirmation'
+                    elif collected_info.get('service_type') or collected_info.get('location'):
+                        conversation_state.current_phase = ConversationPhase.INFORMATION_GATHERING
+                        self.conversation_data[user_identifier]['current_phase'] = 'information_gathering'
+                    
+                    # Update message count
+                    self.conversation_data[user_identifier]['message_count'] = conversation_state.message_count
+            
             # Save conversation state
             self.active_conversations[user_identifier] = conversation_state
             
@@ -253,6 +277,20 @@ class NaturalConversationEngine:
                     existing_state.collected_info.update(stored_data['collected_info'])
                 if 'pending_request_data' in stored_data:
                     existing_state.pending_request_data = stored_data['pending_request_data']
+                
+                # Update phase based on accumulated data
+                if stored_data.get('collected_info'):
+                    # If we have collected info, move beyond greeting phase
+                    service_type = stored_data['collected_info'].get('service_type')
+                    location = stored_data['collected_info'].get('location')
+                    
+                    if service_type and location:
+                        existing_state.current_phase = ConversationPhase.CONFIRMATION
+                    elif service_type or location:
+                        existing_state.current_phase = ConversationPhase.INFORMATION_GATHERING
+                    else:
+                        existing_state.current_phase = ConversationPhase.INFORMATION_GATHERING
+                        
             return existing_state
         
         # Initialize persistent data storage for this user
@@ -271,9 +309,24 @@ class NaturalConversationEngine:
         # Get persistent data
         stored_data = self.conversation_data[user_identifier]
         
+        # Determine conversation phase based on accumulated data
+        current_phase = ConversationPhase.GREETING
+        collected_info = stored_data.get('collected_info', {})
+        
+        if collected_info:
+            service_type = collected_info.get('service_type')
+            location = collected_info.get('location')
+            
+            if service_type and location:
+                current_phase = ConversationPhase.CONFIRMATION
+            elif service_type or location:
+                current_phase = ConversationPhase.INFORMATION_GATHERING
+            else:
+                current_phase = ConversationPhase.INFORMATION_GATHERING
+        
         conversation_state = ConversationState(
             user_identifier=user_identifier,
-            current_phase=ConversationPhase.GREETING,
+            current_phase=current_phase,
             context_data=context,
             message_count=stored_data.get('message_count', 0)
         )

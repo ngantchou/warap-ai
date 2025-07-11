@@ -142,6 +142,7 @@ CONVERSATION CONTEXT:
 - Cultural Context: {agent_message.cultural_context}
 - Urgency Level: {agent_message.urgency_level}
 - Conversation Phase: {conversation_state.current_phase}
+- Message Count: {conversation_state.message_count}
 
 USER DATA:
 - User ID: {agent_message.user_data.get('user_id', 'unknown')}
@@ -158,16 +159,23 @@ SYSTEM STATE:
 PREVIOUS CONTEXT:
 {json.dumps(agent_message.conversation_context, indent=2)}
 
+CRITICAL CONVERSATION RULES:
+1. If message_count = 0: Use a greeting like "Bonjour! Comment puis-je vous aider?"
+2. If message_count > 0: NEVER use "Bonjour" again - continue the conversation naturally
+3. Avoid repetitive questions - if user already mentioned service type, ask for location instead
+4. Progress the conversation - each response should move toward completing the request
+5. Be contextual - reference what the user just said
+
 INSTRUCTIONS:
 1. Analyze the user's intent with high confidence
 2. Extract ALL relevant information (service_type, location, description, urgency)
-3. Provide a natural, culturally appropriate response in French
+3. Provide a natural, NON-REPETITIVE response in French
 4. Indicate next conversation actions needed
 5. Assess confidence level (0.0-1.0)
 
 RESPONSE FORMAT (JSON):
 {{
-    "response_text": "Natural French response to user",
+    "response_text": "Natural French response to user (NO repetitive greetings)",
     "intent_confidence": 0.95,
     "extracted_data": {{
         "service_type": "service type or null",

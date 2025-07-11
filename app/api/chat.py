@@ -125,8 +125,8 @@ async def handle_web_chat(
         # Format response for web chat (convert to HTML)
         formatted_response = format_web_response(ai_response)
         
-        # Generate suggestions based on conversation state
-        suggestions = generate_suggestions(request_info_dict, result)
+        # Generate contextual suggestions based on conversation state
+        suggestions = generate_contextual_suggestions(request_info_dict, result, ai_response)
         
         # Determine if request is complete
         is_complete = bool(request_id and request_info.get('all_info_collected', False))
@@ -337,9 +337,120 @@ def format_web_response(response: str) -> str:
     
     return formatted
 
+def generate_contextual_suggestions(request_info: dict, result: dict, ai_response: str) -> List[str]:
+    """
+    Generate contextual suggestions based on conversation state and AI response
+    
+    Args:
+        request_info: Current request information
+        result: Processing result
+        ai_response: AI response text
+    
+    Returns:
+        List[str]: Contextual suggestions
+    """
+    suggestions = []
+    
+    # Analyze what information is already collected
+    collected_info = request_info.get('collected_info', {})
+    phase = request_info.get('phase', 'greeting')
+    
+    # Get service type if mentioned in response
+    service_type = None
+    if 'plomberie' in ai_response.lower():
+        service_type = 'plomberie'
+    elif 'électr' in ai_response.lower():
+        service_type = 'electricite'
+    elif 'électroménager' in ai_response.lower():
+        service_type = 'electromenager'
+    
+    # Generate contextual suggestions based on conversation state
+    if phase == 'greeting' or not collected_info:
+        # First interaction - suggest common problems
+        if service_type == 'plomberie':
+            suggestions = [
+                "Fuite d'eau sous l'évier",
+                "WC bouché", 
+                "Problème de pression d'eau"
+            ]
+        elif service_type == 'electricite':
+            suggestions = [
+                "Panne de courant dans une pièce",
+                "Prise électrique qui ne marche pas",
+                "Problème avec le disjoncteur"
+            ]
+        elif service_type == 'electromenager':
+            suggestions = [
+                "Réfrigérateur qui ne refroidit plus",
+                "Machine à laver qui fuit",
+                "Climatiseur qui ne marche pas"
+            ]
+        else:
+            # Generic service suggestions
+            suggestions = [
+                "Problème de plomberie",
+                "Problème électrique", 
+                "Réparation électroménager"
+            ]
+    
+    elif 'quartier' in ai_response.lower() or 'où' in ai_response.lower():
+        # Location being asked
+        suggestions = [
+            "Bonamoussadi",
+            "Akwa",
+            "Douala centre"
+        ]
+    
+    elif 'décrivez' in ai_response.lower() or 'détail' in ai_response.lower():
+        # Description being asked
+        if service_type == 'plomberie':
+            suggestions = [
+                "L'eau coule sous l'évier depuis hier",
+                "Les WC sont complètement bouchés",
+                "Plus d'eau chaude depuis ce matin"
+            ]
+        elif service_type == 'electricite':
+            suggestions = [
+                "Le courant a sauté dans la cuisine",
+                "Plus de courant dans toute la maison",
+                "Les prises ne marchent plus"
+            ]
+        else:
+            suggestions = [
+                "Ça marche plus depuis hier",
+                "Il y a des bruits bizarres",
+                "Ça fuit partout"
+            ]
+    
+    elif 'urgent' in ai_response.lower() or 'rapidement' in ai_response.lower():
+        # Urgency being discussed
+        suggestions = [
+            "Oui, c'est urgent",
+            "Non, pas urgent",
+            "Dans les 2 prochaines heures"
+        ]
+    
+    else:
+        # Default contextual suggestions
+        suggestions = [
+            "Oui, exactement",
+            "Non, pas vraiment",
+            "Pouvez-vous m'expliquer?"
+        ]
+    
+    # Ensure we have at least some suggestions
+    if not suggestions:
+        suggestions = [
+            "Continuez s'il vous plaît",
+            "J'ai compris",
+            "Merci"
+        ]
+    
+    return suggestions[:3]  # Return max 3 suggestions
+
 def generate_suggestions(request_info: dict, result: dict) -> List[str]:
     """
-    Generate contextual suggestions based on conversation state
+    Legacy function for backward compatibility
     
     Args:
         request_info: Current request information
