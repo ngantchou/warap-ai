@@ -108,6 +108,10 @@ app.include_router(chat_router, tags=["chat"])
 from app.api.dashboard import router as dashboard_router
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 
+# Landing page dynamic data
+from app.api.landing_data import router as landing_data_router
+app.include_router(landing_data_router, tags=["landing-data"])
+
 # ==== END CLEAN API STRUCTURE ====
 
 # Root endpoint

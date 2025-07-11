@@ -213,11 +213,11 @@
             
             <div class="services__grid">
                 <div class="service-card">
-                    <div class="service-card__icon">
+                    <div class="service-card__icon service-icon">
                         <i class="fas fa-wrench"></i>
                     </div>
-                    <h3 class="service-card__title">Plomberie</h3>
-                    <p class="service-card__description">
+                    <h3 class="service-card__title service-title">Plomberie</h3>
+                    <p class="service-card__description service-desc">
                         Réparation de fuites, débouchage de canalisations, 
                         installation de robinets et équipements sanitaires.
                     </p>
@@ -227,7 +227,7 @@
                         <span class="example">• Installation robinets</span>
                     </div>
                     <div class="service-card__price">
-                        <span class="price-range">3,000 - 15,000 XAF</span>
+                        <span class="price-range service-price">3,000 - 15,000 XAF</span>
                     </div>
                     <button class="btn btn--service" onclick="startServiceChat('plomberie')">
                         Demander un plombier
@@ -238,11 +238,11 @@
                     <div class="service-card__badge">
                         <span>Plus demandé</span>
                     </div>
-                    <div class="service-card__icon">
+                    <div class="service-card__icon service-icon">
                         <i class="fas fa-bolt"></i>
                     </div>
-                    <h3 class="service-card__title">Électricité</h3>
-                    <p class="service-card__description">
+                    <h3 class="service-card__title service-title">Électricité</h3>
+                    <p class="service-card__description service-desc">
                         Réparation de pannes électriques, installation de prises, 
                         interrupteurs et réparation d'appareils électriques.
                     </p>
@@ -252,7 +252,7 @@
                         <span class="example">• Réparation ventilateurs</span>
                     </div>
                     <div class="service-card__price">
-                        <span class="price-range">2,000 - 12,000 XAF</span>
+                        <span class="price-range service-price">2,000 - 12,000 XAF</span>
                     </div>
                     <button class="btn btn--service" onclick="startServiceChat('électricité')">
                         Demander un électricien
@@ -260,11 +260,11 @@
                 </div>
                 
                 <div class="service-card">
-                    <div class="service-card__icon">
+                    <div class="service-card__icon service-icon">
                         <i class="fas fa-tools"></i>
                     </div>
-                    <h3 class="service-card__title">Électroménager</h3>
-                    <p class="service-card__description">
+                    <h3 class="service-card__title service-title">Électroménager</h3>
+                    <p class="service-card__description service-desc">
                         Réparation de fers à repasser, bouilloires, mixeurs 
                         et autres appareils électroménagers.
                     </p>
@@ -274,7 +274,7 @@
                         <span class="example">• Réparation mixeurs</span>
                     </div>
                     <div class="service-card__price">
-                        <span class="price-range">1,500 - 8,000 XAF</span>
+                        <span class="price-range service-price">1,500 - 8,000 XAF</span>
                     </div>
                     <button class="btn btn--service" onclick="startServiceChat('électroménager')">
                         Demander un réparateur
@@ -409,6 +409,69 @@
                     <p class="feature__description">
                         Tarifs clairs communiqués avant toute intervention
                     </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <div class="section__header">
+                <h2 class="section__title">Ce que disent nos clients</h2>
+                <p class="section__description">
+                    Témoignages authentiques de nos clients satisfaits à Douala
+                </p>
+            </div>
+            
+            <div class="testimonials-container">
+                <!-- Dynamic testimonials will be loaded here -->
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        ★★★★★
+                    </div>
+                    <div class="testimonial-text">
+                        "Service rapide et professionnel. Mon problème de plomberie a été résolu en moins d'une heure!"
+                    </div>
+                    <div class="testimonial-service">Plomberie - Bonamoussadi</div>
+                    <div class="testimonial-time">Il y a 2 heures</div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        ★★★★★
+                    </div>
+                    <div class="testimonial-text">
+                        "Excellent service! L'électricien était compétent et ponctuel."
+                    </div>
+                    <div class="testimonial-service">Électricité - Akwa</div>
+                    <div class="testimonial-time">Il y a 1 jour</div>
+                </div>
+                
+                <div class="testimonial-card">
+                    <div class="testimonial-rating">
+                        ★★★★☆
+                    </div>
+                    <div class="testimonial-text">
+                        "Très satisfait de la réparation de mon fer à repasser. Prix correct."
+                    </div>
+                    <div class="testimonial-service">Électroménager - Bonapriso</div>
+                    <div class="testimonial-time">Il y a 3 jours</div>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" data-stat="total-providers">18</div>
+                    <div class="stat-label">Prestataires actifs</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-stat="completion-rate">94%</div>
+                    <div class="stat-label">Taux de satisfaction</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-stat="recent-requests">45</div>
+                    <div class="stat-label">Services ce mois</div>
                 </div>
             </div>
         </div>
