@@ -127,11 +127,6 @@ async def provider_dashboard_page(request: Request):
     """Provider dashboard page"""
     return templates.TemplateResponse("provider_dashboard.html", {"request": request})
 
-@app.get("/provider-profile", response_class=HTMLResponse)
-async def provider_profile_page(request: Request):
-    """Provider profile management page"""
-    return templates.TemplateResponse("provider_profile.html", {"request": request})
-
 @app.get("/admin")
 async def admin_redirect():
     """Redirect /admin to /admin/"""
@@ -149,20 +144,9 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "djobea-ai"}
 
-@app.get("/api/config")
-async def get_config():
-    """Get client configuration"""
-    return {
-        "demo_mode": settings.demo_mode,
-        "app_name": settings.app_name
-    }
-
-
-
 if __name__ == "__main__":
-    # Run the application
     uvicorn.run(
-        "main:app",
+        "app.main:app",
         host="0.0.0.0",
         port=5000,
         reload=True,
