@@ -112,6 +112,10 @@ app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"]
 from app.api.landing_data import router as landing_data_router
 app.include_router(landing_data_router, tags=["landing-data"])
 
+# Communication metrics endpoint
+from app.api.communication_metrics import router as communication_router
+app.include_router(communication_router, prefix="/api/communication", tags=["communication"])
+
 # ==== END CLEAN API STRUCTURE ====
 
 # Root endpoint

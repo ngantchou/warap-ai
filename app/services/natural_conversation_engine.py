@@ -17,6 +17,7 @@ from app.services.ai_service import AIService
 from app.services.context_manager import ConversationContextManager
 from app.services.intent_analyzer import IntentAnalyzer
 from app.services.response_generator import NaturalResponseGenerator
+from app.services.enhanced_agent_llm_communication import EnhancedAgentLLMCommunicator, AgentMessage
 from app.utils.conversation_state import ConversationState, ConversationPhase
 from app.models.database_models import User, ServiceRequest, Conversation, RequestStatus
 from app.services.provider_service import ProviderService
@@ -72,6 +73,7 @@ class NaturalConversationEngine:
         self.response_generator = NaturalResponseGenerator()
         self.provider_service = ProviderService(db)
         self.whatsapp_service = WhatsAppService()
+        self.enhanced_communicator = EnhancedAgentLLMCommunicator()
         # self.notification_service = NotificationService()
         
         # Use global cache to maintain state across instances
@@ -95,68 +97,149 @@ class NaturalConversationEngine:
             # Get or create conversation context
             conversation_state = await self._get_conversation_context(user_identifier)
             
-            # Analyze user intent naturally
-            intent_analysis = await self.intent_analyzer.analyze_intent(
-                message, conversation_state.get_history(), conversation_state.current_phase
+            # Use enhanced communication system
+            enhanced_response = await self._process_with_enhanced_communication(
+                user_identifier, message, conversation_state
             )
             
-            # Update conversation context with new message
-            await self.context_manager.add_message(
-                user_identifier, message, "user", intent_analysis
-            )
+            if enhanced_response:
+                return enhanced_response
             
-            # Accumulate extracted information from this message
-            extracted_info = intent_analysis.get('extracted_info', {})
-            if user_identifier in self.conversation_data:
-                # Merge new information with accumulated data
-                for key, value in extracted_info.items():
-                    if value is not None:
-                        self.conversation_data[user_identifier]['collected_info'][key] = value
-                        if conversation_state.pending_request_data is None:
-                            conversation_state.pending_request_data = {}
-                        conversation_state.pending_request_data[key] = value
-            
-            # Process based on detected intent
-            result = await self._process_by_intent(
-                user_identifier, message, intent_analysis, conversation_state
-            )
-            
-            # Generate natural response
-            logger.info(f"Processing result before response generation: {result}")
-            
-            # Pass intent as string to response generator  
-            intent_analysis_for_response = intent_analysis.copy()
-            intent_analysis_for_response["primary_intent"] = intent_analysis.get("primary_intent", "general_inquiry")
-            
-            final_response = await self.response_generator.generate_natural_response(
-                intent_analysis_for_response, conversation_state, result, message
-            )
-            logger.info(f"Generated response: {final_response}")
-            
-            # Update conversation state
-            conversation_state.last_message = message
-            conversation_state.last_response = final_response
-            conversation_state.message_count += 1
-            
-            # Save conversation state
-            self.active_conversations[user_identifier] = conversation_state
-            
-            # Log conversation for analytics (invisible to user)
-            await self._log_conversation_analytics(user_identifier, message, final_response, intent_analysis)
-            
-            return ConversationResult(
-                response_message=final_response,
-                conversation_state=conversation_state,
-                system_actions=result.get("system_actions", []),
-                user_context_updated=True,
-                requires_follow_up=intent_analysis.get("requires_follow_up", False),
-                confidence_score=intent_analysis.get("confidence", 0.8)
+            # Fallback to original system if enhanced fails
+            return await self._process_with_original_system(
+                user_identifier, message, conversation_state
             )
             
         except Exception as e:
             logger.error(f"Error in natural conversation processing: {e}")
             # Graceful fallback
             return await self._generate_fallback_response(user_identifier, message)
+    
+    async def _process_with_enhanced_communication(
+        self, 
+        user_identifier: str, 
+        message: str,
+        conversation_state: ConversationState
+    ) -> Optional[ConversationResult]:
+        """Process conversation using enhanced Agent-LLM communication"""
+        
+        try:
+            # Get user data
+            user_data = await self._get_user_data(user_identifier)
+            
+            # Get system state
+            system_state = await self._get_system_state()
+            
+            # Create structured agent message
+            agent_message = AgentMessage(
+                user_message=message,
+                conversation_context=conversation_state.get_history(),
+                user_data=user_data,
+                system_state=system_state,
+                urgency_level=self._detect_urgency_level(message),
+                language="french",
+                cultural_context="cameroon"
+            )
+            
+            # Process with enhanced communicator
+            llm_response = await self.enhanced_communicator.process_conversation_with_llm(
+                agent_message, conversation_state
+            )
+            
+            # Process the structured response
+            result = await self._process_structured_response(
+                llm_response, user_identifier, conversation_state
+            )
+            
+            # Update conversation state
+            conversation_state.last_message = message
+            conversation_state.last_response = llm_response.response_text
+            conversation_state.message_count += 1
+            
+            # Save conversation state
+            self.active_conversations[user_identifier] = conversation_state
+            
+            # Log enhanced analytics
+            await self._log_enhanced_analytics(user_identifier, agent_message, llm_response)
+            
+            return ConversationResult(
+                response_message=llm_response.response_text,
+                conversation_state=conversation_state,
+                system_actions=result.get("system_actions", []),
+                user_context_updated=True,
+                requires_follow_up=llm_response.follow_up_needed,
+                confidence_score=llm_response.intent_confidence
+            )
+            
+        except Exception as e:
+            logger.error(f"Enhanced communication failed: {e}")
+            return None
+    
+    async def _process_with_original_system(
+        self, 
+        user_identifier: str, 
+        message: str,
+        conversation_state: ConversationState
+    ) -> ConversationResult:
+        """Fallback to original conversation processing system"""
+        
+        # Analyze user intent naturally
+        intent_analysis = await self.intent_analyzer.analyze_intent(
+            message, conversation_state.get_history(), conversation_state.current_phase
+        )
+        
+        # Update conversation context with new message
+        await self.context_manager.add_message(
+            user_identifier, message, "user", intent_analysis
+        )
+        
+        # Accumulate extracted information from this message
+        extracted_info = intent_analysis.get('extracted_info', {})
+        if user_identifier in self.conversation_data:
+            # Merge new information with accumulated data
+            for key, value in extracted_info.items():
+                if value is not None:
+                    self.conversation_data[user_identifier]['collected_info'][key] = value
+                    if conversation_state.pending_request_data is None:
+                        conversation_state.pending_request_data = {}
+                    conversation_state.pending_request_data[key] = value
+        
+        # Process based on detected intent
+        result = await self._process_by_intent(
+            user_identifier, message, intent_analysis, conversation_state
+        )
+        
+        # Generate natural response
+        logger.info(f"Processing result before response generation: {result}")
+        
+        # Pass intent as string to response generator  
+        intent_analysis_for_response = intent_analysis.copy()
+        intent_analysis_for_response["primary_intent"] = intent_analysis.get("primary_intent", "general_inquiry")
+        
+        final_response = await self.response_generator.generate_natural_response(
+            intent_analysis_for_response, conversation_state, result, message
+        )
+        logger.info(f"Generated response: {final_response}")
+        
+        # Update conversation state
+        conversation_state.last_message = message
+        conversation_state.last_response = final_response
+        conversation_state.message_count += 1
+        
+        # Save conversation state
+        self.active_conversations[user_identifier] = conversation_state
+        
+        # Log conversation for analytics (invisible to user)
+        await self._log_conversation_analytics(user_identifier, message, final_response, intent_analysis)
+        
+        return ConversationResult(
+            response_message=final_response,
+            conversation_state=conversation_state,
+            system_actions=result.get("system_actions", []),
+            user_context_updated=True,
+            requires_follow_up=intent_analysis.get("requires_follow_up", False),
+            confidence_score=intent_analysis.get("confidence", 0.8)
+        )
     
     async def _get_conversation_context(self, user_identifier: str) -> ConversationState:
         """Get existing conversation context or create new one with accumulated data persistence"""
@@ -203,6 +286,140 @@ class NaturalConversationEngine:
         self.active_conversations[user_identifier] = conversation_state
         
         return conversation_state
+    
+    async def _get_user_data(self, user_identifier: str) -> Dict[str, Any]:
+        """Get user data for enhanced communication"""
+        try:
+            # Get user from database
+            user = self.db.query(User).filter(User.phone_number == user_identifier).first()
+            if not user:
+                return {"user_id": user_identifier, "phone": user_identifier}
+            
+            # Get user service history
+            service_history = self.db.query(ServiceRequest).filter(
+                ServiceRequest.user_id == user.id
+            ).order_by(ServiceRequest.created_at.desc()).limit(5).all()
+            
+            return {
+                "user_id": user.id,
+                "phone": user.phone_number,
+                "name": user.name,
+                "location_history": [req.location for req in service_history if req.location],
+                "service_history": [req.service_type for req in service_history if req.service_type],
+                "total_requests": len(service_history),
+                "last_request_date": service_history[0].created_at.isoformat() if service_history else None
+            }
+        except Exception as e:
+            logger.error(f"Error getting user data: {e}")
+            return {"user_id": user_identifier, "phone": user_identifier}
+    
+    async def _get_system_state(self) -> Dict[str, Any]:
+        """Get current system state"""
+        try:
+            # Get provider availability
+            from app.models.database_models import Provider
+            active_providers = self.db.query(Provider).filter(Provider.is_active == True).count()
+            
+            # Get current request stats
+            pending_requests = self.db.query(ServiceRequest).filter(
+                ServiceRequest.status == RequestStatus.PENDING
+            ).count()
+            
+            return {
+                "active_providers": active_providers,
+                "pending_requests": pending_requests,
+                "current_request_status": "processing",
+                "provider_availability": "normal" if active_providers > 0 else "limited",
+                "system_load": "normal"
+            }
+        except Exception as e:
+            logger.error(f"Error getting system state: {e}")
+            return {"system_load": "unknown", "provider_availability": "unknown"}
+    
+    def _detect_urgency_level(self, message: str) -> str:
+        """Detect urgency level from message"""
+        urgent_keywords = ["urgent", "urgence", "vite", "rapidement", "emergency", "emergencecy", "inmediatement", "maintenant"]
+        emergency_keywords = ["feu", "flood", "inondation", "danger", "risque", "eau partout", "électrocution"]
+        
+        message_lower = message.lower()
+        
+        if any(keyword in message_lower for keyword in emergency_keywords):
+            return "emergency"
+        elif any(keyword in message_lower for keyword in urgent_keywords):
+            return "urgent"
+        else:
+            return "normal"
+    
+    async def _process_structured_response(
+        self, 
+        llm_response, 
+        user_identifier: str, 
+        conversation_state: ConversationState
+    ) -> Dict[str, Any]:
+        """Process structured LLM response and execute actions"""
+        
+        result = {"system_actions": []}
+        
+        try:
+            # Update conversation data with extracted information
+            if user_identifier in self.conversation_data:
+                extracted_data = llm_response.extracted_data
+                for key, value in extracted_data.items():
+                    if value is not None:
+                        self.conversation_data[user_identifier]['collected_info'][key] = value
+                        if conversation_state.pending_request_data is None:
+                            conversation_state.pending_request_data = {}
+                        conversation_state.pending_request_data[key] = value
+            
+            # Process next actions
+            for action in llm_response.next_actions:
+                if action == "create_request":
+                    # Create service request if we have enough info
+                    await self._handle_service_request(user_identifier, conversation_state)
+                    result["system_actions"].append({"type": "request_created"})
+                elif action == "continue_conversation":
+                    result["system_actions"].append({"type": "continue_conversation"})
+                elif action == "gather_info":
+                    result["system_actions"].append({"type": "gather_info"})
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error processing structured response: {e}")
+            return {"system_actions": []}
+    
+    async def _log_enhanced_analytics(self, user_identifier: str, agent_message, llm_response):
+        """Log enhanced analytics for improvement"""
+        
+        analytics_data = {
+            "user_id": user_identifier,
+            "message_length": len(agent_message.user_message),
+            "urgency_level": agent_message.urgency_level,
+            "intent_confidence": llm_response.intent_confidence,
+            "quality_score": llm_response.quality_score,
+            "extracted_fields": len([v for v in llm_response.extracted_data.values() if v is not None]),
+            "response_type": llm_response.response_type,
+            "follow_up_needed": llm_response.follow_up_needed,
+            "error_indicators": llm_response.error_indicators,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        logger.info(f"Enhanced analytics: {analytics_data}")
+        
+        # Store analytics in database if analytics table exists
+        try:
+            # This would store in a conversation_analytics table if it exists
+            pass
+        except Exception as e:
+            logger.debug(f"Analytics storage failed: {e}")
+    
+    def get_communication_metrics(self) -> Dict[str, Any]:
+        """Get communication metrics from enhanced system"""
+        return self.enhanced_communicator.get_communication_metrics()
+    
+    def get_improvement_suggestions(self) -> List[str]:
+        """Get improvement suggestions from enhanced system"""
+        return self.enhanced_communicator.get_improvement_suggestions()
     
     async def _process_by_intent(
         self, 

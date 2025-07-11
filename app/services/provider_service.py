@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from app.models.database_models import Provider, ServiceRequest, RequestStatus
 from app.utils.logger import setup_logger
+from app.services.communication_service import CommunicationService
 
 logger = setup_logger(__name__)
 
@@ -11,33 +12,53 @@ class ProviderService:
     
     def __init__(self, db: Session):
         self.db = db
+        self.communication_service = CommunicationService()
     
     def find_available_providers(self, service_type: str, location: str) -> List[Provider]:
         """Find available providers for a specific service and location"""
         try:
-            # Query providers who:
-            # 1. Offer the requested service
-            # 2. Cover the requested area
-            # 3. Are currently available and active
+            from sqlalchemy import and_, or_, func
+            
+            # Query providers who are available and active
             providers = self.db.query(Provider).filter(
                 and_(
                     Provider.is_available == True,
-                    Provider.is_active == True,
-                    Provider.services.contains([service_type]),
-                    or_(
-                        Provider.coverage_areas.contains([location]),
-                        Provider.coverage_areas.contains(["Bonamoussadi"]),  # Default coverage area
-                        Provider.coverage_areas.contains(["Douala"])  # City-wide coverage
-                    )
+                    Provider.is_active == True
                 )
             ).order_by(Provider.rating.desc(), Provider.total_jobs.asc()).all()
             
-            logger.info(f"Found {len(providers)} available providers for {service_type} in {location}")
-            return providers
+            # Filter in Python for JSON array matching (more reliable)
+            matching_providers = []
+            for provider in providers:
+                try:
+                    # Check if provider offers the service
+                    if provider.services and isinstance(provider.services, list):
+                        if service_type in provider.services:
+                            # Check coverage areas
+                            if provider.coverage_areas and isinstance(provider.coverage_areas, list):
+                                if any(area in provider.coverage_areas for area in [location, "Bonamoussadi", "Douala"]):
+                                    matching_providers.append(provider)
+                                    continue
+                            
+                            # If no coverage areas specified, assume city-wide
+                            if not provider.coverage_areas:
+                                matching_providers.append(provider)
+                                continue
+                        
+                except Exception as provider_error:
+                    logger.warning(f"Error checking provider {provider.id}: {provider_error}")
+                    continue
+            
+            logger.info(f"Found {len(matching_providers)} available providers for {service_type} in {location}")
+            return matching_providers
             
         except Exception as e:
             logger.error(f"Error finding available providers: {e}")
             return []
+    
+    async def find_matching_providers(self, service_type: str, location: str, urgency: str = "normal") -> List[Provider]:
+        """Find matching providers for fallback system (alias for find_available_providers)"""
+        return self.find_available_providers(service_type, location)
     
     def get_provider_by_whatsapp_id(self, whatsapp_id: str) -> Optional[Provider]:
         """Get provider by WhatsApp ID"""
@@ -209,4 +230,86 @@ class ProviderService:
         except Exception as e:
             logger.error(f"Error deactivating provider: {e}")
             self.db.rollback()
+            return False
+    
+    async def notify_providers_with_fallback(self, request: ServiceRequest, providers: List[Provider]) -> bool:
+        """Notify providers and handle failures with fallback provider list"""
+        try:
+            from app.services.whatsapp_service import WhatsAppService
+            
+            whatsapp_service = WhatsAppService()
+            failed_providers = []
+            successful_notifications = 0
+            
+            for provider in providers:
+                try:
+                    # Create notification message
+                    message = f"""
+🔔 **Nouvelle demande de service**
+
+📋 **Service :** {request.service_type}
+📍 **Localisation :** {request.location}
+💰 **Budget estimé :** {request.estimated_price or 'À négocier'}
+⏰ **Urgence :** {request.urgency}
+
+📝 **Description :**
+{request.description}
+
+✅ **Répondez "OUI" pour accepter cette demande**
+❌ **Répondez "NON" pour refuser**
+
+**Référence :** REQ-{request.id}
+"""
+                    
+                    # Try to send notification
+                    success = whatsapp_service.send_message(provider.whatsapp_id, message)
+                    
+                    if success:
+                        successful_notifications += 1
+                        logger.info(f"Notification sent to provider {provider.id} ({provider.name})")
+                    else:
+                        failed_providers.append(provider)
+                        logger.warning(f"Failed to notify provider {provider.id} ({provider.name})")
+                        
+                except Exception as e:
+                    failed_providers.append(provider)
+                    logger.error(f"Error notifying provider {provider.id}: {e}")
+            
+            # If all notifications failed, trigger fallback
+            if successful_notifications == 0:
+                logger.warning(f"All provider notifications failed for request {request.id}")
+                
+                # Use communication service to send fallback message
+                fallback_success = await self.communication_service.handle_provider_notification_failure(
+                    request, failed_providers, self.db
+                )
+                
+                if fallback_success:
+                    logger.info(f"Provider fallback message sent for request {request.id}")
+                    return True
+                else:
+                    # Complete system failure
+                    logger.error(f"Complete notification failure for request {request.id}")
+                    await self.communication_service.handle_complete_system_failure(request, self.db)
+                    return False
+            
+            # If some notifications succeeded, log partial failures
+            if failed_providers:
+                logger.warning(f"Partial notification failure for request {request.id}: {len(failed_providers)} providers failed")
+                
+                # Log failed providers for analytics
+                for provider in failed_providers:
+                    logger.warning(f"Failed to notify provider {provider.id} ({provider.name})")
+            
+            return successful_notifications > 0
+            
+        except Exception as e:
+            logger.error(f"Error in notify_providers_with_fallback: {e}")
+            
+            # Emergency fallback
+            try:
+                await self.communication_service.handle_complete_system_failure(request, self.db)
+            except Exception as fallback_error:
+                logger.critical(f"Emergency fallback also failed: {fallback_error}")
+            
             return False

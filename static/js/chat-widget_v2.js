@@ -865,6 +865,26 @@
         }, 200);
     };
 
+    // Add missing global functions
+    window.sendMessage = function(message) {
+        if (!state.isOpen) {
+            controls.open();
+        }
+        setTimeout(() => {
+            chat.sendUserMessage(message);
+        }, 200);
+    };
+
+    window.handleKeyPress = function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const message = elements.input.value.trim();
+            if (message) {
+                chat.sendUserMessage(message);
+            }
+        }
+    };
+
     window.startServiceChat = function(serviceType) {
         const messages = {
             'plomberie': 'J\'ai un problème de plomberie. Pouvez-vous m\'aider?',

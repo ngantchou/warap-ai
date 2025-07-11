@@ -14,6 +14,7 @@ from app.database import get_db
 from app.models.database_models import ServiceRequest, User, Provider, RequestStatus
 from app.services.whatsapp_service import WhatsAppService
 from app.services.provider_profile_service import get_provider_profile_service
+from app.services.provider_fallback_service import ProviderFallbackService
 
 
 class CommunicationService:
@@ -72,6 +73,11 @@ class CommunicationService:
             
             if success:
                 logger.info(f"Instant confirmation sent for request {request_id}")
+                
+            # If confirmation fails, log it for fallback handling
+            if not success:
+                logger.warning(f"Instant confirmation failed for request {request_id}")
+                await self._handle_confirmation_failure(request, user, db)
                 
                 # Start proactive update task
                 await self.start_proactive_updates(request_id, db)
@@ -549,3 +555,113 @@ Merci de votre patience ! 🙏
             max_price = pricing.get("max", 0)
             return f"{min_price:,} - {max_price:,} XAF".replace(",", " ")
         return "À négocier"
+    
+    async def _handle_confirmation_failure(self, request: ServiceRequest, user: User, db: Session):
+        """Handle confirmation failure with fallback message"""
+        try:
+            fallback_service = ProviderFallbackService(db)
+            
+            # Send fallback message explaining the delay
+            fallback_message = f"""
+📱 **Confirmation en cours**
+
+Votre demande de {request.service_type} a été reçue et est en cours de traitement.
+
+⏱️ **Délai prolongé :** 10-15 minutes (au lieu de 5-10 minutes habituels)
+
+🔍 Je recherche activement des prestataires dans votre zone.
+
+💬 Vous recevrez une notification dès qu'un professionnel acceptera votre demande.
+
+**Votre référence :** REQ-{request.id}
+"""
+            
+            # Try to send fallback message
+            success = self.whatsapp_service.send_message(user.whatsapp_id, fallback_message)
+            
+            if success:
+                logger.info(f"Fallback confirmation sent for request {request.id}")
+            else:
+                logger.error(f"Both confirmation and fallback failed for request {request.id}")
+                
+        except Exception as e:
+            logger.error(f"Error handling confirmation failure: {e}")
+    
+    async def handle_provider_notification_failure(
+        self, 
+        request: ServiceRequest, 
+        failed_providers: List[Provider], 
+        db: Session
+    ) -> bool:
+        """Handle provider notification failure with fallback provider list"""
+        try:
+            logger.warning(f"Provider notification failed for request {request.id}")
+            
+            user = db.query(User).filter(User.id == request.user_id).first()
+            if not user:
+                return False
+            
+            # Use fallback service to get provider list
+            fallback_service = ProviderFallbackService(db)
+            fallback_message = await fallback_service.handle_notification_failure(
+                request, "provider_notification_failed"
+            )
+            
+            # Send fallback message with provider list
+            success = self.whatsapp_service.send_message(user.whatsapp_id, fallback_message)
+            
+            if success:
+                logger.info(f"Provider fallback list sent for request {request.id}")
+                
+                # Log the failure for analytics
+                await fallback_service.log_notification_failure(
+                    request, 
+                    "provider_notification_failed", 
+                    f"Failed to notify {len(failed_providers)} providers"
+                )
+                
+                return True
+            else:
+                logger.error(f"Failed to send provider fallback list for request {request.id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error handling provider notification failure: {e}")
+            return False
+    
+    async def handle_complete_system_failure(
+        self, 
+        request: ServiceRequest, 
+        db: Session
+    ) -> bool:
+        """Handle complete system failure with emergency fallback"""
+        try:
+            logger.error(f"Complete system failure for request {request.id}")
+            
+            user = db.query(User).filter(User.id == request.user_id).first()
+            if not user:
+                return False
+            
+            # Use fallback service for emergency message
+            fallback_service = ProviderFallbackService(db)
+            emergency_message = fallback_service._generate_emergency_fallback_message(request)
+            
+            # Try to send emergency message
+            success = self.whatsapp_service.send_message(user.whatsapp_id, emergency_message)
+            
+            if success:
+                logger.info(f"Emergency fallback sent for request {request.id}")
+                
+                # Update request status
+                request.status = "SYSTEM_FAILURE"
+                request.notes = "Complete system failure - emergency fallback sent"
+                db.commit()
+                
+                return True
+            else:
+                logger.critical(f"Emergency fallback also failed for request {request.id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error handling complete system failure: {e}")
+            return False
