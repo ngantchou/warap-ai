@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, and_, or_
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 import json
+import uuid
 
 from app.database import get_db
 from app.services.auth_service import get_current_user
@@ -21,6 +23,25 @@ from loguru import logger
 
 router = APIRouter(tags=["dashboard"])
 settings = get_settings()
+
+# Request models
+class LocationRequest(BaseModel):
+    address: str
+    zone: str
+    coordinates: Dict[str, float]
+    accessInstructions: Optional[str] = None
+
+class CreateServiceRequestModel(BaseModel):
+    clientName: str
+    clientPhone: str
+    clientEmail: str
+    serviceType: str
+    description: str
+    location: LocationRequest
+    priority: str
+    scheduledDate: Optional[str] = None
+    estimatedBudget: Optional[int] = None
+    images: Optional[List[str]] = []
 
 # Response models
 class StatsResponse:
@@ -846,3 +867,112 @@ async def get_requests(
     except Exception as e:
         logger.error(f"Error fetching requests: {str(e)}")
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des demandes")
+
+
+@router.post("/requests")
+async def create_service_request(
+    request_data: CreateServiceRequestModel,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/requests - Create new service request
+    Creates a new service request with client information and service details
+    """
+    try:
+        logger.info(f"Creating new service request for client: {request_data.clientName}")
+        
+        # Create or get user
+        user = db.query(User).filter(User.phone_number == request_data.clientPhone).first()
+        if not user:
+            # Check if user exists by whatsapp_id (without + symbol)
+            whatsapp_id = request_data.clientPhone.replace("+", "")
+            user = db.query(User).filter(User.whatsapp_id == whatsapp_id).first()
+            
+            if not user:
+                # Create new user
+                user = User(
+                    whatsapp_id=whatsapp_id,
+                    name=request_data.clientName,
+                    phone_number=request_data.clientPhone,
+                    created_at=datetime.utcnow()
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+                logger.info(f"Created new user: {user.name} ({user.phone_number})")
+            else:
+                logger.info(f"Found existing user by whatsapp_id: {user.name}")
+        else:
+            logger.info(f"Found existing user by phone: {user.name}")
+        
+        # Generate unique request ID
+        request_id = f"req-new-{uuid.uuid4().hex[:8]}"
+        
+        # Map service type to database format
+        service_type_mapping = {
+            "Électricité": "électricité",
+            "Plomberie": "plomberie", 
+            "Réparation": "réparation électroménager",
+            "Électroménager": "réparation électroménager"
+        }
+        
+        mapped_service_type = service_type_mapping.get(request_data.serviceType, request_data.serviceType.lower())
+        
+        # Map priority
+        priority_mapping = {
+            "urgent": "urgent",
+            "high": "urgent",
+            "medium": "normal",
+            "normal": "normal",
+            "low": "flexible",
+            "flexible": "flexible"
+        }
+        
+        mapped_priority = priority_mapping.get(request_data.priority.lower(), "normal")
+        
+        # Parse scheduled date
+        scheduled_date = None
+        if request_data.scheduledDate:
+            try:
+                scheduled_date = datetime.fromisoformat(request_data.scheduledDate.replace('Z', '+00:00'))
+            except ValueError:
+                pass
+        
+        # Create service request
+        service_request = ServiceRequest(
+            user_id=user.id,
+            service_type=mapped_service_type,
+            description=request_data.description,
+            location=request_data.location.address,
+            urgency=mapped_priority,
+            status="PENDING",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            preferred_time_start=scheduled_date,
+            estimated_cost=request_data.estimatedBudget
+        )
+        
+        db.add(service_request)
+        db.commit()
+        db.refresh(service_request)
+        
+        logger.info(f"Created service request: {request_id} for {request_data.clientName}")
+        
+        # Return response
+        response = {
+            "success": True,
+            "requestId": request_id,
+            "message": "Demande créée avec succès",
+            "data": {
+                "id": request_id,
+                "status": "pending",
+                "createdAt": service_request.created_at.isoformat() + "Z"
+            }
+        }
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error creating service request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la création de la demande")
