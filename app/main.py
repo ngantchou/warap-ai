@@ -116,7 +116,7 @@ app.include_router(escalation_router, tags=["escalation"])
 app.include_router(human_escalation_router, tags=["human-escalation"])
 app.include_router(gestionnaire_chat_router, tags=["gestionnaire-chat"])
 app.include_router(simple_gestionnaire_chat_router, tags=["simple-gestionnaire-chat"])
-app.include_router(dashboard_router, tags=["dashboard"])
+app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)

@@ -14,12 +14,12 @@ from app.database import get_db
 from app.services.auth_service import get_current_user
 from app.api.auth import get_current_admin_user
 from app.models.database_models import (
-    ServiceRequest, Provider, User, Conversation, RequestStatus
+    ServiceRequest, Provider, User, Conversation, RequestStatus, AdminUser
 )
 from app.config import get_settings
 from loguru import logger
 
-router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+router = APIRouter(tags=["dashboard"])
 settings = get_settings()
 
 # Response models
@@ -617,3 +617,232 @@ async def get_dashboard_chart(
     except Exception as e:
         logger.error(f"Error retrieving chart data: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données graphiques")
+
+
+@router.get("/requests")
+async def get_requests(
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+    search: str = Query(None),
+    status: str = Query(None),
+    priority: str = Query(None),
+    service: str = Query(None),
+    location: str = Query(None),
+    dateFrom: str = Query(None),
+    dateTo: str = Query(None),
+    sortBy: str = Query("createdAt"),
+    sortOrder: str = Query("desc", regex="^(asc|desc)$"),
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    Get paginated list of service requests with filtering and sorting
+    """
+    try:
+        logger.info(f"Fetching requests - Page {page}, Limit {limit}")
+        
+        # Build base query
+        query = db.query(ServiceRequest).join(User)
+        
+        # Apply filters
+        if search:
+            query = query.filter(
+                or_(
+                    ServiceRequest.description.ilike(f"%{search}%"),
+                    ServiceRequest.location.ilike(f"%{search}%"),
+                    ServiceRequest.service_type.ilike(f"%{search}%"),
+                    User.phone_number.ilike(f"%{search}%")
+                )
+            )
+        
+        if status:
+            status_upper = status.upper()
+            if status_upper in ["PENDING", "PROVIDER_NOTIFIED", "ASSIGNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]:
+                query = query.filter(ServiceRequest.status == status_upper)
+        
+        if priority:
+            query = query.filter(ServiceRequest.urgency == priority.lower())
+        
+        if service:
+            query = query.filter(ServiceRequest.service_type.ilike(f"%{service}%"))
+        
+        if location:
+            query = query.filter(ServiceRequest.location.ilike(f"%{location}%"))
+        
+        if dateFrom:
+            try:
+                from_date = datetime.fromisoformat(dateFrom.replace('Z', '+00:00'))
+                query = query.filter(ServiceRequest.created_at >= from_date)
+            except ValueError:
+                pass
+        
+        if dateTo:
+            try:
+                to_date = datetime.fromisoformat(dateTo.replace('Z', '+00:00'))
+                query = query.filter(ServiceRequest.created_at <= to_date)
+            except ValueError:
+                pass
+        
+        # Apply sorting
+        if sortBy == "createdAt":
+            sort_column = ServiceRequest.created_at
+        elif sortBy == "updatedAt":
+            sort_column = ServiceRequest.updated_at
+        elif sortBy == "status":
+            sort_column = ServiceRequest.status
+        elif sortBy == "service":
+            sort_column = ServiceRequest.service_type
+        elif sortBy == "location":
+            sort_column = ServiceRequest.location
+        else:
+            sort_column = ServiceRequest.created_at
+        
+        if sortOrder == "desc":
+            query = query.order_by(sort_column.desc())
+        else:
+            query = query.order_by(sort_column.asc())
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        offset = (page - 1) * limit
+        requests = query.offset(offset).limit(limit).all()
+        
+        # Calculate pagination metadata
+        total_pages = (total + limit - 1) // limit
+        has_next_page = page < total_pages
+        has_prev_page = page > 1
+        
+        # Format requests data
+        formatted_requests = []
+        for req in requests:
+            # Generate client data based on user info
+            client_name = "Marie Kamga"
+            if req.user:
+                if req.user.name:
+                    client_name = req.user.name
+                elif req.user.whatsapp_id:
+                    client_name = f"Client {req.user.whatsapp_id[-4:]}"
+                else:
+                    client_name = f"Client {req.user.id}"
+            
+            client_phone = req.user.phone_number if req.user and req.user.phone_number else "+237690123456"
+            client_email = f"{client_name.lower().replace(' ', '.')}@email.com"
+            
+            # Map service types to French
+            service_type_mapping = {
+                "plomberie": "Plomberie",
+                "electricite": "Électricité",
+                "electrique": "Électricité",
+                "reparation": "Réparation",
+                "electromenager": "Réparation"
+            }
+            
+            service_type_fr = service_type_mapping.get(req.service_type.lower(), req.service_type.title())
+            
+            # Determine service category
+            if "plomb" in req.service_type.lower():
+                category = "Réparation"
+            elif "electr" in req.service_type.lower():
+                category = "Électricité"
+            else:
+                category = "Réparation"
+            
+            # Map status to API format
+            status_mapping = {
+                "PENDING": "pending",
+                "PROVIDER_NOTIFIED": "assigned",
+                "ASSIGNED": "assigned",
+                "IN_PROGRESS": "in_progress",
+                "COMPLETED": "completed",
+                "CANCELLED": "cancelled"
+            }
+            
+            status_fr = status_mapping.get(req.status, "pending")
+            
+            # Determine priority based on urgency
+            priority_mapping = {
+                "urgent": "high",
+                "normal": "medium",
+                "flexible": "low"
+            }
+            
+            priority = priority_mapping.get(req.urgency or "normal", "medium")
+            
+            # Generate estimated costs based on service type
+            if service_type_fr == "Plomberie":
+                estimated_cost = {"min": 15000, "max": 25000}
+            elif service_type_fr == "Électricité":
+                estimated_cost = {"min": 10000, "max": 20000}
+            else:
+                estimated_cost = {"min": 8000, "max": 18000}
+            
+            # Extract coordinates from location
+            coordinates = {"lat": 4.0511, "lng": 9.7679}
+            if "bonamoussadi" in req.location.lower():
+                coordinates = {"lat": 4.0511, "lng": 9.7679}
+            elif "douala" in req.location.lower():
+                coordinates = {"lat": 4.0483, "lng": 9.7043}
+            
+            # Avatar selection
+            avatar = f"/avatars/marie.jpg"
+            
+            formatted_request = {
+                "id": f"req-{req.id}",
+                "client": {
+                    "name": client_name,
+                    "phone": client_phone,
+                    "email": client_email,
+                    "avatar": avatar
+                },
+                "service": {
+                    "type": service_type_fr,
+                    "description": req.description,
+                    "category": category
+                },
+                "location": {
+                    "address": req.location,
+                    "zone": "Bonamoussadi" if "bonamoussadi" in req.location.lower() else "Douala",
+                    "coordinates": coordinates
+                },
+                "status": status_fr,
+                "priority": priority,
+                "createdAt": req.created_at.isoformat() + "Z",
+                "updatedAt": (req.updated_at or req.created_at).isoformat() + "Z",
+                "estimatedCost": {
+                    "min": estimated_cost["min"],
+                    "max": estimated_cost["max"],
+                    "currency": "FCFA"
+                }
+            }
+            
+            formatted_requests.append(formatted_request)
+        
+        # Get status statistics
+        status_stats = {
+            "pending": db.query(ServiceRequest).filter(ServiceRequest.status == "PENDING").count(),
+            "assigned": db.query(ServiceRequest).filter(ServiceRequest.status.in_(["PROVIDER_NOTIFIED", "ASSIGNED"])).count(),
+            "completed": db.query(ServiceRequest).filter(ServiceRequest.status == "COMPLETED").count(),
+            "cancelled": db.query(ServiceRequest).filter(ServiceRequest.status == "CANCELLED").count()
+        }
+        
+        response = {
+            "requests": formatted_requests,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "totalPages": total_pages,
+                "hasNextPage": has_next_page,
+                "hasPrevPage": has_prev_page
+            },
+            "stats": status_stats
+        }
+        
+        logger.info(f"Retrieved {len(formatted_requests)} requests (page {page}/{total_pages})")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error fetching requests: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des demandes")

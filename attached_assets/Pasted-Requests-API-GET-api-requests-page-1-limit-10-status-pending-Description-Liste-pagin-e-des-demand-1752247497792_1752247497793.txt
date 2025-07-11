@@ -1,0 +1,82 @@
+Requests API
+GET /api/requests?page=1&limit=10&status=pending
+Description : Liste paginée des demandes avec filtres
+Entrée : Query parameters optionnels (page, limit, search, status, priority, service, location, dateFrom, dateTo, sortBy, sortOrder)
+Réponse :
+json{
+  "requests": [
+    {
+      "id": "req-789",
+      "client": {
+        "name": "Marie Kamga",
+        "phone": "+237690123456",
+        "email": "marie@email.com",
+        "avatar": "/avatars/marie.jpg"
+      },
+      "service": {
+        "type": "Plomberie",
+        "description": "Fuite sous l'évier de la cuisine",
+        "category": "Réparation"
+      },
+      "location": {
+        "address": "Rue des Bananiers, Bonamoussadi",
+        "zone": "Bonamoussadi",
+        "coordinates": {"lat": 4.0511, "lng": 9.7679}
+      },
+      "status": "pending",
+      "priority": "high",
+      "createdAt": "2025-07-11T08:20:00Z",
+      "updatedAt": "2025-07-11T08:20:00Z",
+      "estimatedCost": {
+        "min": 15000,
+        "max": 25000,
+        "currency": "FCFA"
+      }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 156,
+    "totalPages": 16,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  },
+  "stats": {
+    "pending": 23,
+    "assigned": 45,
+    "completed": 78,
+    "cancelled": 10
+  }
+}
+POST /api/requests
+Description : Créer une nouvelle demande de service
+Entrée :
+json{
+  "clientName": "Paul Ngono",
+  "clientPhone": "+237677998877",
+  "clientEmail": "paul@email.com",
+  "serviceType": "Électricité",
+  "description": "Panne de courant dans toute la maison",
+  "location": {
+    "address": "Quartier Makepe, Douala",
+    "zone": "Makepe",
+    "coordinates": {"lat": 4.0612, "lng": 9.7580},
+    "accessInstructions": "Maison bleue, portail rouge"
+  },
+  "priority": "urgent",
+  "scheduledDate": "2025-07-11T14:00:00Z",
+  "estimatedBudget": 30000,
+  "images": ["/uploads/image1.jpg", "/uploads/image2.jpg"]
+}
+Réponse :
+json{
+  "success": true,
+  "requestId": "req-new-123",
+  "message": "Demande créée avec succès",
+  "data": {
+    "id": "req-new-123",
+    "status": "pending",
+    "createdAt": "2025-07-11T10:15:00Z"
+  }
+}
