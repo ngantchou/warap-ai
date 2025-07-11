@@ -101,7 +101,7 @@ class AISuggestionService:
             ])
         
         prompt = f"""Tu es un assistant IA pour un service de dépannage à domicile au Cameroun (Douala).
-Génère 3 suggestions courtes et pertinentes pour aider l'utilisateur à continuer la conversation naturellement.
+Génère 3 suggestions courtes qui sont des EXEMPLES DE RÉPONSES que l'utilisateur peut donner, pas des questions.
 
 CONTEXTE DE LA CONVERSATION:
 - Phase actuelle: {conversation_phase}
@@ -119,23 +119,33 @@ MESSAGE ACTUEL DE L'UTILISATEUR:
 RÉPONSE DE L'IA:
 {ai_response}
 
-RÈGLES POUR LES SUGGESTIONS:
-1. Maxium 15 mots par suggestion
-2. Pertinentes au contexte camerounais (Douala, XAF, expressions locales)
-3. Aident à compléter les informations manquantes
-4. Naturelles et conversationnelles
-5. Adaptées au niveau d'urgence
+RÈGLES IMPORTANTES:
+1. Génère des RÉPONSES EXEMPLE que l'utilisateur peut dire, PAS des questions
+2. Maximum 15 mots par suggestion
+3. Pertinentes au contexte camerounais (Douala, XAF, expressions locales)
+4. Aident à compléter les informations manquantes
+5. Naturelles et conversationnelles
 6. En français simple
 
-EXEMPLES DE BONNES SUGGESTIONS:
+EXEMPLES DE BONNES SUGGESTIONS (RÉPONSES UTILISATEUR):
+Si l'IA demande le type de problème:
+- "Le disjoncteur a sauté"
+- "Pas de courant dans la cuisine"
+- "Les prises ne marchent plus"
+
+Si l'IA demande la localisation:
+- "À Bonamoussadi centre"
+- "Près du marché Deido"
+- "À côté de l'école"
+
+Si l'IA demande l'urgence:
 - "Oui, c'est urgent"
 - "Non, ça peut attendre"
-- "À Bonamoussadi centre"
-- "Combien ça coûte environ?"
-- "Le disjoncteur a sauté"
-- "Depuis ce matin"
+- "Dès que possible"
 
-GÉNÈRE 3 SUGGESTIONS COURTES ET PERTINENTES:
+IMPORTANT: NE GÉNÈRE PAS DE QUESTIONS! Génère UNIQUEMENT des réponses/affirmations que l'utilisateur peut dire.
+
+GÉNÈRE 3 EXEMPLES DE RÉPONSES QUE L'UTILISATEUR PEUT DONNER:
 """
         
         return prompt
@@ -146,7 +156,7 @@ GÉNÈRE 3 SUGGESTIONS COURTES ET PERTINENTES:
             # Get AI response
             ai_response = await self.ai_service.generate_response(
                 messages=[{"role": "user", "content": prompt}],
-                system_prompt="Tu es un générateur de suggestions contextuelles. Réponds uniquement avec 3 suggestions courtes séparées par des retours à la ligne.",
+                system_prompt="Tu es un générateur de suggestions contextuelles. Génère UNIQUEMENT 3 exemples de réponses/affirmations que l'utilisateur peut donner, PAS DES QUESTIONS. Évite les mots interrogatifs (quel, quand, comment, où, pourquoi). Réponds avec 3 suggestions courtes séparées par des retours à la ligne.",
                 max_tokens=150,
                 temperature=0.7
             )
@@ -192,9 +202,16 @@ GÉNÈRE 3 SUGGESTIONS COURTES ET PERTINENTES:
             if not suggestion or len(suggestion) > 50:
                 continue
             
-            # Skip duplicates
-            if suggestion not in processed:
-                processed.append(suggestion)
+            # Filter out questions and convert to answer examples
+            if self._is_question(suggestion):
+                # Convert question to answer example
+                answer_example = self._convert_question_to_answer(suggestion, conversation_context)
+                if answer_example and answer_example not in processed:
+                    processed.append(answer_example)
+            else:
+                # Skip duplicates
+                if suggestion not in processed:
+                    processed.append(suggestion)
         
         # Ensure we have at least 2 suggestions
         if len(processed) < 2:
@@ -202,26 +219,64 @@ GÉNÈRE 3 SUGGESTIONS COURTES ET PERTINENTES:
         
         return processed[:3]  # Max 3 suggestions
     
+    def _is_question(self, text: str) -> bool:
+        """Check if text is a question"""
+        text_lower = text.lower()
+        question_words = ['quel', 'quand', 'comment', 'où', 'pourquoi', 'combien', 'est-ce que', 'avez-vous']
+        return text.endswith('?') or any(word in text_lower for word in question_words)
+    
+    def _convert_question_to_answer(self, question: str, conversation_context: Dict[str, Any]) -> str:
+        """Convert a question to an answer example"""
+        question_lower = question.lower()
+        extracted_info = conversation_context.get('extracted_info', {})
+        
+        # Location-related questions
+        if 'où' in question_lower or 'quartier' in question_lower or 'zone' in question_lower:
+            return "À Bonamoussadi centre"
+        
+        # Time-related questions
+        if 'quand' in question_lower or 'depuis' in question_lower:
+            return "Depuis ce matin"
+        
+        # Type/description questions
+        if 'quel' in question_lower or 'décri' in question_lower:
+            service_type = extracted_info.get('service_type', '').lower()
+            if 'électricité' in service_type:
+                return "Le disjoncteur a sauté"
+            elif 'plomberie' in service_type:
+                return "Le robinet coule"
+            elif 'électroménager' in service_type:
+                return "Le frigo ne marche plus"
+            else:
+                return "Problème technique"
+        
+        # Verification questions
+        if 'avez-vous' in question_lower or 'vérifié' in question_lower:
+            return "Oui, j'ai vérifié"
+        
+        # Default answer
+        return "Oui exactement"
+    
     def _get_contextual_fallback(self, conversation_context: Dict[str, Any]) -> List[str]:
         """Get contextual fallback suggestions based on conversation context"""
         extracted_info = conversation_context.get('extracted_info', {})
         
-        # Service-specific suggestions
+        # Service-specific answer examples
         service_type = extracted_info.get('service_type', '').lower()
         if 'plomberie' in service_type:
-            return ["Fuite d'eau", "WC bouché", "Pression faible"]
+            return ["Le robinet coule", "WC bouché", "À Bonamoussadi"]
         elif 'électricité' in service_type:
-            return ["Disjoncteur sauté", "Prise défectueuse", "Coupure totale"]
+            return ["Le disjoncteur a sauté", "Depuis ce matin", "À Bonamoussadi centre"]
         elif 'électroménager' in service_type:
-            return ["Ne démarre plus", "Fait du bruit", "Surchauffe"]
+            return ["Le frigo ne marche plus", "Fait du bruit bizarre", "Depuis hier soir"]
         
-        # Location-specific suggestions
+        # Location-specific answer examples
         location = extracted_info.get('location', '').lower()
         if not location:
-            return ["À Bonamoussadi", "À Akwa", "À Bonapriso"]
+            return ["À Bonamoussadi", "À Akwa", "Près du marché"]
         
-        # General suggestions
-        return ["Oui exactement", "Non pas vraiment", "Pouvez-vous expliquer?"]
+        # General answer examples
+        return ["Oui exactement", "Non pas vraiment", "Depuis ce matin"]
     
     def _get_fallback_suggestions(
         self,
@@ -233,24 +288,24 @@ GÉNÈRE 3 SUGGESTIONS COURTES ET PERTINENTES:
             # Analyze AI response for context
             ai_lower = ai_response.lower()
             
-            # Urgency-related
+            # Urgency-related answer examples
             if 'urgent' in ai_lower or 'rapidement' in ai_lower:
-                return ["Oui, c'est urgent", "Non, ça peut attendre", "Dans 2 heures"]
+                return ["Oui, c'est urgent", "Non, ça peut attendre", "Dans l'après-midi"]
             
-            # Location-related
+            # Location-related answer examples
             if 'où' in ai_lower or 'zone' in ai_lower or 'quartier' in ai_lower:
-                return ["À Bonamoussadi", "À Akwa", "À Bonapriso"]
+                return ["À Bonamoussadi centre", "Près du marché", "À côté de l'école"]
             
-            # Service-related
+            # Service type answer examples
             if 'service' in ai_lower or 'problème' in ai_lower:
-                return ["Électricité", "Plomberie", "Électroménager"]
+                return ["Problème électrique", "Fuite d'eau", "Réfrigérateur cassé"]
             
-            # Description-related
+            # Description-related answer examples
             if 'décri' in ai_lower or 'expli' in ai_lower:
-                return ["Oui exactement", "Plus de détails", "C'est différent"]
+                return ["Le disjoncteur a sauté", "Plus de courant", "Depuis ce matin"]
             
-            # Default contextual suggestions
-            return ["Continuez", "Oui", "Non"]
+            # Default answer examples
+            return ["Oui exactement", "Non pas ça", "Depuis hier"]
             
         except Exception as e:
             logger.error(f"Error in fallback suggestions: {e}")
@@ -261,7 +316,7 @@ GÉNÈRE 3 SUGGESTIONS COURTES ET PERTINENTES:
         return [
             "Oui, exactement",
             "Non, pas vraiment", 
-            "Pouvez-vous expliquer?"
+            "Depuis ce matin"
         ]
     
     async def _get_conversation_history(self, user_id: str, limit: int = 5) -> List[Dict[str, Any]]:
