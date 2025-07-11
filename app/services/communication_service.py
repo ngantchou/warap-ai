@@ -587,8 +587,36 @@ Votre demande de {request.service_type} a été reçue et est en cours de traite
             else:
                 logger.error(f"Both confirmation and fallback failed for request {request.id}")
                 
+                # Store failed notification for retry later
+                await self._store_failed_notification(request, user, fallback_message, db)
+                
         except Exception as e:
             logger.error(f"Error handling confirmation failure: {e}")
+            await self._store_failed_notification(request, user, "Confirmation failed", db)
+    
+    async def _store_failed_notification(self, request: ServiceRequest, user: User, message: str, db: Session):
+        """Store failed notification for retry when WhatsApp is available"""
+        try:
+            from app.models.notification import NotificationQueue
+            
+            # Create notification record for retry
+            notification = NotificationQueue(
+                user_id=user.id,
+                request_id=request.id,
+                message=message,
+                notification_type="confirmation",
+                status="failed",
+                retry_count=0,
+                max_retries=3
+            )
+            
+            db.add(notification)
+            db.commit()
+            
+            logger.info(f"Failed notification stored for retry: request {request.id}")
+            
+        except Exception as e:
+            logger.error(f"Error storing failed notification: {e}")
     
     async def handle_provider_notification_failure(
         self, 
