@@ -537,7 +537,7 @@ Merci de votre patience ! 🙏
 📞 *Djobea AI* - Service de mise en relation"""
             
             # Try to send via WhatsApp (this might also fail, but it's worth trying)
-            success = self.whatsapp_service.send_message(user.whatsapp_id, error_message)
+            success = await self.whatsapp_service.send_message(user.whatsapp_id, error_message)
             
             if success:
                 logger.info(f"User {user.id} notified about confirmation error for request {request.id}")

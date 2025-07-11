@@ -116,6 +116,10 @@ app.include_router(landing_data_router, tags=["landing-data"])
 from app.api.communication_metrics import router as communication_router
 app.include_router(communication_router, prefix="/api/communication", tags=["communication"])
 
+# AI Suggestions endpoint
+from app.api.ai_suggestions import router as ai_suggestions_router
+app.include_router(ai_suggestions_router, tags=["ai-suggestions"])
+
 # ==== END CLEAN API STRUCTURE ====
 
 # Root endpoint

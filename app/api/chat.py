@@ -128,12 +128,20 @@ async def handle_web_chat(
         # Determine if request is complete
         is_complete = bool(request_id and request_info.get('all_info_collected', False))
         
-        # Generate contextual suggestions based on conversation state
+        # Generate AI-powered contextual suggestions based on conversation state
         # Hide suggestions if request is completed
         if is_complete or request_info.get('phase') == 'request_processing':
             suggestions = []  # No suggestions when request is completed
         else:
-            suggestions = generate_contextual_suggestions(request_info_dict, result, ai_response)
+            # Generate intelligent suggestions using AI
+            suggestions = await generate_ai_contextual_suggestions(
+                db=db,
+                request_info=request_info_dict,
+                result=result,
+                ai_response=ai_response,
+                user_message=chat_message.message,
+                user_identifier=user_identifier
+            )
         
         # Identify missing information
         needs_info = get_missing_info(request_info)
@@ -341,9 +349,52 @@ def format_web_response(response: str) -> str:
     
     return formatted
 
+async def generate_ai_contextual_suggestions(
+    db: Session, 
+    request_info: dict, 
+    result: dict, 
+    ai_response: str,
+    user_message: str,
+    user_identifier: str
+) -> List[str]:
+    """
+    Generate AI-powered contextual suggestions based on conversation state and AI response
+    
+    Args:
+        db: Database session
+        request_info: Current request information
+        result: Processing result
+        ai_response: AI response text
+        user_message: User's message
+        user_identifier: User identifier
+    
+    Returns:
+        List[str]: AI-generated contextual suggestions
+    """
+    try:
+        # Import AI suggestion service
+        from app.services.ai_suggestion_service import AISuggestionService
+        ai_suggestion_service = AISuggestionService(db)
+        
+        # Generate intelligent suggestions using AI
+        suggestions = await ai_suggestion_service.generate_contextual_suggestions(
+            conversation_context=request_info,
+            current_message=user_message,
+            ai_response=ai_response,
+            user_id=user_identifier,
+            conversation_phase=request_info.get('phase', 'information_gathering')
+        )
+        
+        return suggestions
+        
+    except Exception as e:
+        print(f"AI suggestions error: {e}")
+        # Fallback to simple contextual suggestions
+        return generate_contextual_suggestions(request_info, result, ai_response)
+
 def generate_contextual_suggestions(request_info: dict, result: dict, ai_response: str) -> List[str]:
     """
-    Generate contextual suggestions based on conversation state and AI response
+    Generate contextual suggestions based on conversation state and AI response (fallback version)
     
     Args:
         request_info: Current request information
