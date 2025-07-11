@@ -2,7 +2,7 @@ modules = ["python-3.11", "web", "nodejs-20", "postgresql-16"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["cargo", "freetype", "glibcLocales", "lcms2", "libiconv", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "rustc", "tcl", "tk", "zlib", "jq"]
+packages = ["cargo", "freetype", "glibcLocales", "jq", "lcms2", "libiconv", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "rustc", "tcl", "tk", "zlib"]
 
 [workflows]
 runButton = "Project"

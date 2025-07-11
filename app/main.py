@@ -93,6 +93,15 @@ from app.api.gestionnaire_chat import router as gestionnaire_chat_router
 from app.api.simple_gestionnaire_chat import router as simple_gestionnaire_chat_router
 from app.api.dashboard import router as dashboard_router
 
+# Import new API modules (fixed import issues)
+from app.api.analytics import router as analytics_api_router
+from app.api.providers import router as providers_api_router
+from app.api.requests import router as requests_api_router
+from app.api.finances import router as finances_api_router
+from app.api.system import router as system_api_router
+from app.api.ai import router as ai_api_router
+from app.api.settings import router as settings_api_router
+
 # Include routers
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
 app.include_router(webhook_v2_router, prefix="/webhook", tags=["webhook-v2"])
@@ -117,6 +126,15 @@ app.include_router(human_escalation_router, tags=["human-escalation"])
 app.include_router(gestionnaire_chat_router, tags=["gestionnaire-chat"])
 app.include_router(simple_gestionnaire_chat_router, tags=["simple-gestionnaire-chat"])
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+
+# New API routers for mobile/web interface
+app.include_router(analytics_api_router, prefix="/api", tags=["analytics-api"])
+app.include_router(providers_api_router, prefix="/api", tags=["providers-api"])
+app.include_router(requests_api_router, prefix="/api", tags=["requests-api"])
+app.include_router(finances_api_router, prefix="/api", tags=["finances-api"])
+app.include_router(system_api_router, prefix="/api", tags=["system-api"])
+app.include_router(ai_api_router, prefix="/api", tags=["ai-api"])
+app.include_router(settings_api_router, prefix="/api", tags=["settings-api"])
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)
