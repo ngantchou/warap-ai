@@ -107,6 +107,11 @@ class Provider(Base):
     services = Column(JSON, nullable=False)  # List of services offered
     coverage_areas = Column(JSON, nullable=False)  # List of areas covered
     
+    # Add single service_type field for backward compatibility
+    service_type = Column(String(50), nullable=True)  # Primary service type for compatibility
+    location = Column(String(100), nullable=True)  # Primary location for compatibility 
+    coverage_zone = Column(String(100), nullable=True)  # Primary coverage zone for compatibility
+    
     # Basic status and metrics
     is_available = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
