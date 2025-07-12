@@ -1,0 +1,6050 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Djobea AI",
+    "description": "Agent conversationnel WhatsApp pour services \u00e0 domicile au Cameroun",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/webhook/whatsapp": {
+      "post": {
+        "tags": [
+          "webhook"
+        ],
+        "summary": "Whatsapp Webhook",
+        "description": "Handle incoming WhatsApp messages",
+        "operationId": "whatsapp_webhook_webhook_whatsapp_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_whatsapp_webhook_webhook_whatsapp_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhook/whatsapp-enhanced": {
+      "post": {
+        "tags": [
+          "webhook"
+        ],
+        "summary": "Whatsapp Enhanced Webhook",
+        "description": "Enhanced WhatsApp webhook using multi-LLM orchestration",
+        "operationId": "whatsapp_enhanced_webhook_webhook_whatsapp_enhanced_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_whatsapp_enhanced_webhook_webhook_whatsapp_enhanced_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhook/whatsapp/status": {
+      "post": {
+        "tags": [
+          "webhook"
+        ],
+        "summary": "Whatsapp Status Webhook",
+        "description": "Handle WhatsApp message status updates",
+        "operationId": "whatsapp_status_webhook_webhook_whatsapp_status_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Login Page",
+        "description": "Serve admin login page",
+        "operationId": "login_page_auth_login_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Login For Access Token",
+        "description": "Authenticate user and return access token (legacy form-based endpoint)",
+        "operationId": "login_for_access_token_auth_login_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/api/auth/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Api Login",
+        "description": "Authenticate user with email and password for external admin interface",
+        "operationId": "api_login_auth_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/api/login": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Api Login",
+        "description": "API endpoint for login (returns JSON)",
+        "operationId": "api_login_auth_api_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Logout",
+        "description": "Logout user and clear cookies",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/auth/api/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Api Logout",
+        "description": "API logout endpoint",
+        "operationId": "api_logout_auth_api_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Refresh Access Token",
+        "description": "Refresh access token using refresh token (legacy endpoint)",
+        "operationId": "refresh_access_token_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/api/auth/refresh": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Api Refresh Token",
+        "description": "Refresh access token using refresh token for external admin interface",
+        "operationId": "api_refresh_token_auth_api_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenRefreshResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/api/auth/logout": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Api Logout",
+        "description": "Logout user and revoke tokens for external admin interface",
+        "operationId": "api_logout_auth_api_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Get Current User Info",
+        "description": "Get current user information",
+        "operationId": "get_current_user_info_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/auth/change-password": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Change Password",
+        "description": "Change user password",
+        "operationId": "change_password_auth_change_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/auth/users": {
+      "post": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Create Admin User",
+        "description": "Create new admin user (super admin only)",
+        "operationId": "create_admin_user_auth_users_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "List Admin Users",
+        "description": "List all admin users",
+        "operationId": "list_admin_users_auth_users_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/security-logs": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Get Security Logs",
+        "description": "Get security logs",
+        "operationId": "get_security_logs_auth_security_logs_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/health": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "summary": "Auth Health Check",
+        "description": "Health check for auth service",
+        "operationId": "auth_health_check_auth_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Admin Dashboard",
+        "description": "Admin dashboard with overview statistics",
+        "operationId": "admin_dashboard_admin__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/providers": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Admin Providers",
+        "description": "Admin providers management page",
+        "operationId": "admin_providers_admin_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/providers/add": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Add Provider",
+        "description": "Add a new provider",
+        "operationId": "add_provider_admin_providers_add_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_provider_admin_providers_add_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/providers/{provider_id}/toggle-status": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Toggle Provider Status",
+        "description": "Toggle provider active/inactive status",
+        "operationId": "toggle_provider_status_admin_providers__provider_id__toggle_status_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/providers/{provider_id}/toggle-availability": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Toggle Provider Availability",
+        "description": "Toggle provider availability",
+        "operationId": "toggle_provider_availability_admin_providers__provider_id__toggle_availability_post",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/requests": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Admin Requests",
+        "description": "Admin requests management page",
+        "operationId": "admin_requests_admin_requests_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/requests/{request_id}/cancel": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Cancel Request",
+        "description": "Cancel a service request",
+        "operationId": "cancel_request_admin_requests__request_id__cancel_post",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/logs": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Admin Logs",
+        "description": "Admin logs page",
+        "operationId": "admin_logs_admin_logs_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/metrics": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Admin Metrics",
+        "description": "Real-time metrics dashboard",
+        "operationId": "admin_metrics_admin_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/analytics": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Admin Analytics",
+        "description": "Analytics dashboard page",
+        "operationId": "admin_analytics_admin_analytics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/api/metrics": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Api Metrics",
+        "description": "API endpoint for real-time metrics",
+        "operationId": "api_metrics_admin_api_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/analytics/success-rate": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Analytics Success Rate",
+        "description": "Success rate analytics API",
+        "operationId": "analytics_success_rate_admin_analytics_success_rate_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/analytics/response-times": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Analytics Response Times",
+        "description": "Response time analytics API",
+        "operationId": "analytics_response_times_admin_analytics_response_times_get",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/analytics/provider-rankings": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Analytics Provider Rankings",
+        "description": "Provider rankings analytics API",
+        "operationId": "analytics_provider_rankings_admin_analytics_provider_rankings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/requests/{request_id}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Admin Request Detail",
+        "description": "Individual request detail page",
+        "operationId": "admin_request_detail_admin_requests__request_id__get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/requests/{request_id}/status": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Request Status",
+        "description": "Update request status (admin override)",
+        "operationId": "update_request_status_admin_requests__request_id__status_put",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          },
+          {
+            "name": "new_status",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "New Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/": {
+      "get": {
+        "tags": [
+          "analytics",
+          "Analytics"
+        ],
+        "summary": "Get Analytics Overview",
+        "description": "GET /api/analytics - Get analytics overview\nRetrieve comprehensive analytics data for the specified period",
+        "operationId": "get_analytics_overview_api_analytics__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(24h|7d|30d|90d|1y)$",
+              "default": "7d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/kpis": {
+      "get": {
+        "tags": [
+          "analytics",
+          "Analytics"
+        ],
+        "summary": "Get Kpi Metrics",
+        "description": "GET /api/analytics/kpis - Get KPI metrics\nRetrieve key performance indicators for the specified period",
+        "operationId": "get_kpi_metrics_api_analytics_kpis_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(24h|7d|30d|90d|1y)$",
+              "default": "7d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/performance": {
+      "get": {
+        "tags": [
+          "analytics",
+          "Analytics"
+        ],
+        "summary": "Get Performance Metrics",
+        "description": "GET /api/analytics/performance - Get performance metrics\nRetrieve performance analytics over time",
+        "operationId": "get_performance_metrics_api_analytics_performance_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(24h|7d|30d|90d|1y)$",
+              "default": "7d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/services": {
+      "get": {
+        "tags": [
+          "analytics",
+          "Analytics"
+        ],
+        "summary": "Get Services Analytics",
+        "description": "GET /api/analytics/services - Get services analytics\nRetrieve service distribution and performance analytics",
+        "operationId": "get_services_analytics_api_analytics_services_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(24h|7d|30d|90d|1y)$",
+              "default": "7d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/geographic": {
+      "get": {
+        "tags": [
+          "analytics",
+          "Analytics"
+        ],
+        "summary": "Get Geographic Analytics",
+        "description": "GET /api/analytics/geographic - Get geographic analytics\nRetrieve geographic distribution of services and providers",
+        "operationId": "get_geographic_analytics_api_analytics_geographic_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(24h|7d|30d|90d|1y)$",
+              "default": "7d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/insights": {
+      "get": {
+        "tags": [
+          "analytics",
+          "Analytics"
+        ],
+        "summary": "Get Ai Insights",
+        "description": "GET /api/analytics/insights - Get AI insights\nRetrieve AI-generated insights and recommendations",
+        "operationId": "get_ai_insights_api_analytics_insights_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/leaderboard": {
+      "get": {
+        "tags": [
+          "analytics",
+          "Analytics"
+        ],
+        "summary": "Get Provider Leaderboard",
+        "description": "GET /api/analytics/leaderboard - Get provider leaderboard\nRetrieve top performing providers",
+        "operationId": "get_provider_leaderboard_api_analytics_leaderboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai/predictions": {
+      "get": {
+        "tags": [
+          "ai",
+          "AI"
+        ],
+        "summary": "Get Ai Predictions",
+        "description": "GET /api/ai/predictions - Get AI predictions\nRetrieve AI-generated predictions and forecasts",
+        "operationId": "get_ai_predictions_api_ai_predictions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai/models": {
+      "get": {
+        "tags": [
+          "ai",
+          "AI"
+        ],
+        "summary": "Get Ai Models",
+        "description": "GET /api/ai/models - Get AI models\nRetrieve available AI models and their configurations",
+        "operationId": "get_ai_models_api_ai_models_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai/metrics": {
+      "get": {
+        "tags": [
+          "ai",
+          "AI"
+        ],
+        "summary": "Get Ai Metrics",
+        "description": "GET /api/ai/metrics - Get AI metrics\nRetrieve comprehensive AI performance metrics",
+        "operationId": "get_ai_metrics_api_ai_metrics_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(7d|30d|90d|1y)$",
+              "default": "30d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/analyze": {
+      "post": {
+        "tags": [
+          "ai",
+          "AI"
+        ],
+        "summary": "Analyze Text",
+        "description": "POST /api/ai/analyze - Analyze text\nAnalyze text content for intent, sentiment, and entities",
+        "operationId": "analyze_text_api_ai_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Analysis Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "tags": [
+          "ai",
+          "AI"
+        ],
+        "summary": "Chat With Ai",
+        "description": "POST /api/ai/chat - Chat with AI\nSend a message to the AI and get a response",
+        "operationId": "chat_with_ai_api_ai_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Chat Request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai/health": {
+      "get": {
+        "tags": [
+          "ai",
+          "AI"
+        ],
+        "summary": "Ai Health Check",
+        "description": "GET /api/ai/health - AI health check\nCheck the health and status of AI services",
+        "operationId": "ai_health_check_api_ai_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/settings/system": {
+      "get": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Get System Settings",
+        "description": "GET /api/settings/system - Get system settings\nRetrieve system-wide configuration settings",
+        "operationId": "get_system_settings_api_settings_system_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Update System Settings",
+        "description": "PUT /api/settings/system - Update system settings\nUpdate system-wide configuration settings",
+        "operationId": "update_system_settings_api_settings_system_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Settings Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/settings/notifications": {
+      "get": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Get Notification Settings",
+        "description": "GET /api/settings/notifications - Get notification settings\nRetrieve notification configuration and templates",
+        "operationId": "get_notification_settings_api_settings_notifications_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Update Notification Settings",
+        "description": "PUT /api/settings/notifications - Update notification settings\nUpdate notification configuration and templates",
+        "operationId": "update_notification_settings_api_settings_notifications_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Notification Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/settings/pricing": {
+      "get": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Get Pricing Settings",
+        "description": "GET /api/settings/pricing - Get pricing settings\nRetrieve pricing configuration and service rates",
+        "operationId": "get_pricing_settings_api_settings_pricing_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Update Pricing Settings",
+        "description": "PUT /api/settings/pricing - Update pricing settings\nUpdate pricing configuration and service rates",
+        "operationId": "update_pricing_settings_api_settings_pricing_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Pricing Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/settings/integrations": {
+      "get": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Get Integration Settings",
+        "description": "GET /api/settings/integrations - Get integration settings\nRetrieve external service integrations configuration",
+        "operationId": "get_integration_settings_api_settings_integrations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "settings",
+          "Settings"
+        ],
+        "summary": "Update Integration Settings",
+        "description": "PUT /api/settings/integrations - Update integration settings\nUpdate external service integrations configuration",
+        "operationId": "update_integration_settings_api_settings_integrations_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Integration Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/finances/": {
+      "get": {
+        "tags": [
+          "finances",
+          "Finances"
+        ],
+        "summary": "Get Financial Overview",
+        "description": "GET /api/finances - Get financial overview\nRetrieve comprehensive financial overview including revenue, commissions, and trends",
+        "operationId": "get_financial_overview_api_finances__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(7d|30d|90d|1y)$",
+              "default": "30d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finances/transactions": {
+      "get": {
+        "tags": [
+          "finances",
+          "Finances"
+        ],
+        "summary": "Get Transactions",
+        "description": "GET /api/finances/transactions - Get transactions\nRetrieve detailed transaction history with filtering",
+        "operationId": "get_transactions_api_finances_transactions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Datefrom"
+            }
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dateto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finances/overview": {
+      "get": {
+        "tags": [
+          "finances",
+          "Finances"
+        ],
+        "summary": "Get Finances Overview",
+        "description": "GET /api/finances/overview - Get finances overview\nRetrieve comprehensive financial overview and metrics",
+        "operationId": "get_finances_overview_api_finances_overview_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(7d|30d|90d|1y)$",
+              "default": "30d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finances/commissions": {
+      "get": {
+        "tags": [
+          "finances",
+          "Finances"
+        ],
+        "summary": "Get Commissions",
+        "description": "GET /api/finances/commissions - Get commissions\nRetrieve commission data and analytics",
+        "operationId": "get_commissions_api_finances_commissions_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(7d|30d|90d|1y)$",
+              "default": "30d",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finances/payouts": {
+      "get": {
+        "tags": [
+          "finances",
+          "Finances"
+        ],
+        "summary": "Get Payouts",
+        "description": "GET /api/finances/payouts - Get payouts\nRetrieve provider payout information",
+        "operationId": "get_payouts_api_finances_payouts_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "finances",
+          "Finances"
+        ],
+        "summary": "Create Payout",
+        "description": "POST /api/finances/payouts - Create payout\nCreate a new payout for a provider",
+        "operationId": "create_payout_api_finances_payouts_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true,
+                "title": "Payout Data"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/finances/reports": {
+      "get": {
+        "tags": [
+          "finances",
+          "Finances"
+        ],
+        "summary": "Get Financial Reports",
+        "description": "GET /api/finances/reports - Get financial reports\nGenerate comprehensive financial reports",
+        "operationId": "get_financial_reports_api_finances_reports_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(7d|30d|90d|1y)$",
+              "default": "30d",
+              "title": "Period"
+            }
+          },
+          {
+            "name": "report_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(revenue|commission|payout|summary)$",
+              "default": "revenue",
+              "title": "Report Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/providers/": {
+      "get": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Get Providers",
+        "description": "GET /api/providers - Get providers list\nRetrieve paginated list of service providers with filtering",
+        "operationId": "get_providers_api_providers__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 6,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "specialty",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Specialty"
+            }
+          },
+          {
+            "name": "zone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Zone"
+            }
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 5,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Minrating"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Create Provider",
+        "description": "POST /api/providers - Create new provider\nAdd a new service provider to the system",
+        "operationId": "create_provider_api_providers__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/providers/{provider_id}": {
+      "get": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Get Provider By Id",
+        "description": "GET /api/providers/{id} - Get provider by ID\nRetrieve detailed information about a specific provider",
+        "operationId": "get_provider_by_id_api_providers__provider_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Update Provider",
+        "description": "PUT /api/providers/{id} - Update provider\nUpdate provider information",
+        "operationId": "update_provider_api_providers__provider_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Delete Provider",
+        "description": "DELETE /api/providers/{id} - Delete provider\nRemove a provider from the system",
+        "operationId": "delete_provider_api_providers__provider_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/providers/{provider_id}/contact": {
+      "post": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Contact Provider",
+        "description": "POST /api/providers/{id}/contact - Contact provider\nSend a message to a provider",
+        "operationId": "contact_provider_api_providers__provider_id__contact_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/providers/{provider_id}/status": {
+      "put": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Update Provider Status",
+        "description": "PUT /api/providers/{id}/status - Update provider status\nUpdate the status of a provider",
+        "operationId": "update_provider_status_api_providers__provider_id__status_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Provider Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "title": "Status Data"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/providers/available": {
+      "get": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Get Available Providers",
+        "description": "GET /api/providers/available - Get available providers\nRetrieve list of available providers for immediate assignment",
+        "operationId": "get_available_providers_api_providers_available_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "serviceType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Servicetype"
+            }
+          },
+          {
+            "name": "zone",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Zone"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/providers/stats": {
+      "get": {
+        "tags": [
+          "providers",
+          "Providers"
+        ],
+        "summary": "Get Provider Stats",
+        "description": "GET /api/providers/stats - Get provider statistics\nRetrieve overall provider statistics",
+        "operationId": "get_provider_stats_api_providers_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/requests/": {
+      "get": {
+        "tags": [
+          "requests",
+          "Requests"
+        ],
+        "summary": "Get Requests",
+        "description": "GET /api/requests - Get requests list\nRetrieve paginated list of service requests with filtering and sorting",
+        "operationId": "get_requests_api_requests__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Priority"
+            }
+          },
+          {
+            "name": "service",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Service"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Datefrom"
+            }
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dateto"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "createdAt",
+              "title": "Sortby"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sortorder"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/requests/{request_id}": {
+      "get": {
+        "tags": [
+          "requests",
+          "Requests"
+        ],
+        "summary": "Get Request Details",
+        "description": "GET /api/requests/{id} - Get request details\nRetrieve detailed information about a specific request",
+        "operationId": "get_request_details_api_requests__request_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/requests/{request_id}/assign": {
+      "post": {
+        "tags": [
+          "requests",
+          "Requests"
+        ],
+        "summary": "Assign Request To Provider",
+        "description": "POST /api/requests/{id}/assign - Assign request to provider\nAssign a service request to a specific provider",
+        "operationId": "assign_request_to_provider_api_requests__request_id__assign_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/requests/{request_id}/cancel": {
+      "post": {
+        "tags": [
+          "requests",
+          "Requests"
+        ],
+        "summary": "Cancel Request",
+        "description": "POST /api/requests/{id}/cancel - Cancel request\nCancel a service request",
+        "operationId": "cancel_request_api_requests__request_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelRequestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/requests/{request_id}/status": {
+      "put": {
+        "tags": [
+          "requests",
+          "Requests"
+        ],
+        "summary": "Update Request Status",
+        "description": "PUT /api/requests/{id}/status - Update request status\nUpdate the status of a service request",
+        "operationId": "update_request_status_api_requests__request_id__status_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/requests/{request_id}/invoice": {
+      "post": {
+        "tags": [
+          "requests",
+          "Requests"
+        ],
+        "summary": "Generate Invoice",
+        "description": "POST /api/requests/{id}/invoice - Generate invoice\nGenerate an invoice for a completed service request",
+        "operationId": "generate_invoice_api_requests__request_id__invoice_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateInvoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhook/chat": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Handle Web Chat",
+        "description": "Handle web chat messages from the chat widget\n\nArgs:\n    chat_message: The chat message data\n    db: Database session\n\nReturns:\n    ChatResponse: Structured response with AI message and metadata",
+        "operationId": "handle_web_chat_webhook_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat-llm": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Chat Llm Endpoint",
+        "description": "LLM-driven chat endpoint with natural intent detection and action codes\n\nArgs:\n    chat_message: The chat message data\n    db: Database session\n\nReturns:\n    ChatResponse: Structured response with AI message and metadata",
+        "operationId": "chat_llm_endpoint_chat_llm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhook/chat/health": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Chat Health Check",
+        "description": "Health check endpoint for chat service",
+        "operationId": "chat_health_check_webhook_chat_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhook/chat/session/{session_id}": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Get Chat Session",
+        "description": "Get chat session information\n\nArgs:\n    session_id: Session identifier\n    db: Database session\n\nReturns:\n    Dict: Session information",
+        "operationId": "get_chat_session_webhook_chat_session__session_id__get",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/": {
+      "get": {
+        "tags": [
+          "dashboard",
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Data",
+        "description": "GET /api/dashboard - Donn\u00e9es principales du tableau de bord\nR\u00e9cup\u00e8re statistiques globales, donn\u00e9es graphiques et activit\u00e9 r\u00e9cente",
+        "operationId": "get_dashboard_data_api_dashboard__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/dashboard/stats": {
+      "get": {
+        "tags": [
+          "dashboard",
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Stats",
+        "description": "GET /api/dashboard/stats - Statistiques en temps r\u00e9el\nSupporter query params: period=24h|7d|30d",
+        "operationId": "get_dashboard_stats_api_dashboard_stats_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(24h|7d|30d)$",
+              "default": "7d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/activity": {
+      "get": {
+        "tags": [
+          "dashboard",
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Activity",
+        "description": "GET /api/dashboard/activity - Activit\u00e9 r\u00e9cente\nSupporter pagination (limit, offset)",
+        "operationId": "get_dashboard_activity_api_dashboard_activity_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/metrics": {
+      "get": {
+        "tags": [
+          "dashboard",
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Metrics",
+        "description": "GET /api/dashboard/metrics - M\u00e9triques temps r\u00e9el\nEndpoint optionnel pour les m\u00e9triques d\u00e9taill\u00e9es",
+        "operationId": "get_dashboard_metrics_api_dashboard_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/dashboard/charts/{chart_type}": {
+      "get": {
+        "tags": [
+          "dashboard",
+          "dashboard"
+        ],
+        "summary": "Get Dashboard Chart",
+        "description": "GET /api/dashboard/charts/{chart_type} - Donn\u00e9es graphiques sp\u00e9cifiques\nTypes: activity, services, providers, geographic",
+        "operationId": "get_dashboard_chart_api_dashboard_charts__chart_type__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "chart_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Chart Type"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(24h|7d|30d)$",
+              "default": "7d",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dashboard/requests": {
+      "get": {
+        "tags": [
+          "dashboard",
+          "dashboard"
+        ],
+        "summary": "Get Requests",
+        "description": "Get paginated list of service requests with filtering and sorting",
+        "operationId": "get_requests_api_dashboard_requests_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Search"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Priority"
+            }
+          },
+          {
+            "name": "service",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Service"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Location"
+            }
+          },
+          {
+            "name": "dateFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Datefrom"
+            }
+          },
+          {
+            "name": "dateTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Dateto"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "createdAt",
+              "title": "Sortby"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sortorder"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "dashboard",
+          "dashboard"
+        ],
+        "summary": "Create Service Request",
+        "description": "POST /api/requests - Create new service request\nCreates a new service request with client information and service details",
+        "operationId": "create_service_request_api_dashboard_requests_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceRequestModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/landing/data": {
+      "get": {
+        "tags": [
+          "landing-data"
+        ],
+        "summary": "Get Landing Data",
+        "description": "Get dynamic data for landing page including:\n- Real-time statistics\n- Available services\n- Coverage zones\n- Recent activity",
+        "operationId": "get_landing_data_api_landing_data_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Landing Data Api Landing Data Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/landing/stats": {
+      "get": {
+        "tags": [
+          "landing-data"
+        ],
+        "summary": "Get Landing Stats",
+        "description": "Get just the statistics for real-time updates",
+        "operationId": "get_landing_stats_api_landing_stats_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Landing Stats Api Landing Stats Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/communication/metrics": {
+      "get": {
+        "tags": [
+          "communication"
+        ],
+        "summary": "Get Communication Metrics",
+        "description": "Get current communication metrics",
+        "operationId": "get_communication_metrics_api_communication_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/communication/improvement-suggestions": {
+      "get": {
+        "tags": [
+          "communication"
+        ],
+        "summary": "Get Improvement Suggestions",
+        "description": "Get suggestions for improving communication quality",
+        "operationId": "get_improvement_suggestions_api_communication_improvement_suggestions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/communication/test-enhanced-communication": {
+      "post": {
+        "tags": [
+          "communication"
+        ],
+        "summary": "Test Enhanced Communication",
+        "description": "Test the enhanced communication system with sample data",
+        "operationId": "test_enhanced_communication_api_communication_test_enhanced_communication_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Test Data"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/communication/conversation-analytics": {
+      "get": {
+        "tags": [
+          "communication"
+        ],
+        "summary": "Get Conversation Analytics",
+        "description": "Get conversation analytics for the last 24 hours",
+        "operationId": "get_conversation_analytics_api_communication_conversation_analytics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/communication/system-health": {
+      "get": {
+        "tags": [
+          "communication"
+        ],
+        "summary": "Get System Health",
+        "description": "Get system health metrics related to communication",
+        "operationId": "get_system_health_api_communication_system_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai-suggestions/generate": {
+      "post": {
+        "tags": [
+          "ai-suggestions",
+          "ai-suggestions"
+        ],
+        "summary": "Generate Ai Suggestions",
+        "description": "Generate AI-powered suggestions for a conversation context",
+        "operationId": "generate_ai_suggestions_api_ai_suggestions_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuggestionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai-suggestions/analytics": {
+      "get": {
+        "tags": [
+          "ai-suggestions",
+          "ai-suggestions"
+        ],
+        "summary": "Get Suggestion Analytics",
+        "description": "Get analytics about AI suggestion usage",
+        "operationId": "get_suggestion_analytics_api_ai_suggestions_analytics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Suggestion Analytics Api Ai Suggestions Analytics Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai-suggestions/test-scenarios": {
+      "post": {
+        "tags": [
+          "ai-suggestions",
+          "ai-suggestions"
+        ],
+        "summary": "Test Suggestion Scenarios",
+        "description": "Test AI suggestions with predefined scenarios",
+        "operationId": "test_suggestion_scenarios_api_ai_suggestions_test_scenarios_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai-suggestions/health": {
+      "get": {
+        "tags": [
+          "ai-suggestions",
+          "ai-suggestions"
+        ],
+        "summary": "Health Check",
+        "description": "Health check for AI suggestion service",
+        "operationId": "health_check_api_ai_suggestions_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm/status": {
+      "get": {
+        "tags": [
+          "llm-management",
+          "llm-management"
+        ],
+        "summary": "Get Llm Status",
+        "description": "Get status of all LLM providers",
+        "operationId": "get_llm_status_api_llm_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm/reset-failures": {
+      "post": {
+        "tags": [
+          "llm-management",
+          "llm-management"
+        ],
+        "summary": "Reset Failed Providers",
+        "description": "Reset failed providers list (admin only)",
+        "operationId": "reset_failed_providers_api_llm_reset_failures_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/llm/test": {
+      "post": {
+        "tags": [
+          "llm-management",
+          "llm-management"
+        ],
+        "summary": "Test Llm Provider",
+        "description": "Test LLM provider with a sample message",
+        "operationId": "test_llm_provider_api_llm_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestLLMRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestLLMResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm/health": {
+      "get": {
+        "tags": [
+          "llm-management",
+          "llm-management"
+        ],
+        "summary": "Llm Health Check",
+        "description": "Health check for LLM management service",
+        "operationId": "llm_health_check_api_llm_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm/analytics": {
+      "get": {
+        "tags": [
+          "llm-management",
+          "llm-management"
+        ],
+        "summary": "Get Llm Analytics",
+        "description": "Get LLM usage analytics (admin only)",
+        "operationId": "get_llm_analytics_api_llm_analytics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/llm/providers": {
+      "get": {
+        "tags": [
+          "llm-management",
+          "llm-management"
+        ],
+        "summary": "List Available Providers",
+        "description": "List all available LLM providers",
+        "operationId": "list_available_providers_api_llm_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoring/health": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get System Health",
+        "description": "Get system health status",
+        "operationId": "get_system_health_api_monitoring_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get System Health Api Monitoring Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoring/errors": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Error Analysis",
+        "description": "Get detailed error analysis",
+        "operationId": "get_error_analysis_api_monitoring_errors_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Error Analysis Api Monitoring Errors Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoring/proactive-updates": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Proactive Update Status",
+        "description": "Get proactive update system status",
+        "operationId": "get_proactive_update_status_api_monitoring_proactive_updates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Proactive Update Status Api Monitoring Proactive Updates Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoring/report": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Monitoring Report",
+        "description": "Get comprehensive monitoring report",
+        "operationId": "get_monitoring_report_api_monitoring_report_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Monitoring Report Api Monitoring Report Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoring/communication-status": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Communication Status",
+        "description": "Get communication system status",
+        "operationId": "get_communication_status_api_monitoring_communication_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Communication Status Api Monitoring Communication Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoring/retry-failed-messages": {
+      "post": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Retry Failed Messages",
+        "description": "Manually trigger retry of failed messages",
+        "operationId": "retry_failed_messages_api_monitoring_retry_failed_messages_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Retry Failed Messages Api Monitoring Retry Failed Messages Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/monitoring/dashboard": {
+      "get": {
+        "tags": [
+          "monitoring"
+        ],
+        "summary": "Get Monitoring Dashboard",
+        "description": "Get monitoring dashboard data",
+        "operationId": "get_monitoring_dashboard_api_monitoring_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Monitoring Dashboard Api Monitoring Dashboard Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Root",
+        "description": "Root endpoint - serve beautiful landing page",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provider-login": {
+      "get": {
+        "summary": "Provider Login Page",
+        "description": "Provider login page",
+        "operationId": "provider_login_page_provider_login_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provider-dashboard": {
+      "get": {
+        "summary": "Provider Dashboard Page",
+        "description": "Provider dashboard page",
+        "operationId": "provider_dashboard_page_provider_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provider-profile": {
+      "get": {
+        "summary": "Provider Profile Page",
+        "description": "Provider profile management page",
+        "operationId": "provider_profile_page_provider_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin": {
+      "get": {
+        "summary": "Admin Redirect",
+        "description": "Redirect /admin to /admin/",
+        "operationId": "admin_redirect_admin_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent-dashboard": {
+      "get": {
+        "summary": "Agent Dashboard Page",
+        "description": "Agent dashboard page for human escalation",
+        "operationId": "agent_dashboard_page_agent_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Health check endpoint",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config": {
+      "get": {
+        "summary": "Get Config",
+        "description": "Get client configuration",
+        "operationId": "get_config_api_config_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AdminRole": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "super_admin"
+        ],
+        "title": "AdminRole"
+      },
+      "AssignProviderRequest": {
+        "properties": {
+          "providerId": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Providerid"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "providerId"
+        ],
+        "title": "AssignProviderRequest"
+      },
+      "Body_add_provider_admin_providers_add_post": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "whatsapp_id": {
+            "type": "string",
+            "title": "Whatsapp Id"
+          },
+          "phone_number": {
+            "type": "string",
+            "title": "Phone Number"
+          },
+          "services": {
+            "type": "string",
+            "title": "Services"
+          },
+          "coverage_areas": {
+            "type": "string",
+            "title": "Coverage Areas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "whatsapp_id",
+          "phone_number",
+          "services",
+          "coverage_areas"
+        ],
+        "title": "Body_add_provider_admin_providers_add_post"
+      },
+      "Body_whatsapp_enhanced_webhook_webhook_whatsapp_enhanced_post": {
+        "properties": {
+          "AccountSid": {
+            "type": "string",
+            "title": "Accountsid"
+          },
+          "MessageSid": {
+            "type": "string",
+            "title": "Messagesid"
+          },
+          "From": {
+            "type": "string",
+            "title": "From"
+          },
+          "To": {
+            "type": "string",
+            "title": "To"
+          },
+          "Body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          },
+          "NumMedia": {
+            "type": "integer",
+            "title": "Nummedia",
+            "default": 0
+          },
+          "MediaUrl0": {
+            "type": "string",
+            "title": "Mediaurl0"
+          },
+          "MediaContentType0": {
+            "type": "string",
+            "title": "Mediacontenttype0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "AccountSid",
+          "MessageSid",
+          "From",
+          "To"
+        ],
+        "title": "Body_whatsapp_enhanced_webhook_webhook_whatsapp_enhanced_post"
+      },
+      "Body_whatsapp_webhook_webhook_whatsapp_post": {
+        "properties": {
+          "AccountSid": {
+            "type": "string",
+            "title": "Accountsid"
+          },
+          "MessageSid": {
+            "type": "string",
+            "title": "Messagesid"
+          },
+          "From": {
+            "type": "string",
+            "title": "From"
+          },
+          "To": {
+            "type": "string",
+            "title": "To"
+          },
+          "Body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          },
+          "NumMedia": {
+            "type": "integer",
+            "title": "Nummedia",
+            "default": 0
+          },
+          "MediaUrl0": {
+            "type": "string",
+            "title": "Mediaurl0"
+          },
+          "MediaContentType0": {
+            "type": "string",
+            "title": "Mediacontenttype0"
+          }
+        },
+        "type": "object",
+        "required": [
+          "AccountSid",
+          "MessageSid",
+          "From",
+          "To"
+        ],
+        "title": "Body_whatsapp_webhook_webhook_whatsapp_post"
+      },
+      "CancelRequestRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 5,
+            "title": "Reason"
+          },
+          "refundAmount": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refundamount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "CancelRequestRequest"
+      },
+      "ChangePasswordRequest": {
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "title": "Current Password"
+          },
+          "new_password": {
+            "type": "string",
+            "title": "New Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "title": "ChangePasswordRequest"
+      },
+      "ChatMessage": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Message",
+            "description": "User message"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "Unique session identifier"
+          },
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number",
+            "description": "User phone number for session linking"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Message source",
+            "default": "web_chat"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "Message timestamp"
+          },
+          "conversation_history": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation History",
+            "description": "Recent conversation context",
+            "default": []
+          },
+          "button_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Button Value",
+            "description": "Button value if user clicked a button"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "session_id"
+        ],
+        "title": "ChatMessage",
+        "description": "Chat message model for web chat requests"
+      },
+      "ChatResponse": {
+        "properties": {
+          "response": {
+            "type": "string",
+            "title": "Response",
+            "description": "AI response message"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id",
+            "description": "Session identifier"
+          },
+          "request_complete": {
+            "type": "boolean",
+            "title": "Request Complete",
+            "description": "Whether service request is complete",
+            "default": false
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "Service request ID if created"
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions",
+            "description": "Suggested responses",
+            "default": []
+          },
+          "needs_info": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Needs Info",
+            "description": "Missing information needed",
+            "default": []
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Conversation status",
+            "default": "active"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "User ID"
+          },
+          "buttons": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Buttons",
+            "description": "Button options for user interface",
+            "default": []
+          },
+          "system_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System Action",
+            "description": "System action to perform"
+          },
+          "next_step": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Step",
+            "description": "Next conversation step"
+          }
+        },
+        "type": "object",
+        "required": [
+          "response",
+          "session_id"
+        ],
+        "title": "ChatResponse",
+        "description": "Response model for chat requests"
+      },
+      "ContactProviderRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 10,
+            "title": "Message"
+          },
+          "urgency": {
+            "type": "string",
+            "pattern": "^(urgent|normal|low)$",
+            "title": "Urgency",
+            "default": "normal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ContactProviderRequest"
+      },
+      "CreateProviderRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Name"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+237[0-9]{9}$",
+            "title": "Phone"
+          },
+          "serviceType": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
+            "title": "Servicetype"
+          },
+          "coverageZone": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Coveragezone"
+          },
+          "specialties": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialties",
+            "default": []
+          },
+          "yearsExperience": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yearsexperience",
+            "default": 0
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio",
+            "default": ""
+          },
+          "certifications": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certifications",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "phone",
+          "serviceType",
+          "coverageZone"
+        ],
+        "title": "CreateProviderRequest"
+      },
+      "CreateServiceRequestModel": {
+        "properties": {
+          "clientName": {
+            "type": "string",
+            "title": "Clientname"
+          },
+          "clientPhone": {
+            "type": "string",
+            "title": "Clientphone"
+          },
+          "clientEmail": {
+            "type": "string",
+            "title": "Clientemail"
+          },
+          "serviceType": {
+            "type": "string",
+            "title": "Servicetype"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationRequest"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority"
+          },
+          "scheduledDate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduleddate"
+          },
+          "estimatedBudget": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimatedbudget"
+          },
+          "images": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Images",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "clientName",
+          "clientPhone",
+          "clientEmail",
+          "serviceType",
+          "description",
+          "location",
+          "priority"
+        ],
+        "title": "CreateServiceRequestModel"
+      },
+      "CreateUserRequest": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "role": {
+            "$ref": "#/components/schemas/AdminRole",
+            "default": "admin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "email",
+          "password"
+        ],
+        "title": "CreateUserRequest"
+      },
+      "GenerateInvoiceRequest": {
+        "properties": {
+          "finalCost": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Finalcost"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 10,
+            "title": "Description"
+          },
+          "materials": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materials",
+            "default": []
+          },
+          "laborHours": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Laborhours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "finalCost",
+          "description"
+        ],
+        "title": "GenerateInvoiceRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LLMStatusResponse": {
+        "properties": {
+          "providers": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Providers"
+          },
+          "recommended_provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Provider"
+          },
+          "total_providers": {
+            "type": "integer",
+            "title": "Total Providers"
+          },
+          "active_providers": {
+            "type": "integer",
+            "title": "Active Providers"
+          },
+          "failed_providers": {
+            "type": "integer",
+            "title": "Failed Providers"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "providers",
+          "recommended_provider",
+          "total_providers",
+          "active_providers",
+          "failed_providers",
+          "timestamp"
+        ],
+        "title": "LLMStatusResponse",
+        "description": "Response model for LLM provider status"
+      },
+      "LocationRequest": {
+        "properties": {
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "zone": {
+            "type": "string",
+            "title": "Zone"
+          },
+          "coordinates": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Coordinates"
+          },
+          "accessInstructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accessinstructions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "address",
+          "zone",
+          "coordinates"
+        ],
+        "title": "LocationRequest"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "rememberMe": {
+            "type": "boolean",
+            "title": "Rememberme",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest"
+      },
+      "LoginResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "refreshToken": {
+            "type": "string",
+            "title": "Refreshtoken"
+          },
+          "user": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "User"
+          },
+          "expiresAt": {
+            "type": "string",
+            "title": "Expiresat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "token",
+          "refreshToken",
+          "user",
+          "expiresAt"
+        ],
+        "title": "LoginResponse"
+      },
+      "LogoutResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "title": "LogoutResponse"
+      },
+      "SuggestionRequest": {
+        "properties": {
+          "current_message": {
+            "type": "string",
+            "title": "Current Message"
+          },
+          "ai_response": {
+            "type": "string",
+            "title": "Ai Response"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "conversation_context": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Conversation Context",
+            "default": {}
+          },
+          "conversation_phase": {
+            "type": "string",
+            "title": "Conversation Phase",
+            "default": "information_gathering"
+          }
+        },
+        "type": "object",
+        "required": [
+          "current_message",
+          "ai_response",
+          "user_id"
+        ],
+        "title": "SuggestionRequest",
+        "description": "Request model for generating suggestions"
+      },
+      "SuggestionResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          },
+          "total_count": {
+            "type": "integer",
+            "title": "Total Count"
+          },
+          "generation_time_ms": {
+            "type": "integer",
+            "title": "Generation Time Ms"
+          },
+          "fallback_used": {
+            "type": "boolean",
+            "title": "Fallback Used",
+            "default": false
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "suggestions",
+          "total_count",
+          "generation_time_ms",
+          "timestamp"
+        ],
+        "title": "SuggestionResponse",
+        "description": "Response model for suggestions"
+      },
+      "TestLLMRequest": {
+        "properties": {
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "test_message": {
+            "type": "string",
+            "title": "Test Message",
+            "default": "Bonjour, comment allez-vous?"
+          }
+        },
+        "type": "object",
+        "title": "TestLLMRequest",
+        "description": "Request model for testing LLM provider"
+      },
+      "TestLLMResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "provider_used": {
+            "type": "string",
+            "title": "Provider Used"
+          },
+          "response": {
+            "type": "string",
+            "title": "Response"
+          },
+          "response_time_ms": {
+            "type": "integer",
+            "title": "Response Time Ms"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "provider_used",
+          "response",
+          "response_time_ms"
+        ],
+        "title": "TestLLMResponse",
+        "description": "Response model for LLM testing"
+      },
+      "TokenRefreshRequest": {
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "title": "Refreshtoken"
+          }
+        },
+        "type": "object",
+        "required": [
+          "refreshToken"
+        ],
+        "title": "TokenRefreshRequest"
+      },
+      "TokenRefreshResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "expiresAt": {
+            "type": "string",
+            "title": "Expiresat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "token",
+          "expiresAt"
+        ],
+        "title": "TokenRefreshResponse"
+      },
+      "UpdateProviderRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\+237[0-9]{9}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "serviceType": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servicetype"
+          },
+          "coverageZone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coveragezone"
+          },
+          "specialties": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Specialties"
+          },
+          "yearsExperience": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 50.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yearsexperience"
+          },
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "certifications": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Certifications"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "title": "UpdateProviderRequest"
+      },
+      "UpdateStatusRequest": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "pattern": "^(pending|assigned|in_progress|completed|cancelled)$",
+            "title": "Status"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "UpdateStatusRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

@@ -16,7 +16,7 @@ from app.api.auth import get_current_admin_user
 logger = logging.getLogger(__name__)
 
 # Create router
-router = APIRouter(prefix="/settings", tags=["Settings"])
+router = APIRouter(tags=["Settings"])
 
 @router.get("/system")
 async def get_system_settings(

@@ -21,7 +21,7 @@ from app.api.auth import get_current_admin_user
 logger = logging.getLogger(__name__)
 
 # Create router
-router = APIRouter(prefix="/analytics", tags=["Analytics"])
+router = APIRouter(tags=["Analytics"])
 
 @router.get("/")
 async def get_analytics_overview(

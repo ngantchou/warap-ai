@@ -20,7 +20,7 @@ from app.api.auth import get_current_admin_user
 logger = logging.getLogger(__name__)
 
 # Create router
-router = APIRouter(prefix="/finances", tags=["Finances"])
+router = APIRouter(tags=["Finances"])
 
 @router.get("/")
 async def get_financial_overview(

@@ -23,7 +23,7 @@ from app.api.auth import get_current_admin_user
 logger = logging.getLogger(__name__)
 
 # Create router
-router = APIRouter(prefix="/requests", tags=["Requests"])
+router = APIRouter(tags=["Requests"])
 
 # Pydantic models
 class AssignProviderRequest(BaseModel):

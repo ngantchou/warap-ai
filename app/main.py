@@ -82,23 +82,20 @@ app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 from app.api.admin import router as admin_router
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
-# Essential external API endpoints (cleaned up)
+# Essential external API endpoints (cleaned up - no duplicates)
 from app.api.analytics import router as analytics_api_router
 from app.api.ai import router as ai_api_router
 from app.api.settings import router as settings_api_router
 from app.api.finances import router as finances_api_router
-
-app.include_router(analytics_api_router, prefix="/api", tags=["analytics-api"])
-app.include_router(ai_api_router, prefix="/api", tags=["ai-api"])
-app.include_router(settings_api_router, prefix="/api", tags=["settings-api"])
-app.include_router(finances_api_router, prefix="/api", tags=["finances-api"])
-
-# Essential provider and request endpoints (simplified)
 from app.api.providers import router as providers_api_router
 from app.api.requests import router as requests_api_router
 
-app.include_router(providers_api_router, prefix="/api", tags=["providers-api"])
-app.include_router(requests_api_router, prefix="/api", tags=["requests-api"])
+app.include_router(analytics_api_router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(ai_api_router, prefix="/api/ai", tags=["ai"])
+app.include_router(settings_api_router, prefix="/api/settings", tags=["settings"])
+app.include_router(finances_api_router, prefix="/api/finances", tags=["finances"])
+app.include_router(providers_api_router, prefix="/api/providers", tags=["providers"])
+app.include_router(requests_api_router, prefix="/api/requests", tags=["requests"])
 
 # Chat widget endpoint
 from app.api.chat import router as chat_router
