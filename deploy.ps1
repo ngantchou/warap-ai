@@ -169,7 +169,9 @@ function Start-Deployment {
                 break
             }
         }
-        catch {}
+        catch {
+            # Continue trying
+        }
         
         Start-Sleep -Seconds 2
         if ($i -eq 30) {
@@ -189,7 +191,9 @@ function Start-Deployment {
                 break
             }
         }
-        catch {}
+        catch {
+            # Continue trying
+        }
         
         Start-Sleep -Seconds 2
         if ($i -eq 15) {
@@ -209,7 +213,9 @@ function Start-Deployment {
                 break
             }
         }
-        catch {}
+        catch {
+            # Continue trying
+        }
         
         Start-Sleep -Seconds 2
         if ($i -eq 60) {
@@ -352,7 +358,9 @@ function Start-Cleanup {
                 docker rmi $images
             }
         }
-        catch {}
+        catch {
+            # Ignore errors when removing images
+        }
         
         Write-Success "Cleanup completed."
     }
@@ -366,7 +374,7 @@ function Restore-Database {
     param([string]$BackupFilePath)
     
     if (-not $BackupFilePath) {
-        Write-Error "Please specify backup file: .\deploy.ps1 restore <backup_file>"
+        Write-Error "Please specify backup file: .\deploy.ps1 restore backup_file.sql"
         exit 1
     }
     
