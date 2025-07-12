@@ -259,22 +259,115 @@ Djobea AI - Services à domicile
                 except Exception as legacy_error:
                     logger.error(f"Legacy Claude client also failed: {legacy_error}")
             
-            # Final fallback message
-            return "Désolé, je rencontre une difficulté technique. Pouvez-vous reformuler votre demande ?"
+            # Final fallback message with basic parsing
+            return self._get_intelligent_fallback_response(messages[-1] if messages else {"content": ""})
     
     def _get_fallback_response(self, message: str) -> Dict:
-        """Fallback response when AI fails"""
+        """Get fallback response when AI service fails"""
+        # Try basic keyword detection when LLM fails
+        service_type = self._detect_service_type(message)
+        location = self._detect_location(message)
+        urgency = self._detect_urgency(message)
+        
+        missing_info = []
+        if not service_type or service_type == "non_identifié":
+            missing_info.append("service_type")
+        if not location:
+            missing_info.append("location")
+        if not any(word in message.lower() for word in ["problème", "panne", "fuite", "coupure", "réparation"]):
+            missing_info.append("description")
+        
+        # Generate appropriate response based on what we detected
+        if service_type and service_type != "non_identifié":
+            response_message = f"Je comprends que vous avez besoin d'un service de {service_type}. "
+            if location:
+                response_message += f"Vous êtes à {location}. "
+            if missing_info:
+                response_message += "Pouvez-vous me donner plus de détails sur le problème ?"
+            else:
+                response_message += "Je vais créer votre demande de service."
+        else:
+            response_message = "Je rencontre une difficulté technique. Pouvez-vous me dire précisément de quel service vous avez besoin (plomberie, électricité, réparation électroménager) et où vous vous trouvez ?"
+        
         return {
-            "service_type": "non_identifié",
-            "description": "",
-            "location": "",
+            "service_type": service_type,
+            "description": self._extract_description(message),
+            "location": location,
             "preferred_time": "",
-            "urgency": "normal",
-            "missing_info": ["service_type", "description", "location"],
-            "response_message": "Bonjour ! Je suis Djobea AI, votre assistant pour les services à domicile. Pouvez-vous me dire quel service vous avez besoin ? (plomberie, électricité, ou réparation d'électroménager)",
-            "is_complete": False,
-            "is_in_coverage_area": None
+            "urgency": urgency,
+            "missing_info": missing_info,
+            "response_message": response_message,
+            "is_complete": len(missing_info) == 0,
+            "is_in_coverage_area": True if location and any(zone in location.lower() for zone in ["bonamoussadi", "douala"]) else None
         }
+    
+    def _detect_service_type(self, message: str) -> str:
+        """Detect service type using keyword matching"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["plombier", "plomberie", "fuite", "robinet", "tuyau", "eau", "wc", "toilette", "douche", "évier"]):
+            return "plomberie"
+        elif any(word in message_lower for word in ["électricien", "électricité", "courant", "lumière", "prise", "interrupteur", "cable", "panne électrique", "court-circuit"]):
+            return "électricité"
+        elif any(word in message_lower for word in ["réfrigérateur", "frigo", "machine", "laver", "climatisation", "clim", "électroménager", "four", "micro-onde"]):
+            return "réparation électroménager"
+        else:
+            return "non_identifié"
+    
+    def _detect_location(self, message: str) -> str:
+        """Detect location using keyword matching"""
+        message_lower = message.lower()
+        
+        if "bonamoussadi" in message_lower:
+            return "Bonamoussadi"
+        elif "douala" in message_lower:
+            return "Douala"
+        elif any(word in message_lower for word in ["chez moi", "à la maison", "domicile"]):
+            return "À préciser"
+        else:
+            return ""
+    
+    def _detect_urgency(self, message: str) -> str:
+        """Detect urgency using keyword matching"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["urgent", "urgence", "rapidement", "vite", "immédiatement", "maintenant"]):
+            return "urgent"
+        elif any(word in message_lower for word in ["flexible", "quand vous voulez", "pas pressé"]):
+            return "flexible"
+        else:
+            return "normal"
+    
+    def _extract_description(self, message: str) -> str:
+        """Extract basic description from message"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["fuite", "coule"]):
+            return "Problème de fuite"
+        elif any(word in message_lower for word in ["panne", "ne marche pas", "ne fonctionne pas"]):
+            return "Panne d'équipement"
+        elif any(word in message_lower for word in ["coupure", "plus de courant"]):
+            return "Coupure électrique"
+        elif any(word in message_lower for word in ["installation", "installer"]):
+            return "Installation requise"
+        else:
+            return "Service requis"
+    
+    def _get_intelligent_fallback_response(self, message: Dict) -> str:
+        """Get intelligent fallback response when all LLM providers fail"""
+        content = message.get("content", "") if isinstance(message, dict) else str(message)
+        
+        # Try to detect service type from message
+        service_type = self._detect_service_type(content)
+        location = self._detect_location(content)
+        
+        if service_type and service_type != "non_identifié":
+            if location:
+                return f"Je comprends que vous avez besoin d'un service de {service_type} à {location}. Je vais traiter votre demande malgré les difficultés techniques temporaires."
+            else:
+                return f"Je comprends que vous avez besoin d'un service de {service_type}. Pouvez-vous me préciser votre localisation à Douala ?"
+        else:
+            return "Je rencontre une difficulté technique temporaire. Pouvez-vous me dire de quel service vous avez besoin (plomberie, électricité, réparation électroménager) et votre localisation ?"
 
 # Global AI service instance
 ai_service = AIService()

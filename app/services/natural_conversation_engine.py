@@ -633,7 +633,8 @@ class NaturalConversationEngine:
         user = await self._get_or_create_user(user_identifier)
         
         # Check if we have enough information using accumulated data
-        required_fields = ["service_type", "location", "description"]
+        # Only service_type and location are truly required - description can be auto-generated
+        required_fields = ["service_type", "location"]
         missing_fields = [field for field in required_fields if not service_info.get(field) or service_info.get(field) is None]
         
         # Log debug info for troubleshooting
@@ -826,6 +827,7 @@ class NaturalConversationEngine:
         conversation_state.current_phase = ConversationPhase.INFORMATION_GATHERING
         
         # Check if complete now using accumulated data - relaxed requirement
+        # Only service_type and location are truly required - description can be auto-generated
         required_fields = ["service_type", "location"]
         missing_fields = [field for field in required_fields if not accumulated_info.get(field) or accumulated_info.get(field) is None]
         
@@ -1194,10 +1196,17 @@ class NaturalConversationEngine:
     async def _create_service_request(self, user: User, service_info: Dict[str, Any]) -> ServiceRequest:
         """Create service request (invisible to conversation)"""
         
+        # Ensure description is never NULL - provide default if missing
+        description = service_info.get("description")
+        if not description or description is None:
+            service_type = service_info.get("service_type", "service")
+            location = service_info.get("location", "location")
+            description = f"Demande de {service_type} à {location}"
+        
         service_request = ServiceRequest(
             user_id=user.id,
             service_type=service_info.get("service_type"),
-            description=service_info.get("description"),
+            description=description,
             location=service_info.get("location"),
             urgency=service_info.get("urgency", "normal"),
             status=RequestStatus.PENDING,
@@ -1206,11 +1215,15 @@ class NaturalConversationEngine:
         )
         
         self.db.add(service_request)
-        self.db.commit()
-        self.db.refresh(service_request)
-        
-        logger.info(f"Created service request: {service_request.id} for user: {user.id}")
-        return service_request
+        try:
+            self.db.commit()
+            self.db.refresh(service_request)
+            logger.info(f"Created service request: {service_request.id} for user: {user.id}")
+            return service_request
+        except Exception as e:
+            logger.error(f"Error creating service request: {e}")
+            self.db.rollback()
+            raise
     
     async def _initiate_provider_matching(self, service_request: ServiceRequest):
         """Start provider matching process (invisible to user)"""
