@@ -14,10 +14,16 @@ from app.models.provider_models import (
     ProviderSession, ProviderSettings, ProviderStatsCache, 
     ProviderNotification, ProviderAvailability, ProviderDashboardWidget
 )
+from app.models.settings_models import (
+    SystemSettings, NotificationSettings, SecuritySettings, PerformanceSettings,
+    AISettings, WhatsAppSettings, BusinessSettings, ProviderSettings as ProviderSettingsModel,
+    RequestSettings, AdminSettings
+)
 from app.database import engine, get_db
 from app.utils.logger import setup_logger
 from app.config import get_settings
 from app.services.cultural_data_service import CulturalDataService
+from app.services.config_service import init_config
 
 # Setup logging
 logger = setup_logger(__name__)
@@ -40,6 +46,12 @@ async def lifespan(app: FastAPI):
         with next(get_db()) as db:
             cultural_service.seed_all_cultural_data(db)
         logger.info("Cultural data seeded successfully")
+        
+        # Initialize configuration service
+        with next(get_db()) as db:
+            config_service = init_config(db)
+            config_service.settings_service.seed_default_settings()
+        logger.info("Configuration service initialized successfully")
         
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
@@ -96,6 +108,10 @@ app.include_router(settings_api_router, prefix="/api/settings", tags=["settings"
 app.include_router(finances_api_router, prefix="/api/finances", tags=["finances"])
 app.include_router(providers_api_router, prefix="/api/providers", tags=["providers"])
 app.include_router(requests_api_router, prefix="/api/requests", tags=["requests"])
+
+# Configuration API endpoints
+from app.api.config import router as config_api_router
+app.include_router(config_api_router, prefix="/api/config", tags=["configuration"])
 
 # Chat widget endpoint
 from app.api.chat import router as chat_router

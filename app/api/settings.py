@@ -1,6 +1,6 @@
 """
 Settings API endpoints for Djobea AI
-Implements system configuration and settings management functionality
+Implements dynamic system configuration and settings management functionality
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -8,15 +8,123 @@ from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 from datetime import datetime
 import logging
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.api.auth import get_current_admin_user
+from app.services.settings_service import SettingsService
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter(tags=["Settings"])
+
+# Pydantic models for request validation
+class SystemSettingsUpdate(BaseModel):
+    general: Optional[Dict[str, Any]] = None
+    ai: Optional[Dict[str, Any]] = None
+    communication: Optional[Dict[str, Any]] = None
+
+class NotificationSettingsUpdate(BaseModel):
+    email: Optional[Dict[str, Any]] = None
+    sms: Optional[Dict[str, Any]] = None
+    push: Optional[Dict[str, Any]] = None
+    whatsapp: Optional[Dict[str, Any]] = None
+
+class BusinessSettingsUpdate(BaseModel):
+    company: Optional[Dict[str, Any]] = None
+    pricing: Optional[Dict[str, Any]] = None
+    operations: Optional[Dict[str, Any]] = None
+
+# 1. General Settings Endpoints
+@router.get("/")
+async def get_all_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings - Get all system settings
+    Retrieve all configuration settings for the platform
+    """
+    try:
+        settings_service = SettingsService(db)
+        
+        return {
+            "success": True,
+            "data": {
+                "general": settings_service.get_all_system_settings(),
+                "notifications": settings_service.get_notification_settings(),
+                "ai": settings_service.get_ai_settings(),
+                "whatsapp": settings_service.get_whatsapp_settings(),
+                "business": settings_service.get_business_settings(),
+                "providers": settings_service.get_provider_settings(),
+                "requests": settings_service.get_request_settings()
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting all settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve settings")
+
+@router.put("/save")
+async def save_settings(
+    settings: SystemSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    PUT /api/settings/save - Update general settings
+    Update system-wide configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        
+        # Update general settings
+        if settings.general:
+            for key, value in settings.general.items():
+                data_type = "string"
+                if isinstance(value, bool):
+                    data_type = "boolean"
+                elif isinstance(value, int):
+                    data_type = "integer"
+                elif isinstance(value, float):
+                    data_type = "float"
+                
+                settings_service.set_system_setting("general", key, value, data_type)
+        
+        # Update AI settings
+        if settings.ai:
+            for key, value in settings.ai.items():
+                data_type = "string"
+                if isinstance(value, bool):
+                    data_type = "boolean"
+                elif isinstance(value, int):
+                    data_type = "integer"
+                elif isinstance(value, float):
+                    data_type = "float"
+                
+                settings_service.set_system_setting("ai", key, value, data_type)
+        
+        # Update communication settings
+        if settings.communication:
+            for key, value in settings.communication.items():
+                data_type = "string"
+                if isinstance(value, bool):
+                    data_type = "boolean"
+                elif isinstance(value, int):
+                    data_type = "integer"
+                elif isinstance(value, float):
+                    data_type = "float"
+                
+                settings_service.set_system_setting("communication", key, value, data_type)
+        
+        return {
+            "success": True,
+            "message": "Settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update settings")
 
 @router.get("/system")
 async def get_system_settings(
@@ -28,61 +136,20 @@ async def get_system_settings(
     Retrieve system-wide configuration settings
     """
     try:
-        # Mock system settings - in production these would come from a settings table
-        settings = {
-            "general": {
-                "app_name": "Djobea AI",
-                "app_version": "2.0.0",
-                "default_language": "fr",
-                "timezone": "Africa/Douala",
-                "currency": "XAF",
-                "commission_rate": 15.0,
-                "max_providers_per_request": 5,
-                "request_timeout_minutes": 10
-            },
-            "ai": {
-                "primary_model": "claude-sonnet-4-20250514",
-                "confidence_threshold": 0.7,
-                "max_conversation_turns": 10,
-                "enable_auto_escalation": True,
-                "escalation_timeout_minutes": 15
-            },
-            "communication": {
-                "whatsapp_enabled": True,
-                "sms_enabled": True,
-                "email_enabled": False,
-                "notification_retry_attempts": 3,
-                "notification_retry_delay_minutes": 2
-            },
-            "business": {
-                "service_zones": ["Bonamoussadi", "Akwa", "Douala", "Bonaberi"],
-                "operating_hours": {
-                    "start": "07:00",
-                    "end": "20:00",
-                    "timezone": "Africa/Douala"
-                },
-                "emergency_services_24h": True,
-                "price_ranges": {
-                    "plomberie": {"min": 5000, "max": 15000},
-                    "électricité": {"min": 3000, "max": 10000},
-                    "électroménager": {"min": 2000, "max": 8000}
-                }
-            }
-        }
+        settings_service = SettingsService(db)
+        system_settings = settings_service.get_all_system_settings()
         
         return {
-            "settings": settings,
-            "last_updated": datetime.utcnow().isoformat(),
-            "updated_by": getattr(current_user, "username", "system")
+            "success": True,
+            "data": system_settings
         }
     except Exception as e:
-        logger.error(f"Error retrieving system settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des paramètres système")
-
+        logger.error(f"Error getting system settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve system settings")
 
 @router.put("/system")
 async def update_system_settings(
-    settings_data: dict,
+    settings: SystemSettingsUpdate,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_admin_user)
 ):
@@ -91,31 +158,31 @@ async def update_system_settings(
     Update system-wide configuration settings
     """
     try:
-        # Validate required sections
-        required_sections = ["general", "ai", "communication", "business"]
-        for section in required_sections:
-            if section not in settings_data:
-                raise HTTPException(status_code=422, detail=f"Section '{section}' manquante")
+        settings_service = SettingsService(db)
         
-        # In production, this would update a settings table
-        # For now, return success with the provided data
-        
-        updated_settings = settings_data
-        updated_settings["last_updated"] = datetime.utcnow().isoformat()
-        updated_settings["updated_by"] = getattr(current_user, "username", "admin")
-        
-        logger.info(f"System settings updated by {getattr(current_user, 'username', 'admin')}")
+        # Update each category
+        for category, values in settings.dict(exclude_unset=True).items():
+            if values:
+                for key, value in values.items():
+                    data_type = "string"
+                    if isinstance(value, bool):
+                        data_type = "boolean"
+                    elif isinstance(value, int):
+                        data_type = "integer"
+                    elif isinstance(value, float):
+                        data_type = "float"
+                    
+                    settings_service.set_system_setting(category, key, value, data_type)
         
         return {
             "success": True,
-            "message": "Paramètres système mis à jour avec succès",
-            "settings": updated_settings
+            "message": "System settings updated successfully"
         }
     except Exception as e:
-        logger.error(f"Error updating system settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour des paramètres")
+        logger.error(f"Error updating system settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update system settings")
 
-
+# 2. Notification Settings
 @router.get("/notifications")
 async def get_notification_settings(
     db: Session = Depends(get_db),
@@ -123,212 +190,412 @@ async def get_notification_settings(
 ):
     """
     GET /api/settings/notifications - Get notification settings
-    Retrieve notification configuration and templates
+    Retrieve notification configuration settings
     """
     try:
-        notification_settings = {
-            "channels": {
-                "whatsapp": {
-                    "enabled": True,
-                    "priority": 1,
-                    "retry_attempts": 3,
-                    "retry_delay_minutes": 2
-                },
-                "sms": {
-                    "enabled": True,
-                    "priority": 2,
-                    "retry_attempts": 2,
-                    "retry_delay_minutes": 5
-                },
-                "email": {
-                    "enabled": False,
-                    "priority": 3,
-                    "retry_attempts": 1,
-                    "retry_delay_minutes": 10
-                }
-            },
-            "templates": {
-                "request_confirmation": {
-                    "whatsapp": "✅ Votre demande de {service_type} a été reçue. Référence: {request_id}. Nous recherchons un prestataire dans votre zone.",
-                    "sms": "Demande {request_id} reçue pour {service_type}. Recherche de prestataire en cours."
-                },
-                "provider_assigned": {
-                    "whatsapp": "🔧 Prestataire trouvé ! {provider_name} va vous contacter sous peu. Note: {rating}/5 ⭐",
-                    "sms": "Prestataire {provider_name} assigné. Il vous contactera bientôt."
-                },
-                "service_completed": {
-                    "whatsapp": "✅ Service terminé ! Coût: {cost} FCFA. Merci d'évaluer {provider_name} /5 ⭐",
-                    "sms": "Service terminé. Coût: {cost} FCFA. Merci d'évaluer le prestataire."
-                }
-            },
-            "timing": {
-                "confirmation_delay_seconds": 30,
-                "provider_search_timeout_minutes": 10,
-                "status_update_interval_minutes": 5,
-                "quiet_hours": {
-                    "start": "22:00",
-                    "end": "07:00",
-                    "timezone": "Africa/Douala"
-                }
-            }
-        }
+        settings_service = SettingsService(db)
+        notification_settings = settings_service.get_notification_settings()
         
         return {
-            "notification_settings": notification_settings,
-            "last_updated": datetime.utcnow().isoformat()
+            "success": True,
+            "data": notification_settings
         }
     except Exception as e:
-        logger.error(f"Error retrieving notification settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des paramètres de notification")
-
+        logger.error(f"Error getting notification settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve notification settings")
 
 @router.put("/notifications")
 async def update_notification_settings(
-    notification_data: dict,
+    settings: NotificationSettingsUpdate,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_admin_user)
 ):
     """
     PUT /api/settings/notifications - Update notification settings
-    Update notification configuration and templates
+    Update notification configuration settings
     """
     try:
-        # Validate notification channels
-        if "channels" in notification_data:
-            valid_channels = ["whatsapp", "sms", "email"]
-            for channel in notification_data["channels"]:
-                if channel not in valid_channels:
-                    raise HTTPException(status_code=422, detail=f"Canal de notification invalide: {channel}")
+        settings_service = SettingsService(db)
         
-        # In production, this would update notification settings in database
-        updated_settings = notification_data
-        updated_settings["last_updated"] = datetime.utcnow().isoformat()
-        updated_settings["updated_by"] = getattr(current_user, "username", "admin")
-        
-        logger.info(f"Notification settings updated by {getattr(current_user, 'username', 'admin')}")
+        # Update each notification provider
+        for provider, config in settings.dict(exclude_unset=True).items():
+            if config:
+                settings_service.update_notification_settings(provider, config)
         
         return {
             "success": True,
-            "message": "Paramètres de notification mis à jour avec succès",
-            "settings": updated_settings
+            "message": "Notification settings updated successfully"
         }
     except Exception as e:
-        logger.error(f"Error updating notification settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour des paramètres de notification")
+        logger.error(f"Error updating notification settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update notification settings")
 
-
-@router.get("/pricing")
-async def get_pricing_settings(
+@router.post("/notifications/test")
+async def test_notification_settings(
+    test_data: Dict[str, Any],
     db: Session = Depends(get_db),
     current_user = Depends(get_current_admin_user)
 ):
     """
-    GET /api/settings/pricing - Get pricing settings
-    Retrieve pricing configuration and service rates
+    POST /api/settings/notifications/test - Test notification settings
+    Test notification configuration with a sample message
     """
     try:
-        pricing_settings = {
-            "commission": {
-                "rate_percentage": 15.0,
-                "minimum_amount_xaf": 500,
-                "maximum_amount_xaf": 5000,
-                "calculation_method": "percentage"
+        notification_type = test_data.get("type")
+        recipient = test_data.get("recipient")
+        message = test_data.get("message", "Test message from Djobea AI")
+        
+        # Mock test result - in production this would actually send a test message
+        return {
+            "success": True,
+            "data": {
+                "type": notification_type,
+                "recipient": recipient,
+                "status": "sent",
+                "message": f"Test {notification_type} sent successfully to {recipient}"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error testing notification settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to test notification settings")
+
+# 3. AI Settings
+@router.get("/ai")
+async def get_ai_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/ai - Get AI settings
+    Retrieve AI configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        ai_settings = settings_service.get_ai_settings()
+        
+        return {
+            "success": True,
+            "data": ai_settings
+        }
+    except Exception as e:
+        logger.error(f"Error getting AI settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve AI settings")
+
+@router.post("/ai")
+async def update_ai_settings(
+    settings: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/settings/ai - Update AI settings
+    Update AI configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        
+        # Update AI settings for each provider
+        for provider, config in settings.items():
+            if isinstance(config, dict):
+                settings_service.update_ai_settings(provider, config)
+        
+        return {
+            "success": True,
+            "message": "AI settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating AI settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update AI settings")
+
+# 4. WhatsApp Settings
+@router.get("/whatsapp")
+async def get_whatsapp_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/whatsapp - Get WhatsApp settings
+    Retrieve WhatsApp configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        whatsapp_settings = settings_service.get_whatsapp_settings()
+        
+        return {
+            "success": True,
+            "data": whatsapp_settings
+        }
+    except Exception as e:
+        logger.error(f"Error getting WhatsApp settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve WhatsApp settings")
+
+@router.post("/whatsapp")
+async def update_whatsapp_settings(
+    settings: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/settings/whatsapp - Update WhatsApp settings
+    Update WhatsApp configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        settings_service.update_whatsapp_settings(settings)
+        
+        return {
+            "success": True,
+            "message": "WhatsApp settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating WhatsApp settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update WhatsApp settings")
+
+# 5. Business Settings
+@router.get("/business")
+async def get_business_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/business - Get business settings
+    Retrieve business configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        business_settings = settings_service.get_business_settings()
+        
+        return {
+            "success": True,
+            "data": business_settings
+        }
+    except Exception as e:
+        logger.error(f"Error getting business settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve business settings")
+
+@router.post("/business")
+async def update_business_settings(
+    settings: BusinessSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/settings/business - Update business settings
+    Update business configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        settings_service.update_business_settings(settings.dict(exclude_unset=True))
+        
+        return {
+            "success": True,
+            "message": "Business settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating business settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update business settings")
+
+# 6. Provider Settings
+@router.get("/providers")
+async def get_provider_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/providers - Get provider settings
+    Retrieve provider configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        provider_settings = settings_service.get_provider_settings()
+        
+        return {
+            "success": True,
+            "data": provider_settings
+        }
+    except Exception as e:
+        logger.error(f"Error getting provider settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve provider settings")
+
+@router.post("/providers")
+async def update_provider_settings(
+    settings: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/settings/providers - Update provider settings
+    Update provider configuration settings
+    """
+    try:
+        # Mock update for now - implement actual update logic
+        return {
+            "success": True,
+            "message": "Provider settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating provider settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update provider settings")
+
+# 7. Request Settings
+@router.get("/requests")
+async def get_request_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/requests - Get request settings
+    Retrieve request processing configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        request_settings = settings_service.get_request_settings()
+        
+        return {
+            "success": True,
+            "data": request_settings
+        }
+    except Exception as e:
+        logger.error(f"Error getting request settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve request settings")
+
+@router.post("/requests")
+async def update_request_settings(
+    settings: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/settings/requests - Update request settings
+    Update request processing configuration settings
+    """
+    try:
+        # Mock update for now - implement actual update logic
+        return {
+            "success": True,
+            "message": "Request settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating request settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update request settings")
+
+# 8. Performance Settings
+@router.get("/performance")
+async def get_performance_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/performance - Get performance settings
+    Retrieve performance optimization settings
+    """
+    try:
+        # Mock performance settings
+        performance_settings = {
+            "cache": {
+                "redis_enabled": True,
+                "ttl": 300,
+                "max_memory": "512mb"
             },
-            "service_rates": {
-                "plomberie": {
-                    "min_price_xaf": 5000,
-                    "max_price_xaf": 15000,
-                    "base_rate_xaf": 7500,
-                    "currency": "XAF",
-                    "urgency_multiplier": 1.5
-                },
-                "électricité": {
-                    "min_price_xaf": 3000,
-                    "max_price_xaf": 10000,
-                    "base_rate_xaf": 5000,
-                    "currency": "XAF",
-                    "urgency_multiplier": 1.5
-                },
-                "électroménager": {
-                    "min_price_xaf": 2000,
-                    "max_price_xaf": 8000,
-                    "base_rate_xaf": 4000,
-                    "currency": "XAF",
-                    "urgency_multiplier": 1.3
-                }
+            "cdn": {
+                "enabled": True,
+                "provider": "cloudflare",
+                "zones": ["static.djobea.com"]
             },
-            "payment": {
-                "methods": ["Mobile Money", "Cash", "Bank Transfer"],
-                "default_method": "Mobile Money",
-                "payment_timeout_hours": 24,
-                "auto_refund_enabled": True,
-                "refund_timeout_hours": 72
-            },
-            "discounts": {
-                "first_time_user": 10.0,
-                "loyalty_program": {
-                    "enabled": True,
-                    "tiers": {
-                        "bronze": {"min_orders": 5, "discount": 5.0},
-                        "silver": {"min_orders": 15, "discount": 10.0},
-                        "gold": {"min_orders": 30, "discount": 15.0}
-                    }
-                }
+            "optimization": {
+                "compression_enabled": True,
+                "minification_enabled": True,
+                "image_lazy_loading": True
             }
         }
         
         return {
-            "pricing_settings": pricing_settings,
-            "currency": "XAF",
-            "last_updated": datetime.utcnow().isoformat()
+            "success": True,
+            "data": performance_settings
         }
     except Exception as e:
-        logger.error(f"Error retrieving pricing settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des paramètres de tarification")
+        logger.error(f"Error getting performance settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve performance settings")
 
-
-@router.put("/pricing")
-async def update_pricing_settings(
-    pricing_data: dict,
+@router.post("/performance")
+async def update_performance_settings(
+    settings: Dict[str, Any],
     db: Session = Depends(get_db),
     current_user = Depends(get_current_admin_user)
 ):
     """
-    PUT /api/settings/pricing - Update pricing settings
-    Update pricing configuration and service rates
+    POST /api/settings/performance - Update performance settings
+    Update performance optimization settings
     """
     try:
-        # Validate pricing data
-        if "commission" in pricing_data:
-            commission = pricing_data["commission"]
-            if "rate_percentage" in commission:
-                rate = commission["rate_percentage"]
-                if not (0 <= rate <= 50):
-                    raise HTTPException(status_code=422, detail="Le taux de commission doit être entre 0 et 50%")
-        
-        if "service_rates" in pricing_data:
-            for service, rates in pricing_data["service_rates"].items():
-                if "min_price_xaf" in rates and "max_price_xaf" in rates:
-                    if rates["min_price_xaf"] >= rates["max_price_xaf"]:
-                        raise HTTPException(status_code=422, detail=f"Prix minimum supérieur au prix maximum pour {service}")
-        
-        # In production, this would update pricing settings in database
-        updated_settings = pricing_data
-        updated_settings["last_updated"] = datetime.utcnow().isoformat()
-        updated_settings["updated_by"] = getattr(current_user, "username", "admin")
-        
-        logger.info(f"Pricing settings updated by {getattr(current_user, 'username', 'admin')}")
+        # Mock update for now - implement actual update logic
+        return {
+            "success": True,
+            "message": "Performance settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating performance settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update performance settings")
+
+# 9. Security Settings
+@router.get("/security")
+async def get_security_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/security - Get security settings
+    Retrieve security configuration settings
+    """
+    try:
+        # Mock security settings
+        security_settings = {
+            "authentication": {
+                "jwt_expiration": "24h",
+                "refresh_token_expiration": "7d",
+                "max_login_attempts": 5,
+                "lockout_duration": "15m"
+            },
+            "encryption": {
+                "algorithm": "AES-256-GCM",
+                "key_rotation_interval": "30d"
+            },
+            "compliance": {
+                "gdpr_enabled": True,
+                "data_retention_period": "2y",
+                "audit_log_enabled": True
+            }
+        }
         
         return {
             "success": True,
-            "message": "Paramètres de tarification mis à jour avec succès",
-            "settings": updated_settings
+            "data": security_settings
         }
     except Exception as e:
-        logger.error(f"Error updating pricing settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour des paramètres de tarification")
+        logger.error(f"Error getting security settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve security settings")
 
+@router.post("/security")
+async def update_security_settings(
+    settings: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    POST /api/settings/security - Update security settings
+    Update security configuration settings
+    """
+    try:
+        # Mock update for now - implement actual update logic
+        return {
+            "success": True,
+            "message": "Security settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating security settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update security settings")
 
+# 10. Integration Settings
 @router.get("/integrations")
 async def get_integration_settings(
     db: Session = Depends(get_db),
@@ -336,104 +603,103 @@ async def get_integration_settings(
 ):
     """
     GET /api/settings/integrations - Get integration settings
-    Retrieve external service integrations configuration
+    Retrieve third-party integration settings
     """
     try:
+        # Mock integration settings
         integration_settings = {
-            "ai_services": {
-                "claude": {
-                    "enabled": True,
-                    "model": "claude-sonnet-4-20250514",
-                    "api_version": "2024-06-01",
-                    "rate_limit": 1000,
-                    "timeout_seconds": 30
-                },
-                "openai": {
-                    "enabled": True,
-                    "model": "gpt-4-turbo",
-                    "api_version": "v1",
-                    "rate_limit": 500,
-                    "timeout_seconds": 30
-                },
-                "gemini": {
-                    "enabled": True,
-                    "model": "gemini-pro",
-                    "api_version": "v1",
-                    "rate_limit": 300,
-                    "timeout_seconds": 30
-                }
-            },
-            "communication": {
-                "twilio": {
-                    "enabled": True,
-                    "whatsapp_enabled": True,
-                    "sms_enabled": True,
-                    "webhook_url": "/webhook/whatsapp",
-                    "rate_limit": 200
-                }
-            },
             "payment": {
-                "monetbil": {
-                    "enabled": True,
-                    "service_key": "configured",
-                    "service_secret": "configured",
-                    "webhook_url": "/webhook/monetbil",
-                    "supported_operators": ["MTN", "Orange", "Express Union"]
-                }
+                "monetbil_enabled": True,
+                "stripe_enabled": False,
+                "paypal_enabled": False
+            },
+            "messaging": {
+                "twilio_enabled": True,
+                "whatsapp_business_enabled": True,
+                "firebase_enabled": True
             },
             "analytics": {
-                "google_analytics": {
-                    "enabled": False,
-                    "tracking_id": "",
-                    "enhanced_ecommerce": False
-                },
-                "internal_analytics": {
-                    "enabled": True,
-                    "retention_days": 365,
-                    "real_time_updates": True
-                }
+                "google_analytics_enabled": False,
+                "mixpanel_enabled": False,
+                "amplitude_enabled": False
             }
         }
         
         return {
-            "integration_settings": integration_settings,
-            "last_updated": datetime.utcnow().isoformat()
+            "success": True,
+            "data": integration_settings
         }
     except Exception as e:
-        logger.error(f"Error retrieving integration settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des paramètres d'intégration")
-
+        logger.error(f"Error getting integration settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve integration settings")
 
 @router.put("/integrations")
 async def update_integration_settings(
-    integration_data: dict,
+    settings: Dict[str, Any],
     db: Session = Depends(get_db),
     current_user = Depends(get_current_admin_user)
 ):
     """
     PUT /api/settings/integrations - Update integration settings
-    Update external service integrations configuration
+    Update third-party integration settings
     """
     try:
-        # Validate integration data
-        if "ai_services" in integration_data:
-            valid_ai_services = ["claude", "openai", "gemini"]
-            for service in integration_data["ai_services"]:
-                if service not in valid_ai_services:
-                    raise HTTPException(status_code=422, detail=f"Service IA invalide: {service}")
+        # Mock update for now - implement actual update logic
+        return {
+            "success": True,
+            "message": "Integration settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating integration settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update integration settings")
+
+# 11. Pricing Settings
+@router.get("/pricing")
+async def get_pricing_settings(
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    GET /api/settings/pricing - Get pricing settings
+    Retrieve pricing configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        business_settings = settings_service.get_business_settings()
         
-        # In production, this would update integration settings in database
-        updated_settings = integration_data
-        updated_settings["last_updated"] = datetime.utcnow().isoformat()
-        updated_settings["updated_by"] = getattr(current_user, "username", "admin")
-        
-        logger.info(f"Integration settings updated by {getattr(current_user, 'username', 'admin')}")
+        pricing_settings = business_settings.get("pricing", {})
         
         return {
             "success": True,
-            "message": "Paramètres d'intégration mis à jour avec succès",
-            "settings": updated_settings
+            "data": pricing_settings
         }
     except Exception as e:
-        logger.error(f"Error updating integration settings: {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour des paramètres d'intégration")
+        logger.error(f"Error getting pricing settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve pricing settings")
+
+@router.put("/pricing")
+async def update_pricing_settings(
+    settings: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_admin_user)
+):
+    """
+    PUT /api/settings/pricing - Update pricing settings
+    Update pricing configuration settings
+    """
+    try:
+        settings_service = SettingsService(db)
+        
+        # Update business settings with new pricing
+        business_update = {
+            "pricing": settings
+        }
+        settings_service.update_business_settings(business_update)
+        
+        return {
+            "success": True,
+            "message": "Pricing settings updated successfully"
+        }
+    except Exception as e:
+        logger.error(f"Error updating pricing settings: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update pricing settings")

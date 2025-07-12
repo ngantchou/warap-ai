@@ -1,0 +1,685 @@
+# Documentation API Settings - Djobea Analytics
+
+## Vue d'ensemble
+
+Cette documentation couvre tous les endpoints API pour la gestion des paramètres de la plateforme Djobea Analytics. L'API Settings permet de configurer et gérer tous les aspects du système, des notifications aux paramètres de sécurité.
+
+## Base URL
+
+\`\`\`
+Production: https://djobea-analytics.vercel.app/api
+Development: http://localhost:3000/api
+\`\`\`
+
+## Authentification
+
+Toutes les requêtes nécessitent une authentification via JWT Bearer Token:
+
+\`\`\`bash
+Authorization: Bearer YOUR_JWT_TOKEN
+\`\`\`
+
+## Rate Limiting
+
+- **100 requêtes par minute** par utilisateur
+- **500 requêtes par heure** par organisation
+- Headers de réponse: `X-RateLimit-Limit`, `X-RateLimit-Remaining`
+
+---
+
+## 1. Paramètres Généraux
+
+### GET /api/settings
+Récupère tous les paramètres système
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "general": {
+      "appName": "Djobea Analytics",
+      "timezone": "Africa/Douala",
+      "language": "fr",
+      "currency": "XAF"
+    },
+    "notifications": { ... },
+    "security": { ... }
+  }
+}
+\`\`\`
+
+### PUT /api/settings/save
+Met à jour les paramètres généraux
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "general": {
+    "appName": "string",
+    "timezone": "string",
+    "language": "string",
+    "currency": "string"
+  }
+}
+\`\`\`
+
+---
+
+## 2. Notifications
+
+### GET /api/settings/notifications
+Récupère les paramètres de notification
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "email": {
+      "enabled": true,
+      "smtp": {
+        "host": "smtp.gmail.com",
+        "port": 587,
+        "secure": false,
+        "auth": {
+          "user": "notifications@djobea.com"
+        }
+      }
+    },
+    "sms": {
+      "enabled": true,
+      "provider": "twilio",
+      "config": {
+        "accountSid": "AC...",
+        "from": "+237..."
+      }
+    },
+    "push": {
+      "enabled": true,
+      "firebase": {
+        "serverKey": "AAAA..."
+      }
+    },
+    "whatsapp": {
+      "enabled": true,
+      "businessAccountId": "123456789",
+      "accessToken": "EAA..."
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/notifications
+Met à jour les paramètres de notification
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "email": {
+    "enabled": true,
+    "smtp": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "secure": false,
+      "auth": {
+        "user": "notifications@djobea.com",
+        "pass": "password"
+      }
+    }
+  },
+  "sms": {
+    "enabled": true,
+    "provider": "twilio",
+    "config": {
+      "accountSid": "AC...",
+      "authToken": "...",
+      "from": "+237..."
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/notifications/test
+Teste la configuration des notifications
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "type": "email|sms|push|whatsapp",
+  "recipient": "test@example.com|+237123456789",
+  "message": "Message de test"
+}
+\`\`\`
+
+---
+
+## 3. Sécurité
+
+### GET /api/settings/security
+Récupère les paramètres de sécurité
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "authentication": {
+      "jwtExpiration": "24h",
+      "refreshTokenExpiration": "7d",
+      "maxLoginAttempts": 5,
+      "lockoutDuration": "15m"
+    },
+    "encryption": {
+      "algorithm": "AES-256-GCM",
+      "keyRotationInterval": "30d"
+    },
+    "compliance": {
+      "gdprEnabled": true,
+      "dataRetentionPeriod": "2y",
+      "auditLogEnabled": true
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/security
+Met à jour les paramètres de sécurité
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "authentication": {
+    "jwtExpiration": "24h",
+    "refreshTokenExpiration": "7d",
+    "maxLoginAttempts": 5,
+    "lockoutDuration": "15m"
+  },
+  "encryption": {
+    "algorithm": "AES-256-GCM",
+    "keyRotationInterval": "30d"
+  }
+}
+\`\`\`
+
+---
+
+## 4. Performance
+
+### GET /api/settings/performance
+Récupère les paramètres de performance
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "cache": {
+      "redisEnabled": true,
+      "ttl": 300,
+      "maxMemory": "512mb"
+    },
+    "cdn": {
+      "enabled": true,
+      "provider": "cloudflare",
+      "zones": ["static.djobea.com"]
+    },
+    "optimization": {
+      "compressionEnabled": true,
+      "minificationEnabled": true,
+      "imageLazyLoading": true
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/performance
+Met à jour les paramètres de performance
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "cache": {
+    "redisEnabled": true,
+    "ttl": 300,
+    "maxMemory": "512mb"
+  },
+  "cdn": {
+    "enabled": true,
+    "provider": "cloudflare"
+  }
+}
+\`\`\`
+
+---
+
+## 5. Intelligence Artificielle
+
+### GET /api/settings/ai
+Récupère les paramètres IA
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "enabled": true,
+    "model": {
+      "provider": "openai",
+      "version": "gpt-4",
+      "temperature": 0.7,
+      "maxTokens": 2048
+    },
+    "features": {
+      "predictiveAnalytics": true,
+      "autoAssignment": true,
+      "chatbot": true,
+      "sentimentAnalysis": true
+    },
+    "conversation": {
+      "maxHistory": 50,
+      "contextWindow": 4096,
+      "responseTimeout": 30
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/ai
+Met à jour les paramètres IA
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "enabled": true,
+  "model": {
+    "provider": "openai",
+    "version": "gpt-4",
+    "temperature": 0.7,
+    "maxTokens": 2048
+  },
+  "features": {
+    "predictiveAnalytics": true,
+    "autoAssignment": true
+  }
+}
+\`\`\`
+
+---
+
+## 6. WhatsApp
+
+### GET /api/settings/whatsapp
+Récupère les paramètres WhatsApp
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "enabled": true,
+    "businessAccountId": "123456789",
+    "phoneNumberId": "987654321",
+    "accessToken": "EAA...",
+    "webhookUrl": "https://djobea.com/webhook/whatsapp",
+    "verifyToken": "verify_token_123",
+    "templates": [
+      {
+        "name": "welcome_message",
+        "language": "fr",
+        "status": "approved"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### POST /api/settings/whatsapp
+Met à jour les paramètres WhatsApp
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "enabled": true,
+  "businessAccountId": "123456789",
+  "phoneNumberId": "987654321",
+  "accessToken": "EAA...",
+  "webhookUrl": "https://djobea.com/webhook/whatsapp",
+  "verifyToken": "verify_token_123"
+}
+\`\`\`
+
+---
+
+## 7. Business
+
+### GET /api/settings/business
+Récupère les paramètres business
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "company": {
+      "name": "Djobea SARL",
+      "address": "Douala, Cameroun",
+      "phone": "+237 6 XX XX XX XX",
+      "email": "contact@djobea.com",
+      "website": "https://djobea.com"
+    },
+    "pricing": {
+      "currency": "XAF",
+      "taxRate": 19.25,
+      "commissionRate": 15,
+      "minimumOrder": 5000
+    },
+    "operations": {
+      "workingHours": {
+        "start": "08:00",
+        "end": "18:00"
+      },
+      "workingDays": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+      "emergencyAvailable": true
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/business
+Met à jour les paramètres business
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "company": {
+    "name": "Djobea SARL",
+    "address": "Douala, Cameroun",
+    "phone": "+237 6 XX XX XX XX",
+    "email": "contact@djobea.com"
+  },
+  "pricing": {
+    "currency": "XAF",
+    "taxRate": 19.25,
+    "commissionRate": 15
+  }
+}
+\`\`\`
+
+---
+
+## 8. Prestataires
+
+### GET /api/settings/providers
+Récupère les paramètres des prestataires
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "validation": {
+      "requireDocuments": true,
+      "backgroundCheck": true,
+      "minimumRating": 3.0,
+      "probationPeriod": 30
+    },
+    "commission": {
+      "rate": 15,
+      "paymentSchedule": "weekly",
+      "minimumPayout": 10000
+    },
+    "rating": {
+      "minimumReviews": 5,
+      "autoSuspendThreshold": 2.0,
+      "improvementPeriod": 14
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/providers
+Met à jour les paramètres des prestataires
+
+### POST /api/settings/providers/test
+Teste la configuration des prestataires
+
+---
+
+## 9. Demandes
+
+### GET /api/settings/requests
+Récupère les paramètres des demandes
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "processing": {
+      "autoAssignment": true,
+      "assignmentTimeout": 300,
+      "maxRetries": 3,
+      "priorityLevels": ["low", "normal", "high", "urgent"]
+    },
+    "matching": {
+      "algorithm": "distance_rating",
+      "maxDistance": 10,
+      "ratingWeight": 0.6,
+      "distanceWeight": 0.4
+    },
+    "validation": {
+      "requirePhone": true,
+      "requireEmail": false,
+      "minimumDescription": 20
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/requests
+Met à jour les paramètres des demandes
+
+### POST /api/settings/requests/test-matching
+Teste l'algorithme de matching
+
+---
+
+## 10. Administration
+
+### GET /api/settings/admin
+Récupère les paramètres d'administration
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "users": {
+      "maxUsers": 1000,
+      "defaultRole": "user",
+      "passwordPolicy": {
+        "minLength": 8,
+        "requireUppercase": true,
+        "requireNumbers": true,
+        "requireSymbols": true
+      }
+    },
+    "roles": [
+      {
+        "name": "admin",
+        "permissions": ["*"]
+      },
+      {
+        "name": "manager",
+        "permissions": ["read:*", "write:requests", "write:providers"]
+      }
+    ],
+    "system": {
+      "maintenanceMode": false,
+      "debugMode": false,
+      "logLevel": "info"
+    }
+  }
+}
+\`\`\`
+
+### POST /api/settings/admin
+Met à jour les paramètres d'administration
+
+### POST /api/settings/admin/test
+Teste la configuration d'administration
+
+---
+
+## 11. Maintenance
+
+### GET /api/settings/maintenance
+Récupère les paramètres de maintenance
+
+**Réponse:**
+\`\`\`json
+{
+  "success": true,
+  "data": {
+    "status": {
+      "maintenanceMode": false,
+      "scheduledMaintenance": null,
+      "lastUpdate": "2025-01-12T10:30:00Z"
+    },
+    "deployment": {
+      "environment": "production",
+      "version": "1.2.0",
+      "buildNumber": "456",
+      "deployedAt": "2025-01-12T09:00:00Z"
+    },
+    "featureFlags": [
+      {
+        "id": "new-dashboard",
+        "name": "Nouveau Dashboard",
+        "enabled": true,
+        "rolloutPercentage": 100
+      }
+    ]
+  }
+}
+\`\`\`
+
+### POST /api/settings/maintenance/toggle
+Active/désactive le mode maintenance
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "enabled": true,
+  "message": "Maintenance programmée - Retour prévu à 14h00",
+  "estimatedDuration": 120
+}
+\`\`\`
+
+### POST /api/settings/maintenance/deploy
+Déclenche un déploiement
+
+**Corps de la requête:**
+\`\`\`json
+{
+  "version": "1.2.1",
+  "environment": "production",
+  "rollback": false
+}
+\`\`\`
+
+### GET /api/settings/maintenance/feature-flags
+Liste les feature flags
+
+### POST /api/settings/maintenance/feature-flags
+Crée un nouveau feature flag
+
+### PUT /api/settings/maintenance/feature-flags/{id}
+Met à jour un feature flag
+
+### POST /api/settings/maintenance/feature-flags/{id}/toggle
+Active/désactive un feature flag
+
+### POST /api/settings/maintenance/test
+Teste la configuration de maintenance
+
+---
+
+## Codes d'erreur
+
+| Code | Description |
+|------|-------------|
+| 400 | Données invalides |
+| 401 | Non authentifié |
+| 403 | Accès refusé |
+| 404 | Ressource non trouvée |
+| 422 | Erreur de validation |
+| 429 | Trop de requêtes |
+| 500 | Erreur serveur |
+
+## Exemples de réponses d'erreur
+
+\`\`\`json
+{
+  "success": false,
+  "error": "VALIDATION_ERROR",
+  "message": "Les données fournies sont invalides",
+  "details": {
+    "field": "email",
+    "code": "INVALID_FORMAT"
+  }
+}
+\`\`\`
+
+## SDK et Exemples
+
+### JavaScript/Node.js
+
+\`\`\`javascript
+const DjobeaAPI = require('@djobea/api-client');
+
+const client = new DjobeaAPI({
+  baseURL: 'https://djobea-analytics.vercel.app/api',
+  token: 'your-jwt-token'
+});
+
+// Récupérer les paramètres
+const settings = await client.settings.get();
+
+// Mettre à jour les notifications
+await client.settings.notifications.update({
+  email: { enabled: true },
+  sms: { enabled: false }
+});
+\`\`\`
+
+### Python
+
+```python
+import requests
+
+headers = {
+    'Authorization': 'Bearer your-jwt-token',
+    'Content-Type': 'application/json'
+}
+
+# Récupérer les paramètres
+response = requests.get(
+    'https://djobea-analytics.vercel.app/api/settings',
+    headers=headers
+)
+
+# Mettre à jour les paramètres
+data = {
+    'notifications': {
+        'email': {'enabled': True},
+        'sms': {'enabled': False}
+    }
+}
+
+response = requests.post(
+    'https://djobea-analytics.vercel.app/api/settings/notifications',
+    json=data,
+    headers=headers
+)
