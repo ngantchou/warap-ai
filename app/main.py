@@ -122,6 +122,10 @@ from app.api.llm_status import router as llm_status_router
 app.include_router(ai_suggestions_router, tags=["ai-suggestions"])
 app.include_router(llm_status_router, tags=["llm-management"])
 
+# Monitoring API endpoint
+from app.api.monitoring import router as monitoring_router
+app.include_router(monitoring_router, prefix="/api/monitoring", tags=["monitoring"])
+
 # ==== END CLEAN API STRUCTURE ====
 
 # Root endpoint

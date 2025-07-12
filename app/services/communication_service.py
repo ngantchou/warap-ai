@@ -173,6 +173,26 @@ class CommunicationService:
             logger.info(f"Proactive updates cancelled for request {request_id}")
         except Exception as e:
             logger.error(f"Error in proactive update loop for request {request_id}: {e}")
+            # Try to get more specific error information
+            try:
+                from app.database import get_db
+                with get_db() as db:
+                    request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+                    if request:
+                        logger.error(f"Request {request_id} details - Status: {request.status}, User: {request.user_id}, Service: {request.service_type}")
+                        
+                        # Store the error for later analysis
+                        from app.services.error_handling_service import ErrorHandlingService
+                        error_service = ErrorHandlingService(db)
+                        await error_service.handle_whatsapp_failure(
+                            request.user_id, 
+                            request_id, 
+                            f"Proactive update loop error: {str(e)}"
+                        )
+                    else:
+                        logger.error(f"Request {request_id} not found in database")
+            except Exception as inner_e:
+                logger.error(f"Error getting request details for {request_id}: {inner_e}")
         finally:
             # Clean up task reference
             if request_id in self.active_tasks:
@@ -183,21 +203,48 @@ class CommunicationService:
         try:
             user = db.query(User).filter(User.id == request.user_id).first()
             if not user:
+                logger.warning(f"User {request.user_id} not found for status update")
                 return
             
             message = self._generate_status_update_message(request)
             
-            self.whatsapp_service.send_message(user.whatsapp_id, message)
-            logger.info(f"Status update sent for request {request.id}")
+            # Try to send WhatsApp message
+            success = self.whatsapp_service.send_message(user.whatsapp_id, message)
+            if success:
+                logger.info(f"Status update sent for request {request.id}")
+            else:
+                # Handle WhatsApp failure with error handling service
+                logger.warning(f"WhatsApp status update failed for request {request.id}, storing for retry")
+                from app.services.error_handling_service import ErrorHandlingService
+                error_service = ErrorHandlingService(db)
+                await error_service.handle_whatsapp_failure(
+                    request.user_id, 
+                    request.id, 
+                    message,
+                    "status_update"
+                )
             
         except Exception as e:
             logger.error(f"Error sending status update for request {request.id}: {e}")
+            # Store error for later analysis
+            try:
+                from app.services.error_handling_service import ErrorHandlingService
+                error_service = ErrorHandlingService(db)
+                await error_service.handle_whatsapp_failure(
+                    request.user_id, 
+                    request.id, 
+                    f"Status update error: {str(e)}",
+                    "status_update_error"
+                )
+            except Exception as inner_e:
+                logger.error(f"Error storing failed status update: {inner_e}")
     
     async def _send_countdown_warning(self, request: ServiceRequest, minutes_remaining: int, db: Session) -> None:
         """Send countdown warning when timeout approaches"""
         try:
             user = db.query(User).filter(User.id == request.user_id).first()
             if not user:
+                logger.warning(f"User {request.user_id} not found for countdown warning")
                 return
             
             message = f"""⏰ *Mise à jour importante*
@@ -208,11 +255,36 @@ Plus que *{minutes_remaining} minutes* pour qu'un prestataire accepte votre dema
 
 💬 Vous pouvez me poser des questions à tout moment !"""
             
-            self.whatsapp_service.send_message(user.whatsapp_id, message)
-            logger.info(f"Countdown warning sent for request {request.id}")
+            # Try to send WhatsApp message
+            success = self.whatsapp_service.send_message(user.whatsapp_id, message)
+            if success:
+                logger.info(f"Countdown warning sent for request {request.id}")
+            else:
+                # Handle WhatsApp failure with error handling service
+                logger.warning(f"WhatsApp countdown warning failed for request {request.id}, storing for retry")
+                from app.services.error_handling_service import ErrorHandlingService
+                error_service = ErrorHandlingService(db)
+                await error_service.handle_whatsapp_failure(
+                    request.user_id, 
+                    request.id, 
+                    message,
+                    "countdown_warning"
+                )
             
         except Exception as e:
             logger.error(f"Error sending countdown warning for request {request.id}: {e}")
+            # Store error for later analysis
+            try:
+                from app.services.error_handling_service import ErrorHandlingService
+                error_service = ErrorHandlingService(db)
+                await error_service.handle_whatsapp_failure(
+                    request.user_id, 
+                    request.id, 
+                    f"Countdown warning error: {str(e)}",
+                    "countdown_warning_error"
+                )
+            except Exception as inner_e:
+                logger.error(f"Error storing failed countdown warning: {inner_e}")
     
     async def _handle_timeout(self, request: ServiceRequest, db: Session) -> None:
         """Handle request timeout and initiate fallback"""
