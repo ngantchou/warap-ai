@@ -39,9 +39,21 @@ info() {
 check_prerequisites() {
     log "Checking prerequisites..."
     
+    # Detect operating system
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        WINDOWS_ENV=true
+        log "Windows environment detected (using Git Bash/WSL)"
+    else
+        WINDOWS_ENV=false
+    fi
+    
     # Check Docker
     if ! command -v docker &> /dev/null; then
-        error "Docker is not installed. Please install Docker first."
+        if [[ "$WINDOWS_ENV" == "true" ]]; then
+            error "Docker is not installed. Please install Docker Desktop for Windows first."
+        else
+            error "Docker is not installed. Please install Docker first."
+        fi
         exit 1
     fi
     
@@ -51,8 +63,18 @@ check_prerequisites() {
         exit 1
     fi
     
-    # Check if running as root (not recommended)
-    if [[ $EUID -eq 0 ]]; then
+    # Check Docker daemon
+    if ! docker info &> /dev/null; then
+        if [[ "$WINDOWS_ENV" == "true" ]]; then
+            error "Docker is not running. Please start Docker Desktop."
+        else
+            error "Docker daemon is not running. Please start Docker service."
+        fi
+        exit 1
+    fi
+    
+    # Check if running as root (not recommended on Linux)
+    if [[ "$WINDOWS_ENV" == "false" ]] && [[ $EUID -eq 0 ]]; then
         warning "Running as root is not recommended for security reasons."
     fi
     
@@ -83,8 +105,10 @@ setup_environment() {
     mkdir -p "./docker/postgres"
     mkdir -p "./docker/nginx/ssl"
     
-    # Set proper permissions
-    chmod 755 ./logs ./static/uploads ./data
+    # Set proper permissions (skip on Windows)
+    if [[ "$WINDOWS_ENV" != "true" ]]; then
+        chmod 755 ./logs ./static/uploads ./data 2>/dev/null || true
+    fi
     
     log "Environment setup completed."
 }
@@ -160,9 +184,18 @@ deploy() {
     # Wait for application
     info "Waiting for Djobea AI application..."
     for i in {1..60}; do
-        if curl -f http://localhost:5000/health &>/dev/null; then
-            log "Djobea AI application is ready."
-            break
+        # Use different curl approaches for Windows compatibility
+        if [[ "$WINDOWS_ENV" == "true" ]]; then
+            if curl -f -s http://localhost:5000/health > /dev/null 2>&1 || \
+               powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:5000/health' -UseBasicParsing -TimeoutSec 5 | Out-Null; exit 0 } catch { exit 1 }" 2>/dev/null; then
+                log "Djobea AI application is ready."
+                break
+            fi
+        else
+            if curl -f http://localhost:5000/health &>/dev/null; then
+                log "Djobea AI application is ready."
+                break
+            fi
         fi
         sleep 2
         if [ $i -eq 60 ]; then
@@ -187,10 +220,19 @@ status() {
     echo "=== HEALTH CHECKS ==="
     
     # Application health
-    if curl -f http://localhost:5000/health &>/dev/null; then
-        echo -e "${GREEN}✓ Application: Healthy${NC}"
+    if [[ "$WINDOWS_ENV" == "true" ]]; then
+        if curl -f -s http://localhost:5000/health > /dev/null 2>&1 || \
+           powershell -Command "try { Invoke-WebRequest -Uri 'http://localhost:5000/health' -UseBasicParsing -TimeoutSec 5 | Out-Null; exit 0 } catch { exit 1 }" 2>/dev/null; then
+            echo -e "${GREEN}✓ Application: Healthy${NC}"
+        else
+            echo -e "${RED}✗ Application: Unhealthy${NC}"
+        fi
     else
-        echo -e "${RED}✗ Application: Unhealthy${NC}"
+        if curl -f http://localhost:5000/health &>/dev/null; then
+            echo -e "${GREEN}✓ Application: Healthy${NC}"
+        else
+            echo -e "${RED}✗ Application: Unhealthy${NC}"
+        fi
     fi
     
     # Database health

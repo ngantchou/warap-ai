@@ -2,21 +2,31 @@
 
 ## Quick Start
 
-1. **Clone and Setup**
+### Linux/macOS
 ```bash
 git clone <your-repo>
 cd djobea-ai
-```
-
-2. **Configure Environment**
-```bash
 cp .env.example .env
 # Edit .env with your API keys and configuration
+./deploy.sh deploy
 ```
 
-3. **Deploy with One Command**
-```bash
-./deploy.sh deploy
+### Windows (PowerShell)
+```powershell
+git clone <your-repo>
+cd djobea-ai
+Copy-Item .env.example .env
+# Edit .env with your API keys and configuration
+.\deploy.ps1 deploy
+```
+
+### Windows (Command Prompt)
+```cmd
+git clone <your-repo>
+cd djobea-ai
+copy .env.example .env
+REM Edit .env with your API keys and configuration
+deploy.bat deploy
 ```
 
 ## Fixed Docker Issues
@@ -107,7 +117,7 @@ ENVIRONMENT=production
 
 ## Deployment Commands
 
-### Basic Operations
+### Linux/macOS
 ```bash
 # Deploy application
 ./deploy.sh deploy
@@ -120,10 +130,7 @@ ENVIRONMENT=production
 
 # Stop services
 ./deploy.sh stop
-```
 
-### Maintenance Operations
-```bash
 # Create database backup
 ./deploy.sh backup
 
@@ -135,6 +142,51 @@ ENVIRONMENT=production
 
 # Complete cleanup (removes all data)
 ./deploy.sh cleanup
+```
+
+### Windows (PowerShell)
+```powershell
+# Deploy application
+.\deploy.ps1 deploy
+
+# Check status
+.\deploy.ps1 status
+
+# View logs
+.\deploy.ps1 logs
+
+# Stop services
+.\deploy.ps1 stop
+
+# Create database backup
+.\deploy.ps1 backup
+
+# Restore from backup
+.\deploy.ps1 restore "backups\backup_file.sql"
+
+# Perform maintenance
+.\deploy.ps1 maintenance
+
+# Complete cleanup (removes all data)
+.\deploy.ps1 cleanup
+```
+
+### Windows (Command Prompt)
+```cmd
+REM Deploy application
+deploy.bat deploy
+
+REM Check status
+deploy.bat status
+
+REM View logs
+deploy.bat logs
+
+REM Stop services
+deploy.bat stop
+
+REM Create database backup
+deploy.bat backup
 ```
 
 ## Database Management
