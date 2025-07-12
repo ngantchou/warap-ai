@@ -55,6 +55,11 @@ services:
     environment:
       # Database Configuration
       DATABASE_URL: postgresql://djobea_user:${POSTGRES_PASSWORD:-djobea_secure_password}@postgres:5432/djobea_ai
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: djobea_user
+      PGPASSWORD: ${POSTGRES_PASSWORD:-djobea_secure_password}
+      PGDATABASE: djobea_ai
       
       # Redis Configuration
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_password}@redis:6379/0

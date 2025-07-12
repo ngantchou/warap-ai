@@ -1,281 +1,376 @@
 #!/bin/bash
 
-# Djobea AI - Script de déploiement Docker complet
-# Ce script automatise le déploiement complet de l'application
+# Djobea AI Docker Deployment Script
+# Comprehensive deployment with backup, monitoring, and maintenance
 
-set -e  # Exit on any error
+set -e
 
 # Configuration
-PROJECT_NAME="djobea-ai"
-BACKUP_DIR="./backups"
-DOCKER_COMPOSE_FILE="docker-compose.yml"
+COMPOSE_FILE="docker-compose.yml"
 ENV_FILE=".env"
+BACKUP_DIR="./backups"
+LOG_FILE="./deployment.log"
 
-# Couleurs pour les messages
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Fonction pour afficher les messages
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+# Logging function
+log() {
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] $1${NC}" | tee -a "$LOG_FILE"
 }
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+error() {
+    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}" | tee -a "$LOG_FILE"
 }
 
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+warning() {
+    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}" | tee -a "$LOG_FILE"
 }
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+info() {
+    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $1${NC}" | tee -a "$LOG_FILE"
 }
 
-# Fonction pour vérifier les prérequis
+# Check prerequisites
 check_prerequisites() {
-    log_info "Vérification des prérequis..."
+    log "Checking prerequisites..."
     
-    # Vérifier Docker
+    # Check Docker
     if ! command -v docker &> /dev/null; then
-        log_error "Docker n'est pas installé. Veuillez installer Docker."
+        error "Docker is not installed. Please install Docker first."
         exit 1
     fi
     
-    # Vérifier Docker Compose
-    if ! command -v docker-compose &> /dev/null; then
-        log_error "Docker Compose n'est pas installé. Veuillez installer Docker Compose."
+    # Check Docker Compose
+    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+        error "Docker Compose is not installed. Please install Docker Compose first."
         exit 1
     fi
     
-    # Vérifier le fichier .env
+    # Check if running as root (not recommended)
+    if [[ $EUID -eq 0 ]]; then
+        warning "Running as root is not recommended for security reasons."
+    fi
+    
+    log "Prerequisites check completed."
+}
+
+# Environment setup
+setup_environment() {
+    log "Setting up environment..."
+    
+    # Create .env file if it doesn't exist
     if [ ! -f "$ENV_FILE" ]; then
-        log_warning "Fichier .env introuvable. Copie du fichier .env.example..."
-        cp .env.example .env
-        log_warning "Veuillez configurer le fichier .env avec vos clés API avant de continuer."
-        log_warning "Éditez le fichier .env et relancez le script."
-        exit 1
+        warning ".env file not found. Creating from .env.example..."
+        if [ -f ".env.example" ]; then
+            cp .env.example "$ENV_FILE"
+            warning "Please edit .env file with your actual configuration values."
+        else
+            error ".env.example file not found. Cannot create environment configuration."
+            exit 1
+        fi
     fi
     
-    log_success "Prérequis vérifiés avec succès."
+    # Create necessary directories
+    mkdir -p "$BACKUP_DIR"
+    mkdir -p "./logs"
+    mkdir -p "./static/uploads"
+    mkdir -p "./data"
+    mkdir -p "./docker/postgres"
+    mkdir -p "./docker/nginx/ssl"
+    
+    # Set proper permissions
+    chmod 755 ./logs ./static/uploads ./data
+    
+    log "Environment setup completed."
 }
 
-# Fonction pour créer les répertoires nécessaires
-create_directories() {
-    log_info "Création des répertoires nécessaires..."
-    
-    mkdir -p logs
-    mkdir -p static/uploads
-    mkdir -p data
-    mkdir -p docker/nginx/ssl
-    mkdir -p $BACKUP_DIR
-    
-    log_success "Répertoires créés avec succès."
-}
-
-# Fonction pour générer les certificats SSL auto-signés
-generate_ssl_certificates() {
-    log_info "Génération des certificats SSL..."
-    
-    if [ ! -f "docker/nginx/ssl/cert.pem" ] || [ ! -f "docker/nginx/ssl/key.pem" ]; then
-        log_info "Génération de certificats SSL auto-signés..."
-        
-        openssl req -x509 -newkey rsa:4096 -keyout docker/nginx/ssl/key.pem -out docker/nginx/ssl/cert.pem -days 365 -nodes -subj "/C=CM/ST=Littoral/L=Douala/O=Djobea AI/CN=localhost"
-        
-        log_success "Certificats SSL générés avec succès."
-    else
-        log_info "Certificats SSL déjà présents."
-    fi
-}
-
-# Fonction pour sauvegarder la base de données
+# Database backup
 backup_database() {
-    log_info "Sauvegarde de la base de données..."
+    log "Creating database backup..."
     
-    if docker-compose ps | grep -q "djobea-postgres"; then
-        BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +%Y%m%d_%H%M%S).sql"
+    if docker-compose ps postgres | grep -q "Up"; then
+        BACKUP_FILE="$BACKUP_DIR/djobea_backup_$(date +%Y%m%d_%H%M%S).sql"
         
-        docker-compose exec -T postgres pg_dump -U djobea_user -d djobea_ai > "$BACKUP_FILE"
+        # Create backup
+        docker-compose exec -T postgres pg_dump -U djobea_user -d djobea_ai > "$BACKUP_FILE" 2>/dev/null || true
         
-        log_success "Base de données sauvegardée dans $BACKUP_FILE"
+        if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
+            log "Database backup created: $BACKUP_FILE"
+            
+            # Keep only last 5 backups
+            cd "$BACKUP_DIR"
+            ls -t djobea_backup_*.sql | tail -n +6 | xargs -r rm
+            cd ..
+        else
+            warning "Database backup failed or resulted in empty file."
+        fi
     else
-        log_info "Base de données non trouvée, pas de sauvegarde nécessaire."
+        info "PostgreSQL container not running. Skipping backup."
     fi
 }
 
-# Fonction pour construire les images Docker
-build_images() {
-    log_info "Construction des images Docker..."
+# Build and deploy
+deploy() {
+    log "Starting Djobea AI deployment..."
     
+    # Build images
+    log "Building Docker images..."
     docker-compose build --no-cache
     
-    log_success "Images Docker construites avec succès."
-}
-
-# Fonction pour démarrer les services
-start_services() {
-    log_info "Démarrage des services..."
-    
+    # Start services
+    log "Starting services..."
     docker-compose up -d
     
-    log_success "Services démarrés avec succès."
+    # Wait for services to be healthy
+    log "Waiting for services to be healthy..."
+    
+    # Wait for PostgreSQL
+    info "Waiting for PostgreSQL..."
+    for i in {1..30}; do
+        if docker-compose exec postgres pg_isready -U djobea_user -d djobea_ai &>/dev/null; then
+            log "PostgreSQL is ready."
+            break
+        fi
+        sleep 2
+        if [ $i -eq 30 ]; then
+            error "PostgreSQL failed to start within 60 seconds."
+            exit 1
+        fi
+    done
+    
+    # Wait for Redis
+    info "Waiting for Redis..."
+    for i in {1..15}; do
+        if docker-compose exec redis redis-cli ping &>/dev/null; then
+            log "Redis is ready."
+            break
+        fi
+        sleep 2
+        if [ $i -eq 15 ]; then
+            error "Redis failed to start within 30 seconds."
+            exit 1
+        fi
+    done
+    
+    # Wait for application
+    info "Waiting for Djobea AI application..."
+    for i in {1..60}; do
+        if curl -f http://localhost:5000/health &>/dev/null; then
+            log "Djobea AI application is ready."
+            break
+        fi
+        sleep 2
+        if [ $i -eq 60 ]; then
+            error "Djobea AI application failed to start within 120 seconds."
+            show_logs
+            exit 1
+        fi
+    done
+    
+    log "Deployment completed successfully!"
 }
 
-# Fonction pour attendre que les services soient prêts
-wait_for_services() {
-    log_info "Attente de la disponibilité des services..."
+# Show service status
+status() {
+    log "Checking service status..."
     
-    # Attendre PostgreSQL
-    log_info "Attente de PostgreSQL..."
-    while ! docker-compose exec postgres pg_isready -U djobea_user -d djobea_ai &> /dev/null; do
-        sleep 2
-    done
-    
-    # Attendre Redis
-    log_info "Attente de Redis..."
-    while ! docker-compose exec redis redis-cli ping &> /dev/null; do
-        sleep 2
-    done
-    
-    # Attendre l'application
-    log_info "Attente de l'application..."
-    while ! curl -f http://localhost:5000/health &> /dev/null; do
-        sleep 5
-    done
-    
-    log_success "Tous les services sont prêts."
-}
-
-# Fonction pour afficher le statut
-show_status() {
-    log_info "Statut des services:"
+    echo ""
+    echo "=== CONTAINER STATUS ==="
     docker-compose ps
     
-    log_info "Logs récents:"
-    docker-compose logs --tail=20
+    echo ""
+    echo "=== HEALTH CHECKS ==="
+    
+    # Application health
+    if curl -f http://localhost:5000/health &>/dev/null; then
+        echo -e "${GREEN}✓ Application: Healthy${NC}"
+    else
+        echo -e "${RED}✗ Application: Unhealthy${NC}"
+    fi
+    
+    # Database health
+    if docker-compose exec postgres pg_isready -U djobea_user -d djobea_ai &>/dev/null; then
+        echo -e "${GREEN}✓ PostgreSQL: Ready${NC}"
+    else
+        echo -e "${RED}✗ PostgreSQL: Not ready${NC}"
+    fi
+    
+    # Redis health
+    if docker-compose exec redis redis-cli ping &>/dev/null; then
+        echo -e "${GREEN}✓ Redis: Ready${NC}"
+    else
+        echo -e "${RED}✗ Redis: Not ready${NC}"
+    fi
+    
+    echo ""
+    echo "=== RESOURCE USAGE ==="
+    docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}"
 }
 
-# Fonction pour nettoyer les ressources
-cleanup() {
-    log_info "Nettoyage des ressources Docker..."
+# Show logs
+show_logs() {
+    log "Showing recent logs..."
     
-    # Nettoyer les images non utilisées
+    echo "=== DJOBEA AI APPLICATION LOGS ==="
+    docker-compose logs --tail=50 djobea-ai
+    
+    echo ""
+    echo "=== POSTGRESQL LOGS ==="
+    docker-compose logs --tail=20 postgres
+    
+    echo ""
+    echo "=== REDIS LOGS ==="
+    docker-compose logs --tail=20 redis
+}
+
+# Maintenance
+maintenance() {
+    log "Performing maintenance tasks..."
+    
+    # Clean up old images
+    info "Cleaning up old Docker images..."
     docker image prune -f
     
-    # Nettoyer les volumes non utilisés
+    # Clean up volumes (be careful with this)
+    info "Cleaning up unused volumes..."
     docker volume prune -f
     
-    log_success "Nettoyage terminé."
+    # Update containers
+    info "Pulling latest base images..."
+    docker-compose pull
+    
+    # Create backup
+    backup_database
+    
+    log "Maintenance completed."
 }
 
-# Fonction pour arrêter les services
-stop_services() {
-    log_info "Arrêt des services..."
+# Stop services
+stop() {
+    log "Stopping Djobea AI services..."
     
+    # Create backup before stopping
+    backup_database
+    
+    # Stop services
     docker-compose down
     
-    log_success "Services arrêtés."
+    log "Services stopped."
 }
 
-# Fonction pour redémarrer les services
-restart_services() {
-    log_info "Redémarrage des services..."
+# Complete cleanup
+cleanup() {
+    warning "This will remove all containers, volumes, and data. Are you sure? (y/N)"
+    read -r response
     
-    stop_services
-    start_services
-    wait_for_services
-    
-    log_success "Services redémarrés avec succès."
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        log "Performing complete cleanup..."
+        
+        # Create final backup
+        backup_database
+        
+        # Stop and remove everything
+        docker-compose down -v --remove-orphans
+        docker-compose rm -f
+        
+        # Remove images
+        docker rmi $(docker images "djobea*" -q) 2>/dev/null || true
+        
+        log "Cleanup completed."
+    else
+        info "Cleanup cancelled."
+    fi
 }
 
-# Fonction pour afficher l'aide
+# Restore from backup
+restore() {
+    if [ -z "$1" ]; then
+        error "Please specify backup file: ./deploy.sh restore <backup_file>"
+        exit 1
+    fi
+    
+    BACKUP_FILE="$1"
+    
+    if [ ! -f "$BACKUP_FILE" ]; then
+        error "Backup file not found: $BACKUP_FILE"
+        exit 1
+    fi
+    
+    log "Restoring from backup: $BACKUP_FILE"
+    
+    # Stop application (keep database running)
+    docker-compose stop djobea-ai
+    
+    # Restore database
+    cat "$BACKUP_FILE" | docker-compose exec -T postgres psql -U djobea_user -d djobea_ai
+    
+    # Restart application
+    docker-compose start djobea-ai
+    
+    log "Restore completed."
+}
+
+# Help function
 show_help() {
-    echo "Usage: $0 [OPTION]"
+    echo "Djobea AI Docker Deployment Script"
     echo ""
-    echo "Options:"
-    echo "  deploy      Déploiement complet (par défaut)"
-    echo "  start       Démarrer les services"
-    echo "  stop        Arrêter les services"
-    echo "  restart     Redémarrer les services"
-    echo "  status      Afficher le statut des services"
-    echo "  backup      Sauvegarder la base de données"
-    echo "  cleanup     Nettoyer les ressources Docker"
-    echo "  logs        Afficher les logs"
-    echo "  help        Afficher cette aide"
+    echo "Usage: $0 {deploy|status|logs|stop|backup|restore|maintenance|cleanup|help}"
+    echo ""
+    echo "Commands:"
+    echo "  deploy      - Deploy Djobea AI (build and start all services)"
+    echo "  status      - Show service status and health checks"
+    echo "  logs        - Show recent logs from all services"
+    echo "  stop        - Stop all services (with backup)"
+    echo "  backup      - Create database backup"
+    echo "  restore     - Restore from backup file"
+    echo "  maintenance - Perform maintenance tasks"
+    echo "  cleanup     - Complete cleanup (removes all data)"
+    echo "  help        - Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0 deploy                           # Deploy the application"
+    echo "  $0 status                           # Check status"
+    echo "  $0 logs                             # View logs"
+    echo "  $0 restore backups/backup_file.sql  # Restore from backup"
     echo ""
 }
 
-# Fonction pour afficher les logs
-show_logs() {
-    log_info "Logs des services:"
-    docker-compose logs -f
-}
-
-# Fonction de déploiement complet
-deploy() {
-    log_info "Démarrage du déploiement de Djobea AI..."
-    
-    check_prerequisites
-    create_directories
-    generate_ssl_certificates
-    backup_database
-    build_images
-    start_services
-    wait_for_services
-    show_status
-    
-    log_success "Déploiement terminé avec succès!"
-    log_info "Application disponible sur:"
-    log_info "  - HTTP:  http://localhost"
-    log_info "  - HTTPS: https://localhost"
-    log_info "  - API:   http://localhost:5000"
-    log_info "  - Admin: http://localhost:5000/admin"
-}
-
-# Script principal
-main() {
-    case "${1:-deploy}" in
-        deploy)
-            deploy
-            ;;
-        start)
-            start_services
-            wait_for_services
-            ;;
-        stop)
-            stop_services
-            ;;
-        restart)
-            restart_services
-            ;;
-        status)
-            show_status
-            ;;
-        backup)
-            backup_database
-            ;;
-        cleanup)
-            cleanup
-            ;;
-        logs)
-            show_logs
-            ;;
-        help|--help|-h)
-            show_help
-            ;;
-        *)
-            log_error "Option invalide: $1"
-            show_help
-            exit 1
-            ;;
-    esac
-}
-
-# Gestion des signaux
-trap 'log_error "Déploiement interrompu par l\'utilisateur"; exit 1' INT TERM
-
-# Exécuter le script principal
-main "$@"
+# Main script logic
+case "${1:-help}" in
+    deploy)
+        check_prerequisites
+        setup_environment
+        backup_database
+        deploy
+        status
+        ;;
+    status)
+        status
+        ;;
+    logs)
+        show_logs
+        ;;
+    stop)
+        stop
+        ;;
+    backup)
+        backup_database
+        ;;
+    restore)
+        restore "$2"
+        ;;
+    maintenance)
+        maintenance
+        ;;
+    cleanup)
+        cleanup
+        ;;
+    help|*)
+        show_help
+        ;;
+esac

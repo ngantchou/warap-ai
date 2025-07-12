@@ -1,305 +1,271 @@
-# Djobea AI - Déploiement Docker
+# Docker Deployment Guide for Djobea AI
 
-Ce document décrit comment déployer Djobea AI avec Docker et Docker Compose.
+## Quick Start
 
-## 🚀 Déploiement Rapide
-
-### 1. Prérequis
-
-- Docker (version 20.10 ou supérieure)
-- Docker Compose (version 2.0 ou supérieure)
-- Git
-
-### 2. Installation
-
+1. **Clone and Setup**
 ```bash
-# Cloner le repository
-git clone <repository-url>
+git clone <your-repo>
 cd djobea-ai
+```
 
-# Copier et configurer les variables d'environnement
+2. **Configure Environment**
+```bash
 cp .env.example .env
-
-# Éditer le fichier .env avec vos clés API
-nano .env
+# Edit .env with your API keys and configuration
 ```
 
-### 3. Configuration des variables d'environnement
+3. **Deploy with One Command**
+```bash
+./deploy.sh deploy
+```
 
-Éditez le fichier `.env` et configurez les variables suivantes :
+## Fixed Docker Issues
+
+### ✅ PostgreSQL Connection Issue Resolved
+
+The original error:
+```
+sqlalchemy.exc.OperationalError: could not translate host name "2025@postgres" to address
+```
+
+**Root Cause**: Malformed DATABASE_URL containing "2025@postgres" instead of proper credentials.
+
+**Solutions Implemented**:
+
+1. **Fixed Docker Compose Configuration**
+   - Added explicit PostgreSQL environment variables
+   - Corrected DATABASE_URL format
+   - Added proper service dependencies
+
+2. **Enhanced Database Connection Logic**
+   - Added database URL validation and repair
+   - Automatic detection of Docker environment
+   - Fallback to environment variables for connection parameters
+
+3. **Complete Environment Setup**
+   - Created proper `.env` file with correct format
+   - Added PostgreSQL initialization script
+   - Configured proper service networking
+
+## Docker Architecture
+
+### Services
+
+1. **PostgreSQL Database** (`postgres`)
+   - Image: `postgres:15-alpine`
+   - Database: `djobea_ai`
+   - User: `djobea_user`
+   - Port: `5432`
+   - Persistent volume for data
+
+2. **Redis Cache** (`redis`)
+   - Image: `redis:7-alpine`
+   - Password protected
+   - Port: `6379`
+   - Persistent volume for data
+
+3. **Djobea AI Application** (`djobea-ai`)
+   - Built from Dockerfile
+   - Depends on PostgreSQL and Redis
+   - Port: `5000`
+   - Includes health checks
+
+4. **Nginx Reverse Proxy** (`nginx`)
+   - Image: `nginx:alpine`
+   - Rate limiting and security headers
+   - Ports: `80` and `443`
+   - Static file serving
+
+### Network Configuration
+
+- All services connected via `djobea-network`
+- Service discovery using Docker service names
+- Proper health checks and dependencies
+
+## Environment Configuration
+
+### Required Environment Variables
 
 ```bash
-# API Keys - OBLIGATOIRES
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Twilio Configuration - OBLIGATOIRE
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_PHONE_NUMBER=your_twilio_whatsapp_number
-
-# Base de données (optionnel - des valeurs par défaut sont utilisées)
+# Database
 POSTGRES_PASSWORD=your_secure_password
-REDIS_PASSWORD=your_redis_password
+
+# API Keys (Required)
+ANTHROPIC_API_KEY=your_anthropic_key
+OPENAI_API_KEY=your_openai_key
+GEMINI_API_KEY=your_gemini_key
+
+# Twilio (Required for WhatsApp)
+TWILIO_ACCOUNT_SID=your_twilio_sid
+TWILIO_AUTH_TOKEN=your_twilio_token
+TWILIO_PHONE_NUMBER=your_whatsapp_number
+
+# Application
+SECRET_KEY=your_secret_key
+ENVIRONMENT=production
 ```
 
-### 4. Déploiement
+## Deployment Commands
 
+### Basic Operations
 ```bash
-# Rendre le script exécutable
-chmod +x deploy.sh
-
-# Déployer l'application
+# Deploy application
 ./deploy.sh deploy
-```
 
-## 📋 Commandes Disponibles
+# Check status
+./deploy.sh status
 
-### Script de déploiement principal
+# View logs
+./deploy.sh logs
 
-```bash
-./deploy.sh [OPTION]
-
-Options:
-  deploy      Déploiement complet (par défaut)
-  start       Démarrer les services
-  stop        Arrêter les services
-  restart     Redémarrer les services
-  status      Afficher le statut des services
-  backup      Sauvegarder la base de données
-  cleanup     Nettoyer les ressources Docker
-  logs        Afficher les logs
-  help        Afficher l'aide
-```
-
-### Docker Compose
-
-```bash
-# Démarrer tous les services
-docker-compose up -d
-
-# Arrêter tous les services
-docker-compose down
-
-# Voir les logs
-docker-compose logs -f
-
-# Voir le statut
-docker-compose ps
-
-# Redémarrer un service spécifique
-docker-compose restart djobea-ai
-```
-
-## 🏗️ Architecture
-
-Le déploiement Docker inclut les services suivants :
-
-- **PostgreSQL** : Base de données principale
-- **Redis** : Cache et sessions
-- **Djobea AI App** : Application FastAPI
-- **Nginx** : Proxy inverse avec SSL
-
-## 🔧 Services
-
-### PostgreSQL
-- **Port** : 5432
-- **Base de données** : djobea_ai
-- **Utilisateur** : djobea_user
-- **Volume** : `postgres_data`
-
-### Redis
-- **Port** : 6379
-- **Volume** : `redis_data`
-- **Authentification** : Mot de passe configuré
-
-### Application Djobea AI
-- **Port** : 5000
-- **Santé** : http://localhost:5000/health
-- **Admin** : http://localhost:5000/admin
-
-### Nginx
-- **Port HTTP** : 80
-- **Port HTTPS** : 443
-- **SSL** : Certificats auto-signés (production : remplacer par des certificats valides)
-
-## 🛠️ Maintenance
-
-### Sauvegardes
-
-```bash
-# Sauvegarder la base de données
-./deploy.sh backup
-
-# Sauvegarder manuellement
-chmod +x docker/scripts/backup.sh
-./docker/scripts/backup.sh
-```
-
-### Restauration
-
-```bash
-# Voir les sauvegardes disponibles
-chmod +x docker/scripts/restore.sh
-./docker/scripts/restore.sh --list
-
-# Restaurer une sauvegarde
-./docker/scripts/restore.sh --database djobea_db_20240101_120000.sql.gz
-```
-
-### Monitoring
-
-```bash
-# Démarrer le monitoring
-chmod +x docker/scripts/monitor.sh
-./docker/scripts/monitor.sh monitor
-
-# Vérifier le statut
-./docker/scripts/monitor.sh status
-```
-
-## 🔐 Sécurité
-
-### Certificats SSL
-
-Le déploiement génère automatiquement des certificats SSL auto-signés. Pour la production :
-
-1. Obtenez des certificats SSL valides
-2. Placez-les dans `docker/nginx/ssl/`
-3. Redémarrez Nginx : `docker-compose restart nginx`
-
-### Pare-feu
-
-Configurez votre pare-feu pour autoriser uniquement les ports nécessaires :
-
-```bash
-# Autoriser HTTP et HTTPS
-sudo ufw allow 80
-sudo ufw allow 443
-
-# Optionnel : autoriser l'accès direct à l'application (développement)
-sudo ufw allow 5000
-```
-
-## 📊 Monitoring et Logs
-
-### Logs
-
-```bash
-# Logs de tous les services
-docker-compose logs -f
-
-# Logs d'un service spécifique
-docker-compose logs -f djobea-ai
-
-# Logs avec timestamp
-docker-compose logs -f -t
-
-# Dernières 100 lignes
-docker-compose logs --tail=100
-```
-
-### Santé des services
-
-```bash
-# Vérifier la santé de l'application
-curl http://localhost:5000/health
-
-# Vérifier la santé de la base de données
-docker-compose exec postgres pg_isready -U djobea_user -d djobea_ai
-
-# Vérifier Redis
-docker-compose exec redis redis-cli ping
-```
-
-## 🚨 Dépannage
-
-### Problèmes courants
-
-**1. Erreur de connexion à la base de données**
-```bash
-# Vérifier que PostgreSQL est démarré
-docker-compose ps postgres
-
-# Redémarrer PostgreSQL
-docker-compose restart postgres
-```
-
-**2. Problème de permissions**
-```bash
-# Corriger les permissions
-sudo chown -R $USER:$USER logs/
-sudo chown -R $USER:$USER static/uploads/
-```
-
-**3. Ports déjà utilisés**
-```bash
-# Vérifier les ports utilisés
-sudo netstat -tlnp | grep :5000
-
-# Arrêter les processus conflictuels
-sudo kill -9 <PID>
-```
-
-**4. Problème de mémoire**
-```bash
-# Vérifier l'utilisation mémoire
-docker stats
-
-# Nettoyer les ressources inutilisées
-docker system prune -a
-```
-
-### Logs de débogage
-
-```bash
-# Activer les logs de débogage
-echo "DEBUG=true" >> .env
-echo "LOG_LEVEL=DEBUG" >> .env
-
-# Redémarrer l'application
-docker-compose restart djobea-ai
-```
-
-## 🔄 Mise à jour
-
-```bash
-# Arrêter l'application
+# Stop services
 ./deploy.sh stop
-
-# Sauvegarder
-./deploy.sh backup
-
-# Mettre à jour le code
-git pull origin main
-
-# Reconstruire et redémarrer
-./deploy.sh deploy
 ```
 
-## 📞 Support
+### Maintenance Operations
+```bash
+# Create database backup
+./deploy.sh backup
 
-Pour obtenir de l'aide :
+# Restore from backup
+./deploy.sh restore backups/backup_file.sql
 
-1. Consultez les logs : `docker-compose logs -f`
-2. Vérifiez le statut : `./deploy.sh status`
-3. Consultez la documentation dans le répertoire `docs/`
+# Perform maintenance
+./deploy.sh maintenance
 
-## 🌐 Accès à l'application
+# Complete cleanup (removes all data)
+./deploy.sh cleanup
+```
 
-Après le déploiement, l'application est accessible via :
+## Database Management
 
-- **HTTP** : http://localhost
-- **HTTPS** : https://localhost (certificat auto-signé)
-- **API directe** : http://localhost:5000
-- **Interface d'administration** : http://localhost:5000/admin
-- **Monitoring** : http://localhost:5000/health
+### Automatic Initialization
+- Database and user created automatically
+- Required extensions installed
+- Proper permissions configured
 
-## 📝 Notes importantes
+### Backup and Restore
+- Automatic backups before deployments
+- Manual backup creation available
+- Point-in-time restore capability
+- Backup retention (keeps last 5 backups)
 
-- Les certificats SSL générés sont auto-signés et ne doivent pas être utilisés en production
-- Changez tous les mots de passe par défaut avant le déploiement en production
-- Configurez des sauvegardes régulières pour la production
-- Surveillez les logs et les métriques système
-- Mettez à jour régulièrement les dépendances pour la sécurité
+## Security Features
+
+### Application Security
+- Non-root user in containers
+- Security headers via Nginx
+- Rate limiting on API endpoints
+- Environment variable protection
+
+### Network Security
+- Internal Docker network
+- Service isolation
+- Proper port exposure
+- Health check endpoints
+
+## Monitoring and Logging
+
+### Health Checks
+- PostgreSQL: Connection and query tests
+- Redis: Ping tests
+- Application: HTTP health endpoint
+- Nginx: Service availability
+
+### Logging
+- Centralized logging via Docker
+- Application logs in `/app/logs`
+- Nginx access and error logs
+- PostgreSQL logs for debugging
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Errors**
+   ```bash
+   # Check PostgreSQL status
+   docker-compose exec postgres pg_isready -U djobea_user -d djobea_ai
+   
+   # View database logs
+   docker-compose logs postgres
+   ```
+
+2. **Application Startup Issues**
+   ```bash
+   # Check application logs
+   docker-compose logs djobea-ai
+   
+   # Check health endpoint
+   curl http://localhost:5000/health
+   ```
+
+3. **Memory or Performance Issues**
+   ```bash
+   # Check resource usage
+   docker stats
+   
+   # View system status
+   ./deploy.sh status
+   ```
+
+### Container Management
+
+```bash
+# Restart specific service
+docker-compose restart djobea-ai
+
+# Rebuild application container
+docker-compose build djobea-ai
+docker-compose up -d djobea-ai
+
+# Access container shell
+docker-compose exec djobea-ai bash
+```
+
+## Production Considerations
+
+### Performance Optimization
+- PostgreSQL connection pooling
+- Redis caching configuration
+- Nginx static file serving
+- Resource limits and reservations
+
+### Scaling Options
+- Horizontal scaling with load balancer
+- Database read replicas
+- Redis clustering
+- Container orchestration
+
+### Backup Strategy
+- Automated daily backups
+- Offsite backup storage
+- Point-in-time recovery
+- Configuration backup
+
+## Maintenance Schedule
+
+### Daily
+- Health check monitoring
+- Log rotation
+- Performance metrics
+
+### Weekly
+- Database backup verification
+- Security updates
+- Resource usage review
+
+### Monthly
+- Full system backup
+- Dependency updates
+- Performance optimization
+
+## Support
+
+For issues or questions:
+1. Check logs with `./deploy.sh logs`
+2. Verify status with `./deploy.sh status`
+3. Review environment configuration
+4. Check Docker and system resources
+
+The Docker deployment is now fully functional with proper database connectivity and comprehensive management tools.
