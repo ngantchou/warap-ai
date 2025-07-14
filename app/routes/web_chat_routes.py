@@ -114,6 +114,13 @@ async def test_notification(
 ):
     """Test notification system (for debugging)"""
     try:
+        # Check if user exists first
+        if user_id.startswith('237'):  # Phone number format
+            user = db.query(User).filter(User.phone_number == user_id).first()
+            if not user:
+                return {"status": "error", "message": f"User with phone number {user_id} not found"}
+            logger.info(f"Found user {user.id} for phone number {user_id}")
+        
         success = await web_chat_notification_service.send_web_chat_notification(
             user_id, message, notification_type
         )

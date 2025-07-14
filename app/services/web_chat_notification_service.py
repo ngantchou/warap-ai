@@ -26,25 +26,44 @@ class WebChatNotificationService:
         try:
             db = next(get_db())
             try:
+                # Find user by phone number if user_id is a phone number
+                if user_id.startswith('237'):  # Cameroon phone number format
+                    user = db.query(User).filter(User.phone_number == user_id).first()
+                    if not user:
+                        logger.warning(f"User with phone number {user_id} not found")
+                        return False
+                    actual_user_id = user.id
+                    logger.info(f"Found user {actual_user_id} for phone number {user_id}")
+                else:
+                    actual_user_id = int(user_id)
+                    logger.info(f"Using user ID {actual_user_id} directly")
+                
+                # Validate that actual_user_id is an integer
+                if not isinstance(actual_user_id, int):
+                    logger.error(f"Invalid user ID type: {type(actual_user_id)}, value: {actual_user_id}")
+                    return False
+                
                 # Store notification in conversation history for web chat retrieval
                 notification = Conversation(
-                    user_id=user_id,
+                    user_id=actual_user_id,
+                    message_type="outgoing",  # This is a system notification going to user
                     message_content=f"[SYSTEM_NOTIFICATION] {message}",
                     ai_response=message,
-                    created_at=datetime.utcnow(),
-                    conversation_type="notification",
-                    intent="system_notification",
-                    confidence_score=1.0
+                    confidence_score=1.0,
+                    action_code="SYSTEM_NOTIFICATION",
+                    conversation_state="NOTIFICATION_SENT",
+                    action_success=True
                 )
                 
                 db.add(notification)
                 db.commit()
                 
                 # Add to active notifications for real-time display
-                if user_id not in self.active_notifications:
-                    self.active_notifications[user_id] = []
+                notification_key = str(actual_user_id)  # Use actual user ID as key
+                if notification_key not in self.active_notifications:
+                    self.active_notifications[notification_key] = []
                 
-                self.active_notifications[user_id].append({
+                self.active_notifications[notification_key].append({
                     "id": notification.id,
                     "message": message,
                     "type": notification_type,
@@ -53,8 +72,8 @@ class WebChatNotificationService:
                 })
                 
                 # Keep only last 10 notifications per user
-                if len(self.active_notifications[user_id]) > 10:
-                    self.active_notifications[user_id] = self.active_notifications[user_id][-10:]
+                if len(self.active_notifications[notification_key]) > 10:
+                    self.active_notifications[notification_key] = self.active_notifications[notification_key][-10:]
                 
                 logger.info(f"Web chat notification sent to user {user_id}: {notification_type}")
                 return True
@@ -64,6 +83,9 @@ class WebChatNotificationService:
                 
         except Exception as e:
             logger.error(f"Error sending web chat notification: {e}")
+            # Log the full exception for debugging
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return False
     
     async def send_instant_confirmation(self, request_id: int, user_id: str) -> bool:
@@ -205,6 +227,16 @@ Souhaitez-vous accepter cette demande ?
     
     async def get_user_notifications(self, user_id: str) -> List[dict]:
         """Get active notifications for a user"""
+        # Handle phone number format
+        if user_id.startswith('237'):  # Cameroon phone number format
+            db = next(get_db())
+            try:
+                user = db.query(User).filter(User.phone_number == user_id).first()
+                if user:
+                    user_id = str(user.id)
+            finally:
+                db.close()
+        
         return self.active_notifications.get(user_id, [])
     
     async def mark_notification_read(self, user_id: str, notification_id: int) -> bool:

@@ -64,6 +64,21 @@ class CommunicationService:
             # If web chat fails, try WhatsApp as fallback (though it has limitations)
             logger.warning(f"Web chat confirmation failed for request {request_id}, trying WhatsApp fallback")
             
+            # Try WhatsApp fallback
+            try:
+                whatsapp_message = self._generate_confirmation_message(request, user)
+                whatsapp_success = await self.whatsapp_service.send_message(
+                    user.phone_number,
+                    whatsapp_message
+                )
+                if whatsapp_success:
+                    logger.info(f"WhatsApp fallback confirmation sent for request {request_id}")
+                    return True
+            except Exception as e:
+                logger.error(f"WhatsApp fallback failed for request {request_id}: {e}")
+                
+            return False
+            
             # Get pricing estimate
             pricing = self.get_pricing_estimate(request.service_type)
             price_range = self.format_price_range(pricing)
