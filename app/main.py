@@ -101,8 +101,10 @@ from app.api.settings import router as settings_api_router
 from app.api.finances import router as finances_api_router
 from app.api.providers import router as providers_api_router
 from app.api.requests import router as requests_api_router
+from app.routes.web_chat_routes import router as web_chat_api_router
 
 app.include_router(analytics_api_router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"])
 app.include_router(ai_api_router, prefix="/api/ai", tags=["ai"])
 app.include_router(settings_api_router, prefix="/api/settings", tags=["settings"])
 app.include_router(finances_api_router, prefix="/api/finances", tags=["finances"])

@@ -15,6 +15,7 @@ from app.models.database_models import ServiceRequest, User, Provider, RequestSt
 from app.services.whatsapp_service import WhatsAppService
 from app.services.provider_profile_service import get_provider_profile_service
 from app.services.provider_fallback_service import ProviderFallbackService
+from app.services.web_chat_notification_service import web_chat_notification_service
 
 
 class CommunicationService:
@@ -53,6 +54,15 @@ class CommunicationService:
             if not user:
                 logger.error(f"User not found for request {request_id}")
                 return False
+            
+            # Send confirmation via web chat (primary channel)
+            web_chat_success = await web_chat_notification_service.send_instant_confirmation(request_id, request.user_id)
+            if web_chat_success:
+                logger.info(f"Instant confirmation sent via web chat for request {request_id}")
+                return True
+            
+            # If web chat fails, try WhatsApp as fallback (though it has limitations)
+            logger.warning(f"Web chat confirmation failed for request {request_id}, trying WhatsApp fallback")
             
             # Get pricing estimate
             pricing = self.get_pricing_estimate(request.service_type)
@@ -175,7 +185,6 @@ class CommunicationService:
             logger.error(f"Error in proactive update loop for request {request_id}: {e}")
             # Try to get more specific error information
             try:
-                from app.database import get_db
                 db = next(get_db())
                 try:
                     request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
@@ -211,21 +220,26 @@ class CommunicationService:
             
             message = self._generate_status_update_message(request)
             
-            # Try to send WhatsApp message (NOTE: Limited functionality in sandbox mode)
-            success = self.whatsapp_service.send_message(user.whatsapp_id, message)
-            if success:
-                logger.info(f"Status update sent for request {request.id} (may not reach user due to WhatsApp sandbox limitations)")
+            # Send status update via web chat (primary channel since requests come from web chat)
+            web_chat_success = await web_chat_notification_service.send_status_update(request.id, request.user_id, request.status)
+            if web_chat_success:
+                logger.info(f"Status update sent via web chat for request {request.id}")
             else:
-                # Handle WhatsApp failure with error handling service
-                logger.warning(f"WhatsApp status update failed for request {request.id} - this is expected in sandbox mode")
-                from app.services.error_handling_service import ErrorHandlingService
-                error_service = ErrorHandlingService(db)
-                await error_service.handle_whatsapp_failure(
-                    request.user_id, 
-                    request.id, 
-                    message,
-                    "status_update"
-                )
+                # Try WhatsApp as fallback (NOTE: Limited functionality in sandbox mode)
+                success = self.whatsapp_service.send_message(user.whatsapp_id, message)
+                if success:
+                    logger.info(f"Status update sent via WhatsApp for request {request.id} (may not reach user due to sandbox limitations)")
+                else:
+                    # Handle failure with error handling service
+                    logger.warning(f"Both web chat and WhatsApp status updates failed for request {request.id}")
+                    from app.services.error_handling_service import ErrorHandlingService
+                    error_service = ErrorHandlingService(db)
+                    await error_service.handle_whatsapp_failure(
+                        request.user_id, 
+                        request.id, 
+                        message,
+                        "status_update"
+                    )
             
         except Exception as e:
             logger.error(f"Error sending status update for request {request.id}: {e}")
