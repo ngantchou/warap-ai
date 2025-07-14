@@ -21,13 +21,13 @@ class WebChatNotificationService:
         self.active_notifications: Dict[int, List[dict]] = {}
         self.notification_queue: List[dict] = []
     
-    async def send_web_chat_notification(self, user_id: str, message: str, notification_type: str = "info") -> bool:
+    async def send_web_chat_notification(self, user_id, message: str, notification_type: str = "info") -> bool:
         """Send notification through web chat channel"""
         try:
             db = next(get_db())
             try:
-                # Find user by phone number if user_id is a phone number
-                if user_id.startswith('237'):  # Cameroon phone number format
+                # Handle both string and integer user_id
+                if isinstance(user_id, str) and user_id.startswith('237'):  # Cameroon phone number format
                     user = db.query(User).filter(User.phone_number == user_id).first()
                     if not user:
                         logger.warning(f"User with phone number {user_id} not found")
@@ -35,6 +35,7 @@ class WebChatNotificationService:
                     actual_user_id = user.id
                     logger.info(f"Found user {actual_user_id} for phone number {user_id}")
                 else:
+                    # Handle integer user_id or string user_id that's not a phone number
                     actual_user_id = int(user_id)
                     logger.info(f"Using user ID {actual_user_id} directly")
                 
