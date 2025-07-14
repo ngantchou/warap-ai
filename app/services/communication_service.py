@@ -176,7 +176,8 @@ class CommunicationService:
             # Try to get more specific error information
             try:
                 from app.database import get_db
-                with get_db() as db:
+                db = next(get_db())
+                try:
                     request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
                     if request:
                         logger.error(f"Request {request_id} details - Status: {request.status}, User: {request.user_id}, Service: {request.service_type}")
@@ -191,6 +192,8 @@ class CommunicationService:
                         )
                     else:
                         logger.error(f"Request {request_id} not found in database")
+                finally:
+                    db.close()
             except Exception as inner_e:
                 logger.error(f"Error getting request details for {request_id}: {inner_e}")
         finally:
