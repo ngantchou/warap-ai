@@ -386,6 +386,120 @@
         }
     };
 
+    // ===== NOTIFICATION POLLING =====
+    const notifications = {
+        pollingInterval: null,
+        lastNotificationId: null,
+        
+        // Start polling for notifications
+        startPolling() {
+            if (this.pollingInterval) {
+                clearInterval(this.pollingInterval);
+            }
+            
+            // Poll every 3 seconds when chat is open, 10 seconds when closed
+            const interval = state.isOpen ? 3000 : 10000;
+            
+            this.pollingInterval = setInterval(() => {
+                this.checkNotifications();
+            }, interval);
+            
+            // Initial check
+            this.checkNotifications();
+        },
+        
+        // Stop polling
+        stopPolling() {
+            if (this.pollingInterval) {
+                clearInterval(this.pollingInterval);
+                this.pollingInterval = null;
+            }
+        },
+        
+        // Check for new notifications
+        async checkNotifications() {
+            if (!state.phoneNumber) return;
+            
+            try {
+                const response = await fetch(`/api/web-chat/notifications/${state.phoneNumber}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.notifications && data.notifications.length > 0) {
+                        // Show notifications in chat
+                        this.displayNotifications(data.notifications);
+                        
+                        // Update notification badge if chat is closed
+                        if (!state.isOpen && data.unread_count > 0) {
+                            this.updateNotificationBadge(data.unread_count);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking notifications:', error);
+            }
+        },
+        
+        // Display notifications in chat
+        displayNotifications(notifications) {
+            notifications.forEach(notification => {
+                if (notification.id > this.lastNotificationId || this.lastNotificationId === null) {
+                    this.showNotificationMessage(notification);
+                    this.lastNotificationId = notification.id;
+                }
+            });
+        },
+        
+        // Show notification as a message
+        showNotificationMessage(notification) {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'notification-message';
+            notificationDiv.innerHTML = `
+                <div class="message message--received notification">
+                    <div class="message__content">
+                        <div class="notification-header">
+                            <span class="notification-type">${notification.type}</span>
+                            <span class="notification-time">${new Date(notification.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div class="notification-body">
+                            ${notification.message.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            elements.messages.appendChild(notificationDiv);
+            utils.scrollToBottom();
+            
+            // Play notification sound if window is not visible or chat is closed
+            if (document.hidden || !state.isOpen) {
+                utils.playNotificationSound();
+                utils.vibrate();
+            }
+        },
+        
+        // Update notification badge
+        updateNotificationBadge(count) {
+            if (elements.notificationBadge) {
+                elements.notificationBadge.style.display = 'flex';
+                elements.notificationBadge.textContent = count;
+            }
+        },
+        
+        // Mark notifications as read
+        async markAsRead() {
+            if (!state.phoneNumber) return;
+            
+            try {
+                await fetch(`/api/web-chat/notifications/${state.phoneNumber}/clear`, {
+                    method: 'POST'
+                });
+            } catch (error) {
+                console.error('Error marking notifications as read:', error);
+            }
+        }
+    };
+
     // ===== API COMMUNICATION =====
     const api = {
         // Send message to backend
@@ -699,6 +813,12 @@
             chat.hideNotification();
             utils.updateActivity();
             
+            // Start notification polling when chat opens
+            notifications.startPolling();
+            
+            // Mark notifications as read when chat opens
+            notifications.markAsRead();
+            
             // Check if we need to collect phone number first
             console.log('DEBUG: Open widget - phoneCollected:', state.phoneCollected, 'phoneNumber:', state.phoneNumber);
             if (!state.phoneCollected || !state.phoneNumber) {
@@ -727,6 +847,9 @@
         close() {
             state.isOpen = false;
             elements.window.classList.remove('active');
+            
+            // Continue polling but at slower rate when closed
+            notifications.startPolling(); // This will automatically adjust interval
             
             // Analytics
             if (typeof analytics !== 'undefined') {
@@ -934,6 +1057,9 @@
         // Save to localStorage for session persistence
         localStorage.setItem('djobea_phone_number', state.phoneNumber);
         
+        // Start notification polling now that we have phone number
+        notifications.startPolling();
+        
         console.log('Phone number collected:', state.phoneNumber);
     };
 
@@ -994,6 +1120,11 @@
                 }
             }, 5000); // Show after 5 seconds
 
+            // Start notification polling if phone number is available
+            if (state.phoneNumber) {
+                notifications.startPolling();
+            }
+
             console.log('Chat widget initialized successfully');
             
             // Analytics
@@ -1010,7 +1141,7 @@
     // Start initialization
     init();
 
-    // ===== CSS INJECTION FOR ERROR STYLES =====
+    // ===== CSS INJECTION FOR ERROR STYLES AND NOTIFICATIONS =====
     const style = document.createElement('style');
     style.textContent = `
         .error-message .message.error .message__content {
@@ -1022,6 +1153,39 @@
         .request-completion {
             text-align: center;
             margin: 1rem 0;
+        }
+        
+        .notification-message .message.notification .message__content {
+            background: #E7F3FF !important;
+            border-left: 4px solid #1976D2;
+            color: #1565C0;
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .notification-type {
+            background: #1976D2;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+        
+        .notification-time {
+            color: #666;
+            font-size: 11px;
+        }
+        
+        .notification-body {
+            line-height: 1.4;
         }
         
         .completion-message {

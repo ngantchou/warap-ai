@@ -28,7 +28,10 @@ class WebChatNotificationService:
             try:
                 # Handle both string and integer user_id
                 if isinstance(user_id, str) and user_id.startswith('237'):  # Cameroon phone number format
-                    user = db.query(User).filter(User.phone_number == user_id).first()
+                    # Use the same lookup logic as conversation engine - find by whatsapp_id or phone_number
+                    user = db.query(User).filter(User.whatsapp_id == user_id).first()
+                    if not user:
+                        user = db.query(User).filter(User.phone_number == user_id).first()
                     if not user:
                         logger.warning(f"User with phone number {user_id} not found")
                         return False
@@ -227,18 +230,62 @@ Souhaitez-vous accepter cette demande ?
         return pricing.get(service_type, "2 000 - 10 000 XAF")
     
     async def get_user_notifications(self, user_id: str) -> List[dict]:
-        """Get active notifications for a user"""
-        # Handle phone number format
-        if user_id.startswith('237'):  # Cameroon phone number format
+        """Get active notifications for a user (supports both phone numbers and user IDs)"""
+        try:
+            # Handle phone number format
+            if user_id.startswith('237'):  # Cameroon phone number format
+                db = next(get_db())
+                try:
+                    # Use the same lookup logic as conversation engine - find by whatsapp_id or phone_number
+                    user = db.query(User).filter(User.whatsapp_id == user_id).first()
+                    if not user:
+                        user = db.query(User).filter(User.phone_number == user_id).first()
+                    if user:
+                        actual_user_id = str(user.id)
+                        logger.info(f"Found user {actual_user_id} for phone number {user_id}")
+                    else:
+                        logger.warning(f"User with phone number {user_id} not found")
+                        return []
+                finally:
+                    db.close()
+            else:
+                actual_user_id = user_id
+            
+            # Get notifications from active notifications
+            notifications = self.active_notifications.get(actual_user_id, [])
+            
+            # Also check conversation history for system notifications
             db = next(get_db())
             try:
-                user = db.query(User).filter(User.phone_number == user_id).first()
-                if user:
-                    user_id = str(user.id)
+                conversations = db.query(Conversation).filter(
+                    Conversation.user_id == int(actual_user_id),
+                    Conversation.message_content.like('%[SYSTEM_NOTIFICATION]%')
+                ).order_by(Conversation.created_at.desc()).limit(10).all()
+                
+                for conv in conversations:
+                    # Extract the actual message from the notification
+                    message = conv.ai_response or conv.message_content
+                    if message.startswith('[SYSTEM_NOTIFICATION]'):
+                        message = message[len('[SYSTEM_NOTIFICATION]'):].strip()
+                    
+                    # Add to notifications if not already present
+                    if not any(n['id'] == conv.id for n in notifications):
+                        notifications.append({
+                            "id": conv.id,
+                            "message": message,
+                            "type": "system",
+                            "timestamp": conv.created_at.isoformat(),
+                            "read": False
+                        })
+                
+                logger.info(f"Retrieved {len(notifications)} notifications for user {actual_user_id}")
             finally:
                 db.close()
-        
-        return self.active_notifications.get(user_id, [])
+            
+            return notifications
+        except Exception as e:
+            logger.error(f"Error getting user notifications: {e}")
+            return []
     
     async def mark_notification_read(self, user_id: str, notification_id: int) -> bool:
         """Mark a notification as read"""
@@ -256,8 +303,27 @@ Souhaitez-vous accepter cette demande ?
     async def clear_user_notifications(self, user_id: str) -> bool:
         """Clear all notifications for a user"""
         try:
-            if user_id in self.active_notifications:
-                self.active_notifications[user_id] = []
+            # Handle phone number format
+            if user_id.startswith('237'):  # Cameroon phone number format
+                db = next(get_db())
+                try:
+                    # Use the same lookup logic as conversation engine - find by whatsapp_id or phone_number
+                    user = db.query(User).filter(User.whatsapp_id == user_id).first()
+                    if not user:
+                        user = db.query(User).filter(User.phone_number == user_id).first()
+                    if user:
+                        actual_user_id = str(user.id)
+                        logger.info(f"Clearing notifications for user {actual_user_id} (phone: {user_id})")
+                    else:
+                        logger.warning(f"User with phone number {user_id} not found")
+                        return False
+                finally:
+                    db.close()
+            else:
+                actual_user_id = user_id
+            
+            if actual_user_id in self.active_notifications:
+                self.active_notifications[actual_user_id] = []
             return True
         except Exception as e:
             logger.error(f"Error clearing notifications: {e}")
