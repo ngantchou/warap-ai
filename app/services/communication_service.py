@@ -211,13 +211,13 @@ class CommunicationService:
             
             message = self._generate_status_update_message(request)
             
-            # Try to send WhatsApp message
+            # Try to send WhatsApp message (NOTE: Limited functionality in sandbox mode)
             success = self.whatsapp_service.send_message(user.whatsapp_id, message)
             if success:
-                logger.info(f"Status update sent for request {request.id}")
+                logger.info(f"Status update sent for request {request.id} (may not reach user due to WhatsApp sandbox limitations)")
             else:
                 # Handle WhatsApp failure with error handling service
-                logger.warning(f"WhatsApp status update failed for request {request.id}, storing for retry")
+                logger.warning(f"WhatsApp status update failed for request {request.id} - this is expected in sandbox mode")
                 from app.services.error_handling_service import ErrorHandlingService
                 error_service = ErrorHandlingService(db)
                 await error_service.handle_whatsapp_failure(
