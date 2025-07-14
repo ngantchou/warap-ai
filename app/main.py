@@ -104,6 +104,7 @@ from app.api.settings_complete import router as settings_complete_router
 from app.api.geolocation import router as geolocation_router
 from app.api.notifications import router as notifications_router
 from app.api.export import router as export_router
+from app.api.messages import router as messages_router
 
 # Register comprehensive API endpoints
 app.include_router(analytics_complete_router, prefix="/api/analytics", tags=["analytics-complete"])
@@ -115,6 +116,7 @@ app.include_router(settings_complete_router, prefix="/api/settings", tags=["sett
 app.include_router(geolocation_router, prefix="/api/geolocation", tags=["geolocation"])
 app.include_router(notifications_router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(export_router, prefix="/api/export", tags=["export"])
+app.include_router(messages_router, prefix="/api/messages", tags=["messages"])
 
 # Core admin interface (keep main admin)
 from app.api.admin import router as admin_router
