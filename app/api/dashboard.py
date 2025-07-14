@@ -252,6 +252,214 @@ async def get_dashboard_data(
         logger.error(f"Error fetching dashboard data: {str(e)}")
         raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données du tableau de bord")
 
+
+@router.get("/dashboard")
+async def get_dashboard_data(
+    period: str = Query("7d", regex="^(24h|7d|30d|90d|1y)$"),
+    current_user = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """
+    GET /api/dashboard - Dashboard statistics and charts
+    Query Parameters:
+    - period: "24h" | "7d" | "30d" | "90d" | "1y" (default: "7d")
+    """
+    try:
+        # Calculate time period
+        if period == "24h":
+            time_delta = timedelta(hours=24)
+        elif period == "7d":
+            time_delta = timedelta(days=7)
+        elif period == "30d":
+            time_delta = timedelta(days=30)
+        elif period == "90d":
+            time_delta = timedelta(days=90)
+        elif period == "1y":
+            time_delta = timedelta(days=365)
+        else:
+            time_delta = timedelta(days=7)
+        
+        start_date = (datetime.utcnow() - time_delta).replace(tzinfo=None)
+        
+        # Get basic statistics
+        total_requests = db.query(ServiceRequest).filter(
+            ServiceRequest.created_at >= start_date
+        ).count()
+        
+        completed_requests = db.query(ServiceRequest).filter(
+            and_(
+                ServiceRequest.created_at >= start_date,
+                ServiceRequest.status == 'COMPLETED'
+            )
+        ).count()
+        
+        success_rate = (completed_requests / total_requests * 100) if total_requests > 0 else 0
+        
+        pending_requests = db.query(ServiceRequest).filter(
+            ServiceRequest.status.in_(['PENDING', 'PROVIDER_NOTIFIED'])
+        ).count()
+        
+        active_providers = db.query(Provider).filter(
+            Provider.is_active == True
+        ).count()
+        
+        completed_today = db.query(ServiceRequest).filter(
+            and_(
+                ServiceRequest.created_at >= datetime.combine(datetime.utcnow().date(), datetime.min.time()).replace(tzinfo=None),
+                ServiceRequest.status == 'COMPLETED'
+            )
+        ).count()
+        
+        # Calculate revenue (estimated based on completed requests)
+        revenue = completed_requests * 15000  # Average service price
+        
+        # Average response time (simulated)
+        avg_response_time = 14.5
+        
+        # Customer satisfaction (simulated based on success rate)
+        customer_satisfaction = min(success_rate / 100 * 5, 5.0)
+        
+        # Activity chart data
+        activity_labels = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+        activity_data = []
+        
+        for i in range(7):
+            day_date = datetime.utcnow().date() - timedelta(days=6-i)
+            day_start = datetime.combine(day_date, datetime.min.time()).replace(tzinfo=None)
+            day_end = datetime.combine(day_date, datetime.max.time()).replace(tzinfo=None)
+            
+            day_requests = db.query(ServiceRequest).filter(
+                and_(
+                    ServiceRequest.created_at >= day_start,
+                    ServiceRequest.created_at < day_end
+                )
+            ).count()
+            
+            activity_data.append(day_requests)
+        
+        # Services distribution
+        service_stats = db.query(
+            ServiceRequest.service_type,
+            func.count(ServiceRequest.id).label('count')
+        ).group_by(ServiceRequest.service_type).all()
+        
+        services_labels = []
+        services_data = []
+        service_mapping = {
+            'plomberie': 'Plomberie',
+            'électricité': 'Électricité',
+            'électroménager': 'Électroménager',
+            'maintenance': 'Maintenance'
+        }
+        
+        for service_type, count in service_stats:
+            if service_type:
+                services_labels.append(service_mapping.get(service_type, service_type.capitalize()))
+                services_data.append(count)
+        
+        # Revenue chart (last 6 months)
+        revenue_labels = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun"]
+        revenue_data = []
+        
+        for i in range(6):
+            month_start = (datetime.utcnow().replace(day=1) - timedelta(days=30*i)).replace(tzinfo=None)
+            month_end = (month_start + timedelta(days=30)).replace(tzinfo=None)
+            
+            month_completed = db.query(ServiceRequest).filter(
+                and_(
+                    ServiceRequest.created_at >= month_start,
+                    ServiceRequest.created_at < month_end,
+                    ServiceRequest.status == 'COMPLETED'
+                )
+            ).count()
+            
+            revenue_data.append(month_completed * 15000)
+        
+        revenue_data.reverse()
+        
+        # Recent activity
+        recent_requests = db.query(ServiceRequest).join(
+            User, ServiceRequest.user_id == User.id, isouter=True
+        ).order_by(desc(ServiceRequest.created_at)).limit(5).all()
+        
+        requests_activity = []
+        for request in recent_requests:
+            # Generate client name
+            client_name = f"Client #{request.id}"
+            if request.user and hasattr(request.user, 'phone_number'):
+                phone = request.user.phone_number or ""
+                if len(phone) >= 4:
+                    client_name = f"Mme/M. {phone[-4:]}"
+            
+            requests_activity.append({
+                "id": f"REQ-{request.id:03d}",
+                "client": client_name,
+                "service": request.description[:50] + "..." if len(request.description or "") > 50 else request.description,
+                "location": request.location or "Bonamoussadi Centre",
+                "time": "Il y a " + str(max(1, int((datetime.utcnow().replace(tzinfo=None) - (request.created_at.replace(tzinfo=None) if request.created_at else datetime.utcnow().replace(tzinfo=None))).total_seconds() / 60))) + " min",
+                "status": request.status.lower() if request.status else "pending",
+                "avatar": client_name[:2].upper(),
+                "priority": "urgent" if "urgent" in (request.description or "").lower() else "normal"
+            })
+        
+        # System alerts
+        alerts = []
+        
+        # High response time alert
+        if avg_response_time > 15:
+            alerts.append({
+                "id": "ALT-001",
+                "title": "Temps de réponse élevé",
+                "description": f"Temps de réponse moyen: {avg_response_time:.1f} min - Zone Bonamoussadi Centre",
+                "time": "Il y a 10 min",
+                "type": "warning",
+                "status": "Non résolu",
+                "severity": "medium"
+            })
+        
+        # Response data structure according to API documentation
+        response_data = {
+            "success": True,
+            "data": {
+                "stats": {
+                    "totalRequests": total_requests,
+                    "successRate": round(success_rate, 1),
+                    "pendingRequests": pending_requests,
+                    "activeProviders": active_providers,
+                    "completedToday": completed_today,
+                    "revenue": revenue,
+                    "avgResponseTime": avg_response_time,
+                    "customerSatisfaction": round(customer_satisfaction, 1)
+                },
+                "charts": {
+                    "activity": {
+                        "labels": activity_labels,
+                        "data": activity_data
+                    },
+                    "services": {
+                        "labels": services_labels,
+                        "data": services_data
+                    },
+                    "revenue": {
+                        "labels": revenue_labels,
+                        "data": revenue_data
+                    }
+                },
+                "activity": {
+                    "requests": requests_activity,
+                    "alerts": alerts
+                }
+            },
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        logger.info(f"Dashboard API data retrieved successfully for period: {period}")
+        return response_data
+        
+    except Exception as e:
+        logger.error(f"Error fetching dashboard API data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des données du tableau de bord")
+
 @router.get("/stats")
 async def get_dashboard_stats(
     period: str = Query("7d", regex="^(24h|7d|30d)$"),
@@ -273,8 +481,8 @@ async def get_dashboard_stats(
         else:
             time_delta = timedelta(days=7)
         
-        start_date = datetime.utcnow() - time_delta
-        previous_start = start_date - time_delta
+        start_date = (datetime.utcnow() - time_delta).replace(tzinfo=None)
+        previous_start = (start_date - time_delta).replace(tzinfo=None)
         
         # Statistiques période courante
         current_requests = db.query(ServiceRequest).filter(
@@ -559,7 +767,7 @@ async def get_dashboard_chart(
             time_delta = timedelta(days=7)
             date_format = '%d/%m'
         
-        start_date = datetime.utcnow() - time_delta
+        start_date = (datetime.utcnow() - time_delta).replace(tzinfo=None)
         
         if chart_type == "activity":
             # Graphique d'activité

@@ -89,6 +89,8 @@ app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
 # Core authentication (remove demo auth duplicates)
 from app.api.auth import router as auth_router
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
+# Add API auth routes under /api prefix
+app.include_router(auth_router, prefix="/api", tags=["api-auth"])
 
 # Core admin interface (keep main admin)
 from app.api.admin import router as admin_router
@@ -122,6 +124,9 @@ app.include_router(chat_router, tags=["chat"])
 # Main dashboard (remove demo dashboard duplicates)
 from app.api.dashboard import router as dashboard_router
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+
+# Dashboard API endpoint (as per documentation) - should be accessible as /api/dashboard
+app.include_router(dashboard_router, prefix="/api", tags=["dashboard-api"])
 
 # Landing page dynamic data
 from app.api.landing_data import router as landing_data_router

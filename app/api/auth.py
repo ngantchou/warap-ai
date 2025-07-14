@@ -484,6 +484,28 @@ async def api_logout(
     )
 
 
+# Missing endpoint from API documentation
+@router.get("/auth/profile")
+async def get_user_profile(
+    current_user: AdminUser = Depends(get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Get user profile information"""
+    return {
+        "success": True,
+        "data": {
+            "id": str(current_user.id),
+            "name": current_user.username,
+            "email": current_user.email,
+            "role": current_user.role,
+            "avatar": f"/avatars/{current_user.username}.jpg",
+            "permissions": ["read", "write", "admin"] if current_user.role == "admin" else ["read"],
+            "lastLogin": current_user.last_login.isoformat() if current_user.last_login else None,
+            "createdAt": current_user.created_at.isoformat() if current_user.created_at else None
+        }
+    }
+
+
 @router.get("/me")
 async def get_current_user_info(
     current_user: AdminUser = Depends(get_current_admin_user)
