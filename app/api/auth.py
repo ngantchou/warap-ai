@@ -649,6 +649,8 @@ async def get_security_logs(
     ]
 
 
+
+
 @router.get("/health")
 async def auth_health_check():
     """Health check for auth service"""

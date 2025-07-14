@@ -88,9 +88,33 @@ app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
 
 # Core authentication (remove demo auth duplicates)
 from app.api.auth import router as auth_router
+from app.api.auth_api import router as auth_api_router
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 # Add API auth routes under /api prefix
 app.include_router(auth_router, prefix="/api", tags=["api-auth"])
+app.include_router(auth_api_router, tags=["auth-api"])
+
+# Add all comprehensive API modules
+from app.api.analytics_complete import router as analytics_complete_router
+from app.api.providers_complete import router as providers_complete_router
+from app.api.requests_complete import router as requests_complete_router
+from app.api.finances_complete import router as finances_complete_router
+from app.api.ai_complete import router as ai_complete_router
+from app.api.settings_complete import router as settings_complete_router
+from app.api.geolocation import router as geolocation_router
+from app.api.notifications import router as notifications_router
+from app.api.export import router as export_router
+
+# Register comprehensive API endpoints
+app.include_router(analytics_complete_router, prefix="/api/analytics", tags=["analytics-complete"])
+app.include_router(providers_complete_router, prefix="/api/providers", tags=["providers-complete"])
+app.include_router(requests_complete_router, prefix="/api/requests", tags=["requests-complete"])
+app.include_router(finances_complete_router, prefix="/api/finances", tags=["finances-complete"])
+app.include_router(ai_complete_router, prefix="/api/ai", tags=["ai-complete"])
+app.include_router(settings_complete_router, prefix="/api/settings", tags=["settings-complete"])
+app.include_router(geolocation_router, prefix="/api/geolocation", tags=["geolocation"])
+app.include_router(notifications_router, prefix="/api/notifications", tags=["notifications"])
+app.include_router(export_router, prefix="/api/export", tags=["export"])
 
 # Core admin interface (keep main admin)
 from app.api.admin import router as admin_router

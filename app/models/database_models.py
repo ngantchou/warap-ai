@@ -115,6 +115,7 @@ class Provider(Base):
     # Basic status and metrics
     is_available = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
+    status = Column(String(20), default="active")  # active, inactive, suspended
     rating = Column(Float, default=0.0)
     total_jobs = Column(Integer, default=0)
     

@@ -767,7 +767,8 @@ async def get_dashboard_chart(
             time_delta = timedelta(days=7)
             date_format = '%d/%m'
         
-        start_date = (datetime.utcnow() - time_delta).replace(tzinfo=None)
+        start_date = datetime.utcnow() - time_delta
+        start_date = start_date.replace(tzinfo=None)
         
         if chart_type == "activity":
             # Graphique d'activité
