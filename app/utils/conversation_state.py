@@ -13,6 +13,7 @@ class ConversationPhase(Enum):
     """Different phases of conversation flow"""
     GREETING = "greeting"
     INFORMATION_GATHERING = "information_gathering"
+    CONFIRMATION = "confirmation"
     REQUEST_PROCESSING = "request_processing"
     PROVIDER_MATCHING = "provider_matching"
     PROVIDER_COMMUNICATION = "provider_communication"
