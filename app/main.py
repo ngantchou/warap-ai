@@ -123,21 +123,10 @@ from app.api.admin import router as admin_router
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 # Essential external API endpoints (cleaned up - no duplicates)
-from app.api.analytics import router as analytics_api_router
-from app.api.ai import router as ai_api_router
-from app.api.settings import router as settings_api_router
-from app.api.finances import router as finances_api_router
-from app.api.providers import router as providers_api_router
-from app.api.requests import router as requests_api_router
 from app.routes.web_chat_routes import router as web_chat_api_router
 
-app.include_router(analytics_api_router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"])
-app.include_router(ai_api_router, prefix="/api/ai", tags=["ai"])
-app.include_router(settings_api_router, prefix="/api/settings", tags=["settings"])
-app.include_router(finances_api_router, prefix="/api/finances", tags=["finances"])
-app.include_router(providers_api_router, prefix="/api/providers", tags=["providers"])
-app.include_router(requests_api_router, prefix="/api/requests", tags=["requests"])
+# All API endpoints now use the *_complete modules above
 
 # Configuration API endpoints
 from app.api.config import router as config_api_router
@@ -162,10 +151,8 @@ app.include_router(landing_data_router, tags=["landing-data"])
 from app.api.communication_metrics import router as communication_router
 app.include_router(communication_router, prefix="/api/communication", tags=["communication"])
 
-# AI Suggestions endpoint
-from app.api.ai_suggestions import router as ai_suggestions_router
+# AI Suggestions endpoint - removed (functionality integrated into ai_complete.py)
 from app.api.llm_status import router as llm_status_router
-app.include_router(ai_suggestions_router, tags=["ai-suggestions"])
 app.include_router(llm_status_router, tags=["llm-management"])
 
 # Monitoring API endpoint
