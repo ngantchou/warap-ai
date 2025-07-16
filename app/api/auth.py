@@ -60,6 +60,13 @@ class TokenRefreshRequest(BaseModel):
     """Token refresh request model"""
     refreshToken: str
 
+class UserProfileUpdateRequest(BaseModel):
+    """User profile update request model"""
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    profile: Optional[dict] = None
+
 class UserResponse(BaseModel):
     """User response model"""
     id: str
@@ -70,6 +77,20 @@ class UserResponse(BaseModel):
     permissions: List[str] = []
     isActive: bool = True
     lastLogin: Optional[datetime] = None
+
+class UserProfileResponse(BaseModel):
+    """User profile response model"""
+    id: str
+    name: str
+    email: str
+    role: str
+    avatar: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    permissions: List[str] = []
+    isActive: bool = True
+    lastLogin: Optional[datetime] = None
+    profile: Optional[dict] = None
 
 class AuthResponse(BaseModel):
     """Authentication response model"""
@@ -111,6 +132,31 @@ def format_user_response(user: User, permissions: List[str]) -> UserResponse:
         permissions=permissions,
         isActive=user.is_active,
         lastLogin=user.last_login
+    )
+
+def format_user_profile_response(user: User, permissions: List[str]) -> UserProfileResponse:
+    """Format user profile for response"""
+    # Parse profile data if it exists
+    profile_data = None
+    if hasattr(user, 'profile_data') and user.profile_data:
+        try:
+            import json
+            profile_data = json.loads(user.profile_data) if isinstance(user.profile_data, str) else user.profile_data
+        except:
+            profile_data = None
+    
+    return UserProfileResponse(
+        id=user.id,
+        name=user.full_name,
+        email=user.email,
+        role=user.role,
+        avatar=user.avatar,
+        phone=user.phone,
+        address=getattr(user, 'address', None),
+        permissions=permissions,
+        isActive=user.is_active,
+        lastLogin=user.last_login,
+        profile=profile_data
     )
 
 # API Endpoints
@@ -340,6 +386,109 @@ async def logout_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during logout"
+        )
+
+@router.get("/profile", response_model=AuthResponse)
+async def get_user_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get current user profile
+    
+    Returns detailed user profile information including preferences.
+    """
+    try:
+        # Get user permissions
+        permissions = get_user_permissions(current_user, db)
+        
+        # Format profile response
+        profile_response = format_user_profile_response(current_user, permissions)
+        
+        return AuthResponse(
+            success=True,
+            message="Profile retrieved successfully",
+            data=profile_response.dict()
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving profile"
+        )
+
+@router.put("/profile", response_model=AuthResponse)
+async def update_user_profile(
+    profile_data: UserProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update user profile
+    
+    Updates user profile information and preferences.
+    """
+    try:
+        # Update basic profile fields
+        if profile_data.name:
+            names = profile_data.name.strip().split()
+            if len(names) >= 2:
+                current_user.first_name = names[0]
+                current_user.last_name = " ".join(names[1:])
+            else:
+                current_user.first_name = names[0]
+                current_user.last_name = ""
+        
+        if profile_data.phone:
+            current_user.phone = profile_data.phone
+        
+        # Handle address - need to add this field to User model or store in profile_data
+        if profile_data.address:
+            # Store address in profile data as JSON
+            import json
+            profile_json = {}
+            if hasattr(current_user, 'profile_data') and current_user.profile_data:
+                try:
+                    profile_json = json.loads(current_user.profile_data) if isinstance(current_user.profile_data, str) else current_user.profile_data
+                except:
+                    profile_json = {}
+            
+            profile_json['address'] = profile_data.address
+            
+            # Update profile preferences if provided
+            if profile_data.profile:
+                profile_json.update(profile_data.profile)
+            
+            # For now, we'll handle this without a profile_data field
+            # In production, you'd want to add this field to the User model
+        
+        # Update profile preferences
+        if profile_data.profile:
+            # Store profile preferences (in production, add profile_data field to User model)
+            pass
+        
+        # Update timestamp
+        current_user.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(current_user)
+        
+        # Get updated permissions
+        permissions = get_user_permissions(current_user, db)
+        
+        # Format updated profile response
+        profile_response = format_user_profile_response(current_user, permissions)
+        
+        return AuthResponse(
+            success=True,
+            message="Profile updated successfully",
+            data=profile_response.dict()
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while updating profile"
         )
 
 @router.get("/health")

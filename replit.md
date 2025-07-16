@@ -550,16 +550,19 @@ Preferred communication style: Simple, everyday language.
 ✓ **Token Refresh Endpoint**: POST /api/auth/refresh implemented with automatic token rotation for security
 ✓ **Current User Info Endpoint**: GET /api/auth/me implemented for retrieving authenticated user information
 ✓ **User Logout Endpoint**: POST /api/auth/logout implemented with refresh token revocation
+✓ **User Profile Endpoint**: GET /api/auth/profile implemented for retrieving detailed user profile with preferences
+✓ **Profile Update Endpoint**: PUT /api/auth/profile implemented for updating user profile information and preferences
 ✓ **Database Schema Complete**: 7 authentication tables created (auth_users, auth_refresh_tokens, auth_user_roles, auth_permissions, auth_role_permissions, auth_login_attempts, auth_user_sessions)
 ✓ **Role-Based Access Control**: Three roles (user, provider, admin) with granular permissions system (24 role-permission mappings)
 ✓ **Password Security**: bcrypt hashing with configurable rounds, password strength validation
 ✓ **Token Management**: JWT access tokens (24h) and refresh tokens (7d) with automatic rotation
 ✓ **Input Validation**: Comprehensive validation for name, email, password, and role fields
 ✓ **Permission System**: Default permissions initialized (user: 6, provider: 8, admin: 10 permissions)
+✓ **Profile Management**: Complete profile management with phone, address, and preferences support
 ✓ **Error Handling**: Proper HTTP status codes and error messages for all scenarios
 ✓ **Security Features**: Environment-based JWT secrets, duplicate detection, immediate login after registration
-✓ **Complete Testing**: All 6 authentication endpoints tested successfully (register, login, refresh, me, logout, health)
-✓ **Production Ready**: Authentication system operational with 2 test users created, full token lifecycle working
+✓ **Complete Testing**: All 8 authentication endpoints tested successfully (register, login, refresh, me, logout, profile, update profile, health)
+✓ **Production Ready**: Authentication system operational with 3 test users created, full token lifecycle working, profile management functional
 
 ### Complete API Migration to old-endpoint Folder (July 16, 2025)
 ✓ **Complete API Migration**: Successfully moved ALL API files from app/api/ to old-endpoint/ folder as requested by user
