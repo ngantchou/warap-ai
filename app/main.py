@@ -19,6 +19,9 @@ from app.models.settings_models import (
     AISettings, WhatsAppSettings, BusinessSettings, ProviderSettings as ProviderSettingsModel,
     RequestSettings, AdminSettings
 )
+from app.models.auth_models import (
+    User, RefreshToken, UserRole, Permission, RolePermission, LoginAttempt, UserSession
+)
 from app.database import engine, get_db
 from app.utils.logger import setup_logger
 from app.config import get_settings
@@ -40,6 +43,12 @@ async def lifespan(app: FastAPI):
     try:
         init_db(engine)
         logger.info("Database initialized successfully")
+        
+        # Initialize authentication permissions
+        from app.services.permission_service import permission_service
+        with next(get_db()) as db:
+            permission_service.initialize_default_permissions(db)
+        logger.info("Authentication permissions initialized")
         
         # Seed cultural data
         cultural_service = CulturalDataService()
@@ -88,6 +97,10 @@ setup_security_middleware(app)
 # Essential external API endpoints (kept for existing integrations)
 from app.routes.web_chat_routes import router as web_chat_api_router
 app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"])
+
+# JWT Authentication API (comprehensive authentication system)
+from app.api.auth import router as auth_router
+app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 
 # All other API endpoints moved to old-endpoint/ folder:
 # - webhook.py -> old-endpoint/webhook.py
