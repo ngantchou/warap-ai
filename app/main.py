@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import PlainTextResponse
 import uvicorn
 
 from app.models.database_models import Base, init_db
@@ -80,45 +82,38 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS middleware for external access
+# Custom CORS middleware to handle preflight requests
+class CORSPreflightMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        # Handle preflight OPTIONS requests
+        if request.method == "OPTIONS":
+            response = PlainTextResponse("", status_code=200)
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Mx-ReqToken, Keep-Alive, X-Requested-With, If-Modified-Since"
+            response.headers["Access-Control-Max-Age"] = "3600"
+            return response
+        
+        # Process the request
+        response = await call_next(request)
+        
+        # Add CORS headers to all responses
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Mx-ReqToken, Keep-Alive, X-Requested-With, If-Modified-Since"
+        
+        return response
+
+# Add custom CORS middleware BEFORE security middleware
+app.add_middleware(CORSPreflightMiddleware)
+
+# Configure CORS middleware for external access - Allow ALL origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://127.0.0.1:3000",
-        "https://preview-react-api-mock-setup-kzmk6tgl62sji1hmi9u9.vusercontent.net",
-        "https://vusercontent.net",
-        "https://*.vusercontent.net",
-        "https://*.replit.dev",
-        "https://*.replit.com",
-        "https://djobea-ai.replit.app",
-        # Add common development and production origins
-        "http://localhost:*",
-        "https://localhost:*",
-        "*"  # Allow all origins for development - remove in production
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "Access-Control-Allow-Origin",
-        "Access-Control-Allow-Methods",
-        "Access-Control-Allow-Headers",
-        "Access-Control-Allow-Credentials",
-        "X-Requested-With",
-        "Accept",
-        "Origin",
-        "User-Agent",
-        "DNT",
-        "Cache-Control",
-        "X-Mx-ReqToken",
-        "Keep-Alive",
-        "X-Requested-With",
-        "If-Modified-Since"
-    ],
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=False,  # Must be False when allow_origins=["*"]
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
     expose_headers=["*"],
     max_age=3600
 )
@@ -145,6 +140,21 @@ app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"
 # JWT Authentication API (comprehensive authentication system)
 from app.api.auth import router as auth_router
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
+
+# Add global OPTIONS handler for CORS preflight requests
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle CORS preflight OPTIONS requests"""
+    return Response(
+        content="",
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Mx-ReqToken, Keep-Alive, X-Requested-With, If-Modified-Since",
+            "Access-Control-Max-Age": "3600"
+        }
+    )
 
 # All other API endpoints moved to old-endpoint/ folder:
 # - webhook.py -> old-endpoint/webhook.py
