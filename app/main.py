@@ -82,37 +82,23 @@ setup_security_middleware(app)
 
 # ==== UNIFIED API V1 STRUCTURE - PRODUCTION READY ====
 
-# Import unified API v1 router
-from app.api.v1 import api_v1_router
-app.include_router(api_v1_router, tags=["api-v1"])
-
-# Core webhook endpoint (essential for WhatsApp integration)
-from app.api.webhook import router as webhook_router
-app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
+# All API files moved to old-endpoint/ folder
+# No active API v1 routes - all moved to old-endpoint/
 
 # Essential external API endpoints (kept for existing integrations)
 from app.routes.web_chat_routes import router as web_chat_api_router
 app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"])
 
-# Configuration API endpoints (system configuration)
-from app.api.config import router as config_api_router
-app.include_router(config_api_router, prefix="/api/config", tags=["configuration"])
-
-# Chat widget endpoint (frontend integration)
-from app.api.chat import router as chat_router
-app.include_router(chat_router, tags=["chat"])
-
-# Landing page dynamic data (frontend integration)
-from app.api.landing_data import router as landing_data_router
-app.include_router(landing_data_router, tags=["landing-data"])
-
-# LLM Status endpoint (system monitoring)
-from app.api.llm_status import router as llm_status_router
-app.include_router(llm_status_router, tags=["llm-management"])
+# All other API endpoints moved to old-endpoint/ folder:
+# - webhook.py -> old-endpoint/webhook.py
+# - config.py -> old-endpoint/config.py  
+# - chat.py -> old-endpoint/chat.py
+# - landing_data.py -> old-endpoint/landing_data.py
+# - llm_status.py -> old-endpoint/llm_status.py
 
 # ==== LEGACY COMPATIBILITY (DEPRECATED) ====
-# All other API files have been moved to old-endpoint/ folder
-# Only webhook and communications APIs remain active in /api/v1/*
+# ALL API files have been moved to old-endpoint/ folder
+# Only essential web chat routes remain active
 # No direct imports from old API files
 
 # ==== END UNIFIED API STRUCTURE ====

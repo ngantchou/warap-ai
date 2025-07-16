@@ -1,529 +1,337 @@
 """
-System API v1 - Unified System Domain
-Combines ai_complete.py, settings_complete.py, config.py, system.py, llm_status.py, knowledge_base_api.py, validation_api.py
+System API endpoints for Djobea AI
+Implements system metrics, monitoring, and zone management functionality
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Dict, List, Optional, Any
-from datetime import datetime
+from sqlalchemy import func, text
+from typing import List, Dict, Any
+from datetime import datetime, timedelta
+import logging
+import time
+
 from app.database import get_db
-from app.models.database_models import AdminUser
-from app.utils.auth import get_current_user
-from loguru import logger
+from app.models.database_models import (
+    ServiceRequest, Provider, User, RequestStatus
+)
+from app.models.dynamic_services import Service, Zone
+from app.api.auth import get_current_admin_user
 
-router = APIRouter()
+# Configure logging
+logger = logging.getLogger(__name__)
 
-# ==== AI MANAGEMENT ====
-@router.get("/ai/status")
-async def get_ai_status(
+# Create router
+router = APIRouter(tags=["System"])
+
+@router.get("/zones")
+async def get_zones_list(
     db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
+    current_user = Depends(get_current_admin_user)
 ):
-    """Get AI service status"""
+    """
+    GET /api/zones - Get zones list
+    Retrieve list of all service zones with statistics
+    """
     try:
-        return {
-            "success": True,
-            "data": {
-                "status": "operational",
-                "providers": {
-                    "claude": {
-                        "status": "active",
-                        "model": "claude-sonnet-4-20250514",
-                        "usage": "75%",
-                        "responseTime": "1.2s"
-                    },
-                    "gemini": {
-                        "status": "active",
-                        "model": "gemini-2.5-flash",
-                        "usage": "45%",
-                        "responseTime": "0.8s"
-                    },
-                    "openai": {
-                        "status": "active",
-                        "model": "gpt-4o",
-                        "usage": "30%",
-                        "responseTime": "1.5s"
-                    }
-                },
-                "totalRequests": 1247,
-                "successRate": 98.5,
-                "lastUpdate": datetime.now().isoformat()
-            }
-        }
-    except Exception as e:
-        logger.error(f"Get AI status error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération du statut IA")
-
-@router.post("/ai/process")
-async def process_ai_request(
-    request_data: Dict[str, Any],
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Process AI request"""
-    try:
-        message = request_data.get("message", "")
-        context = request_data.get("context", {})
+        logger.info("Fetching zones list")
         
-        # Simulate AI processing
+        # Get all zones
+        zones = db.query(Zone).all()
+        
+        formatted_zones = []
+        for zone in zones:
+            # Get request statistics for this zone
+            total_requests = db.query(ServiceRequest).filter(
+                ServiceRequest.location.ilike(f"%{zone.name}%")
+            ).count()
+            
+            active_requests = db.query(ServiceRequest).filter(
+                ServiceRequest.location.ilike(f"%{zone.name}%"),
+                ServiceRequest.status.in_([RequestStatus.PENDING, RequestStatus.ASSIGNED, RequestStatus.IN_PROGRESS])
+            ).count()
+            
+            completed_requests = db.query(ServiceRequest).filter(
+                ServiceRequest.location.ilike(f"%{zone.name}%"),
+                ServiceRequest.status == RequestStatus.COMPLETED
+            ).count()
+            
+            # Get provider count for this zone
+            providers_count = db.query(Provider).filter(
+                Provider.coverage_zone.ilike(f"%{zone.name}%")
+            ).count()
+            
+            # Calculate success rate
+            success_rate = (completed_requests / total_requests * 100) if total_requests > 0 else 0
+            
+            formatted_zone = {
+                "id": zone.id,
+                "name": zone.name,
+                "nameEn": zone.name_en or zone.name,
+                "nameFr": zone.name_fr or zone.name,
+                "description": zone.description or "",
+                "coordinates": {
+                    "lat": zone.latitude or 4.0511,
+                    "lng": zone.longitude or 9.7679
+                },
+                "parentZone": zone.parent_zone_id,
+                "zoneType": zone.zone_type or "district",
+                "isActive": zone.is_active if zone.is_active is not None else True,
+                "statistics": {
+                    "totalRequests": total_requests,
+                    "activeRequests": active_requests,
+                    "completedRequests": completed_requests,
+                    "providersCount": providers_count,
+                    "successRate": round(success_rate, 2)
+                },
+                "createdAt": zone.created_at.isoformat() + "Z" if zone.created_at else None,
+                "updatedAt": zone.updated_at.isoformat() + "Z" if zone.updated_at else None
+            }
+            
+            formatted_zones.append(formatted_zone)
+        
+        # Sort by total requests (most active zones first)
+        formatted_zones.sort(key=lambda x: x['statistics']['totalRequests'], reverse=True)
+        
+        # Get zone hierarchy (parent zones)
+        parent_zones = [zone for zone in formatted_zones if zone.get('parentZone') is None]
+        child_zones = [zone for zone in formatted_zones if zone.get('parentZone') is not None]
+        
         response = {
-            "response": f"Réponse IA pour: {message}",
-            "confidence": 0.95,
-            "intent": "service_request",
-            "entities": {
-                "service_type": "plomberie",
-                "location": "Bonamoussadi",
-                "urgency": "normal"
+            "zones": formatted_zones,
+            "hierarchy": {
+                "parentZones": parent_zones,
+                "childZones": child_zones
+            },
+            "summary": {
+                "totalZones": len(formatted_zones),
+                "activeZones": len([z for z in formatted_zones if z['isActive']]),
+                "totalRequests": sum(z['statistics']['totalRequests'] for z in formatted_zones),
+                "totalProviders": sum(z['statistics']['providersCount'] for z in formatted_zones)
             }
         }
         
-        return {
-            "success": True,
-            "data": response
-        }
+        logger.info(f"Retrieved {len(formatted_zones)} zones")
+        return response
+        
     except Exception as e:
-        logger.error(f"Process AI request error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors du traitement de la requête IA")
+        logger.error(f"Error fetching zones: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des zones")
 
-@router.get("/ai/suggestions")
-async def get_ai_suggestions(
-    query: str = Query(..., description="Search query"),
-    context: Optional[str] = Query(None, description="Context"),
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Get AI suggestions"""
-    try:
-        suggestions = [
-            {
-                "id": 1,
-                "text": "Demander plus de détails sur la localisation",
-                "confidence": 0.92,
-                "type": "question"
-            },
-            {
-                "id": 2,
-                "text": "Proposer un devis estimatif",
-                "confidence": 0.87,
-                "type": "action"
-            },
-            {
-                "id": 3,
-                "text": "Vérifier la disponibilité des prestataires",
-                "confidence": 0.84,
-                "type": "check"
-            }
-        ]
-        
-        return {
-            "success": True,
-            "data": suggestions
-        }
-    except Exception as e:
-        logger.error(f"Get AI suggestions error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des suggestions IA")
 
-@router.get("/ai/models")
-async def get_ai_models(
+@router.get("/metrics/system")
+async def get_system_metrics(
     db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
+    current_user = Depends(get_current_admin_user)
 ):
-    """Get available AI models"""
+    """
+    GET /api/metrics/system - Get system metrics
+    Retrieve comprehensive system performance and health metrics
+    """
     try:
-        models = [
-            {
-                "id": "claude-sonnet-4",
-                "name": "Claude Sonnet 4",
-                "provider": "Anthropic",
-                "capabilities": ["text", "conversation", "analysis"],
-                "status": "active",
-                "usage": "75%"
-            },
-            {
-                "id": "gemini-2.5-flash",
-                "name": "Gemini 2.5 Flash",
-                "provider": "Google",
-                "capabilities": ["text", "multimodal", "fast"],
-                "status": "active",
-                "usage": "45%"
-            },
-            {
-                "id": "gpt-4o",
-                "name": "GPT-4o",
-                "provider": "OpenAI",
-                "capabilities": ["text", "analysis", "reasoning"],
-                "status": "active",
-                "usage": "30%"
-            }
-        ]
+        logger.info("Fetching system metrics")
         
-        return {
-            "success": True,
-            "data": models
-        }
-    except Exception as e:
-        logger.error(f"Get AI models error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des modèles IA")
-
-# ==== SETTINGS MANAGEMENT ====
-@router.get("/settings")
-async def get_system_settings(
-    category: Optional[str] = Query(None, description="Settings category"),
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Get system settings"""
-    try:
-        settings = {
-            "system": {
-                "appName": "Djobea AI",
-                "version": "1.0.0",
-                "environment": "production",
-                "debug": False,
-                "logLevel": "INFO"
-            },
-            "ai": {
-                "primaryModel": "claude-sonnet-4",
-                "fallbackModel": "gemini-2.5-flash",
-                "maxTokens": 4000,
-                "temperature": 0.7,
-                "confidenceThreshold": 0.8
-            },
-            "whatsapp": {
-                "enabled": True,
-                "webhookUrl": "https://djobea-ai.replit.app/webhook/whatsapp",
-                "maxMessageLength": 1000,
-                "responseTimeout": 30
-            },
-            "business": {
-                "commissionRate": 0.15,
-                "targetCity": "Douala",
-                "targetDistrict": "Bonamoussadi",
-                "supportedServices": ["plomberie", "électricité", "électroménager"]
-            }
-        }
+        # Get current timestamp
+        current_time = datetime.utcnow()
         
-        if category:
-            settings = {category: settings.get(category, {})}
-        
-        return {
-            "success": True,
-            "data": settings
-        }
-    except Exception as e:
-        logger.error(f"Get system settings error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des paramètres")
-
-@router.put("/settings")
-async def update_system_settings(
-    settings_data: Dict[str, Any],
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Update system settings"""
-    try:
-        # Simulate settings update
-        logger.info(f"Updating settings: {settings_data}")
-        
-        return {
-            "success": True,
-            "message": "Paramètres mis à jour avec succès"
-        }
-    except Exception as e:
-        logger.error(f"Update system settings error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour des paramètres")
-
-# ==== CONFIGURATION MANAGEMENT ====
-@router.get("/config")
-async def get_configuration(
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Get system configuration"""
-    try:
-        config = {
-            "database": {
-                "status": "connected",
-                "connectionPool": "active",
-                "migrations": "up_to_date"
-            },
-            "cache": {
-                "status": "active",
-                "type": "redis",
-                "hitRate": "85%"
-            },
-            "services": {
-                "ai": "operational",
-                "whatsapp": "operational",
-                "notifications": "operational",
-                "payment": "operational"
-            },
-            "security": {
-                "authentication": "enabled",
-                "rateLimit": "active",
-                "encryption": "enabled"
-            }
-        }
-        
-        return {
-            "success": True,
-            "data": config
-        }
-    except Exception as e:
-        logger.error(f"Get configuration error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération de la configuration")
-
-@router.post("/config/reload")
-async def reload_configuration(
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Reload system configuration"""
-    try:
-        # Simulate configuration reload
-        logger.info("Reloading system configuration")
-        
-        return {
-            "success": True,
-            "message": "Configuration rechargée avec succès"
-        }
-    except Exception as e:
-        logger.error(f"Reload configuration error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors du rechargement de la configuration")
-
-# ==== KNOWLEDGE BASE ====
-@router.get("/knowledge/search")
-async def search_knowledge_base(
-    query: str = Query(..., description="Search query"),
-    category: Optional[str] = Query(None, description="Knowledge category"),
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Search knowledge base"""
-    try:
-        # Sample knowledge base results
-        results = [
-            {
-                "id": 1,
-                "title": "Procédure de dépannage plomberie",
-                "content": "Étapes pour diagnostiquer et réparer les problèmes de plomberie...",
-                "category": "plomberie",
-                "relevance": 0.95,
-                "lastUpdated": "2025-01-15"
-            },
-            {
-                "id": 2,
-                "title": "Tarification des services électriques",
-                "content": "Grille tarifaire pour les interventions électriques...",
-                "category": "électricité",
-                "relevance": 0.87,
-                "lastUpdated": "2025-01-10"
-            }
-        ]
-        
-        if category:
-            results = [r for r in results if r["category"] == category]
-        
-        return {
-            "success": True,
-            "data": results,
-            "total": len(results)
-        }
-    except Exception as e:
-        logger.error(f"Search knowledge base error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la recherche dans la base de connaissances")
-
-@router.post("/knowledge/articles")
-async def create_knowledge_article(
-    article_data: Dict[str, Any],
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Create knowledge base article"""
-    try:
-        # Simulate article creation
-        article = {
-            "id": 123,
-            "title": article_data.get("title"),
-            "content": article_data.get("content"),
-            "category": article_data.get("category"),
-            "createdBy": current_user.username,
-            "createdAt": datetime.now().isoformat()
-        }
-        
-        return {
-            "success": True,
-            "message": "Article créé avec succès",
-            "data": article
-        }
-    except Exception as e:
-        logger.error(f"Create knowledge article error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la création de l'article")
-
-# ==== VALIDATION SYSTEM ====
-@router.post("/validation/validate")
-async def validate_request(
-    validation_data: Dict[str, Any],
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Validate system request"""
-    try:
-        data = validation_data.get("data", {})
-        validation_type = validation_data.get("type", "general")
-        
-        # Simulate validation
-        result = {
-            "valid": True,
-            "confidence": 0.92,
-            "errors": [],
-            "warnings": [],
-            "suggestions": [
-                "Ajouter plus de détails sur la localisation",
-                "Préciser l'urgence de la demande"
-            ]
-        }
-        
-        return {
-            "success": True,
-            "data": result
-        }
-    except Exception as e:
-        logger.error(f"Validate request error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la validation")
-
-@router.get("/validation/rules")
-async def get_validation_rules(
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Get validation rules"""
-    try:
-        rules = [
-            {
-                "id": 1,
-                "name": "Service Type Validation",
-                "description": "Vérifier que le type de service est supporté",
-                "enabled": True,
-                "priority": "high"
-            },
-            {
-                "id": 2,
-                "name": "Location Validation",
-                "description": "Vérifier que la localisation est dans la zone de couverture",
-                "enabled": True,
-                "priority": "medium"
-            },
-            {
-                "id": 3,
-                "name": "Contact Information",
-                "description": "Vérifier que les informations de contact sont valides",
-                "enabled": True,
-                "priority": "high"
-            }
-        ]
-        
-        return {
-            "success": True,
-            "data": rules
-        }
-    except Exception as e:
-        logger.error(f"Get validation rules error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des règles de validation")
-
-# ==== SYSTEM HEALTH ====
-@router.get("/health")
-async def get_system_health(
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Get system health status"""
-    try:
-        health = {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "services": {
-                "database": {
-                    "status": "healthy",
-                    "responseTime": "12ms",
-                    "connections": "8/20"
-                },
-                "ai": {
-                    "status": "healthy",
-                    "responseTime": "1.2s",
-                    "success_rate": "98.5%"
-                },
-                "whatsapp": {
-                    "status": "healthy",
-                    "responseTime": "450ms",
-                    "webhook_status": "active"
-                },
-                "cache": {
-                    "status": "healthy",
-                    "hit_rate": "85%",
-                    "memory_usage": "45%"
+        # Database metrics
+        try:
+            # Test database connection and get basic stats
+            db_start_time = time.time()
+            total_users = db.query(User).count()
+            total_providers = db.query(Provider).count()
+            total_requests = db.query(ServiceRequest).count()
+            total_services = db.query(Service).count()
+            db_response_time = round((time.time() - db_start_time) * 1000, 2)  # in milliseconds
+            
+            # Get database size (PostgreSQL specific)
+            try:
+                db_size_result = db.execute(text("SELECT pg_size_pretty(pg_database_size(current_database()))")).fetchone()
+                db_size = db_size_result[0] if db_size_result else "Unknown"
+            except:
+                db_size = "Unknown"
+            
+            # Active connections
+            try:
+                active_connections_result = db.execute(
+                    text("SELECT count(*) FROM pg_stat_activity WHERE state = 'active'")
+                ).fetchone()
+                active_connections = active_connections_result[0] if active_connections_result else 0
+            except:
+                active_connections = 0
+            
+            db_metrics = {
+                "status": "healthy",
+                "responseTime": db_response_time,
+                "size": db_size,
+                "activeConnections": active_connections,
+                "tables": {
+                    "users": total_users,
+                    "providers": total_providers,
+                    "requests": total_requests,
+                    "services": total_services
                 }
-            },
-            "metrics": {
-                "uptime": "99.9%",
-                "requests_per_minute": 127,
-                "error_rate": "0.1%",
-                "memory_usage": "65%",
-                "cpu_usage": "32%"
+            }
+        except Exception as e:
+            logger.error(f"Database metrics error: {str(e)}")
+            db_metrics = {
+                "status": "error",
+                "error": str(e),
+                "responseTime": None
+            }
+        
+        # System resource metrics
+        try:
+            # CPU usage
+            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_count = psutil.cpu_count()
+            
+            # Memory usage
+            memory = psutil.virtual_memory()
+            memory_percent = memory.percent
+            memory_total = round(memory.total / (1024**3), 2)  # GB
+            memory_used = round(memory.used / (1024**3), 2)  # GB
+            memory_available = round(memory.available / (1024**3), 2)  # GB
+            
+            # Disk usage
+            disk = psutil.disk_usage('/')
+            disk_percent = disk.percent
+            disk_total = round(disk.total / (1024**3), 2)  # GB
+            disk_used = round(disk.used / (1024**3), 2)  # GB
+            disk_free = round(disk.free / (1024**3), 2)  # GB
+            
+            # System uptime
+            boot_time = datetime.fromtimestamp(psutil.boot_time())
+            uptime = current_time - boot_time
+            uptime_hours = round(uptime.total_seconds() / 3600, 1)
+            
+            system_metrics = {
+                "status": "healthy",
+                "uptime": {
+                    "hours": uptime_hours,
+                    "bootTime": boot_time.isoformat() + "Z"
+                },
+                "cpu": {
+                    "usage": cpu_percent,
+                    "cores": cpu_count
+                },
+                "memory": {
+                    "usage": memory_percent,
+                    "total": memory_total,
+                    "used": memory_used,
+                    "available": memory_available,
+                    "unit": "GB"
+                },
+                "disk": {
+                    "usage": disk_percent,
+                    "total": disk_total,
+                    "used": disk_used,
+                    "free": disk_free,
+                    "unit": "GB"
+                }
+            }
+        except Exception as e:
+            logger.error(f"System metrics error: {str(e)}")
+            system_metrics = {
+                "status": "error",
+                "error": str(e)
+            }
+        
+        # Application metrics
+        try:
+            # Recent activity (last 24 hours)
+            last_24h = current_time - timedelta(hours=24)
+            
+            requests_24h = db.query(ServiceRequest).filter(
+                ServiceRequest.created_at >= last_24h
+            ).count()
+            
+            completed_24h = db.query(ServiceRequest).filter(
+                ServiceRequest.created_at >= last_24h,
+                ServiceRequest.status == RequestStatus.COMPLETED
+            ).count()
+            
+            new_users_24h = db.query(User).filter(
+                User.created_at >= last_24h
+            ).count()
+            
+            # Error rate calculation (simplified)
+            cancelled_24h = db.query(ServiceRequest).filter(
+                ServiceRequest.created_at >= last_24h,
+                ServiceRequest.status == RequestStatus.CANCELLED
+            ).count()
+            
+            error_rate = (cancelled_24h / requests_24h * 100) if requests_24h > 0 else 0
+            success_rate = (completed_24h / requests_24h * 100) if requests_24h > 0 else 0
+            
+            # Average response time (simplified calculation)
+            avg_response_time = db.query(
+                func.avg(
+                    func.extract('epoch', ServiceRequest.accepted_at - ServiceRequest.created_at)
+                )
+            ).filter(
+                ServiceRequest.created_at >= last_24h,
+                ServiceRequest.accepted_at.isnot(None)
+            ).scalar() or 0
+            
+            app_metrics = {
+                "status": "healthy",
+                "performance": {
+                    "avgResponseTime": round(avg_response_time / 60, 2) if avg_response_time else 0,  # minutes
+                    "successRate": round(success_rate, 2),
+                    "errorRate": round(error_rate, 2)
+                },
+                "activity": {
+                    "requests24h": requests_24h,
+                    "completions24h": completed_24h,
+                    "newUsers24h": new_users_24h
+                }
+            }
+        except Exception as e:
+            logger.error(f"Application metrics error: {str(e)}")
+            app_metrics = {
+                "status": "error",
+                "error": str(e)
+            }
+        
+        # Overall system health
+        overall_status = "healthy"
+        if (db_metrics.get("status") == "error" or 
+            system_metrics.get("status") == "error" or 
+            app_metrics.get("status") == "error"):
+            overall_status = "degraded"
+        
+        # Check for warning conditions
+        warnings = []
+        if system_metrics.get("cpu", {}).get("usage", 0) > 80:
+            warnings.append("High CPU usage detected")
+        if system_metrics.get("memory", {}).get("usage", 0) > 80:
+            warnings.append("High memory usage detected")
+        if system_metrics.get("disk", {}).get("usage", 0) > 80:
+            warnings.append("High disk usage detected")
+        if db_metrics.get("responseTime", 0) > 1000:
+            warnings.append("Slow database response time")
+        
+        if warnings:
+            overall_status = "warning"
+        
+        response = {
+            "timestamp": current_time.isoformat() + "Z",
+            "status": overall_status,
+            "warnings": warnings,
+            "database": db_metrics,
+            "system": system_metrics,
+            "application": app_metrics,
+            "summary": {
+                "componentsHealthy": sum(1 for m in [db_metrics, system_metrics, app_metrics] if m.get("status") == "healthy"),
+                "totalComponents": 3,
+                "overallHealth": round((sum(1 for m in [db_metrics, system_metrics, app_metrics] if m.get("status") == "healthy") / 3) * 100, 1)
             }
         }
         
-        return {
-            "success": True,
-            "data": health
-        }
-    except Exception as e:
-        logger.error(f"Get system health error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération de l'état du système")
-
-@router.get("/logs")
-async def get_system_logs(
-    level: Optional[str] = Query("INFO", description="Log level"),
-    limit: int = Query(100, description="Number of logs"),
-    db: Session = Depends(get_db),
-    current_user: AdminUser = Depends(get_current_user)
-):
-    """Get system logs"""
-    try:
-        # Sample logs
-        logs = [
-            {
-                "timestamp": datetime.now().isoformat(),
-                "level": "INFO",
-                "message": "AI request processed successfully",
-                "service": "ai",
-                "details": {"processing_time": "1.2s", "confidence": 0.95}
-            },
-            {
-                "timestamp": datetime.now().isoformat(),
-                "level": "INFO",
-                "message": "WhatsApp message received",
-                "service": "whatsapp",
-                "details": {"from": "237691924173", "message_length": 45}
-            },
-            {
-                "timestamp": datetime.now().isoformat(),
-                "level": "WARNING",
-                "message": "High memory usage detected",
-                "service": "system",
-                "details": {"memory_usage": "85%"}
-            }
-        ]
+        logger.info(f"System metrics retrieved - Status: {overall_status}")
+        return response
         
-        if level and level != "ALL":
-            logs = [log for log in logs if log["level"] == level]
-        
-        return {
-            "success": True,
-            "data": logs[:limit],
-            "total": len(logs)
-        }
     except Exception as e:
-        logger.error(f"Get system logs error: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des logs")
+        logger.error(f"Error fetching system metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des métriques système")
