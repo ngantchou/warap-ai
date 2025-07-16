@@ -111,8 +111,8 @@ from app.api.llm_status import router as llm_status_router
 app.include_router(llm_status_router, tags=["llm-management"])
 
 # ==== LEGACY COMPATIBILITY (DEPRECATED) ====
-# Old API files have been moved to old-endpoint/ folder
-# All legacy endpoints now redirect to /api/v1/* structure
+# All other API files have been moved to old-endpoint/ folder
+# Only webhook and communications APIs remain active in /api/v1/*
 # No direct imports from old API files
 
 # ==== END UNIFIED API STRUCTURE ====

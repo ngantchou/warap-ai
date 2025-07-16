@@ -8,26 +8,19 @@ from fastapi import APIRouter
 # API Version Router
 api_v1_router = APIRouter(prefix="/api/v1", tags=["api-v1"])
 
-# Import all domain routers
-from .analytics import router as analytics_router
-from .providers import router as providers_router
-from .requests import router as requests_router
+# Import only active routers (webhooks and communications)
 from .communications import router as communications_router
-from .system import router as system_router
-from .admin import router as admin_router
-from .external import router as external_router
 from .webhooks import router as webhooks_router
 
-# Register domain routers
-api_v1_router.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
-api_v1_router.include_router(providers_router, prefix="/providers", tags=["providers"])
-api_v1_router.include_router(requests_router, prefix="/requests", tags=["requests"])
+# Register only active domain routers
 api_v1_router.include_router(communications_router, prefix="/communications", tags=["communications"])
-api_v1_router.include_router(system_router, prefix="/system", tags=["system"])
-api_v1_router.include_router(admin_router, prefix="/admin", tags=["admin"])
-api_v1_router.include_router(external_router, prefix="/external", tags=["external"])
 api_v1_router.include_router(webhooks_router, prefix="/webhooks", tags=["webhooks"])
 
-# Legacy compatibility routes (will be deprecated)
-from .legacy import router as legacy_router
-api_v1_router.include_router(legacy_router, prefix="/legacy", tags=["legacy"])
+# All other APIs moved to old-endpoint/ folder
+# - Analytics API: old-endpoint/analytics.py
+# - Providers API: old-endpoint/providers.py
+# - Requests API: old-endpoint/requests.py
+# - System API: old-endpoint/system.py
+# - Admin API: old-endpoint/admin.py
+# - External API: old-endpoint/external.py
+# - Legacy API: old-endpoint/legacy.py
