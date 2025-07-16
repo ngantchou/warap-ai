@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from app.models.database_models import Base, init_db
@@ -77,6 +78,49 @@ app = FastAPI(
     description="Agent conversationnel WhatsApp pour services à domicile au Cameroun",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# Configure CORS middleware for external access
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://127.0.0.1:3000",
+        "https://preview-react-api-mock-setup-kzmk6tgl62sji1hmi9u9.vusercontent.net",
+        "https://vusercontent.net",
+        "https://*.vusercontent.net",
+        "https://*.replit.dev",
+        "https://*.replit.com",
+        "https://djobea-ai.replit.app",
+        # Add common development and production origins
+        "http://localhost:*",
+        "https://localhost:*",
+        "*"  # Allow all origins for development - remove in production
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Methods",
+        "Access-Control-Allow-Headers",
+        "Access-Control-Allow-Credentials",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "DNT",
+        "Cache-Control",
+        "X-Mx-ReqToken",
+        "Keep-Alive",
+        "X-Requested-With",
+        "If-Modified-Since"
+    ],
+    expose_headers=["*"],
+    max_age=3600
 )
 
 # Mount static files
