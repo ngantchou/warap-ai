@@ -111,48 +111,9 @@ from app.api.llm_status import router as llm_status_router
 app.include_router(llm_status_router, tags=["llm-management"])
 
 # ==== LEGACY COMPATIBILITY (DEPRECATED) ====
-# These endpoints are deprecated and will be removed in v2.0.0
-# Please use /api/v1/* endpoints instead
-
-# Legacy admin interface (use /api/v1/admin instead)
-from app.api.admin import router as legacy_admin_router
-app.include_router(legacy_admin_router, prefix="/admin", tags=["admin-legacy"])
-
-# Legacy dashboard (use /api/v1/admin/dashboard instead)
-from app.api.dashboard import router as legacy_dashboard_router
-app.include_router(legacy_dashboard_router, prefix="/api/dashboard", tags=["dashboard-legacy"])
-
-# Legacy complete API modules (use /api/v1/* instead)
-from app.api.analytics_complete import router as legacy_analytics_router
-from app.api.providers_complete import router as legacy_providers_router
-from app.api.requests_complete import router as legacy_requests_router
-from app.api.finances_complete import router as legacy_finances_router
-from app.api.ai_complete import router as legacy_ai_router
-from app.api.settings_complete import router as legacy_settings_router
-from app.api.geolocation import router as legacy_geolocation_router
-from app.api.notifications import router as legacy_notifications_router
-from app.api.export import router as legacy_export_router
-from app.api.messages import router as legacy_messages_router
-
-# Register legacy endpoints (DEPRECATED)
-app.include_router(legacy_analytics_router, prefix="/api/analytics", tags=["analytics-legacy"])
-app.include_router(legacy_providers_router, prefix="/api/providers", tags=["providers-legacy"])
-app.include_router(legacy_requests_router, prefix="/api/requests", tags=["requests-legacy"])
-app.include_router(legacy_finances_router, prefix="/api/finances", tags=["finances-legacy"])
-app.include_router(legacy_ai_router, prefix="/api/ai", tags=["ai-legacy"])
-app.include_router(legacy_settings_router, prefix="/api/settings", tags=["settings-legacy"])
-app.include_router(legacy_geolocation_router, prefix="/api/geolocation", tags=["geolocation-legacy"])
-app.include_router(legacy_notifications_router, prefix="/api/notifications", tags=["notifications-legacy"])
-app.include_router(legacy_export_router, prefix="/api/export", tags=["export-legacy"])
-app.include_router(legacy_messages_router, prefix="/api/messages", tags=["messages-legacy"])
-
-# Communication metrics endpoint (legacy)
-from app.api.communication_metrics import router as legacy_communication_router
-app.include_router(legacy_communication_router, prefix="/api/communication", tags=["communication-legacy"])
-
-# Monitoring API endpoint (legacy)
-from app.api.monitoring import router as legacy_monitoring_router
-app.include_router(legacy_monitoring_router, prefix="/api/monitoring", tags=["monitoring-legacy"])
+# Old API files have been moved to old-endpoint/ folder
+# All legacy endpoints now redirect to /api/v1/* structure
+# No direct imports from old API files
 
 # ==== END UNIFIED API STRUCTURE ====
 

@@ -16,6 +16,7 @@ from .communications import router as communications_router
 from .system import router as system_router
 from .admin import router as admin_router
 from .external import router as external_router
+from .webhooks import router as webhooks_router
 
 # Register domain routers
 api_v1_router.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
@@ -25,6 +26,7 @@ api_v1_router.include_router(communications_router, prefix="/communications", ta
 api_v1_router.include_router(system_router, prefix="/system", tags=["system"])
 api_v1_router.include_router(admin_router, prefix="/admin", tags=["admin"])
 api_v1_router.include_router(external_router, prefix="/external", tags=["external"])
+api_v1_router.include_router(webhooks_router, prefix="/webhooks", tags=["webhooks"])
 
 # Legacy compatibility routes (will be deprecated)
 from .legacy import router as legacy_router
