@@ -80,86 +80,81 @@ templates = Jinja2Templates(directory="templates")
 from app.middleware.security import setup_security_middleware
 setup_security_middleware(app)
 
-# ==== CLEAN API STRUCTURE - ONLY ESSENTIAL ENDPOINTS ====
+# ==== UNIFIED API V1 STRUCTURE - PRODUCTION READY ====
 
-# Core webhook endpoint (remove v2, v3, v4 duplicates)
+# Import unified API v1 router
+from app.api.v1 import api_v1_router
+app.include_router(api_v1_router, tags=["api-v1"])
+
+# Core webhook endpoint (essential for WhatsApp integration)
 from app.api.webhook import router as webhook_router
 app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
 
-# Core authentication (remove demo auth duplicates)
-from app.api.auth import router as auth_router
-from app.api.auth_api import router as auth_api_router
-app.include_router(auth_router, prefix="/auth", tags=["authentication"])
-# Add API auth routes under /api prefix
-app.include_router(auth_router, prefix="/api", tags=["api-auth"])
-app.include_router(auth_api_router, tags=["auth-api"])
-
-# Add all comprehensive API modules
-from app.api.analytics_complete import router as analytics_complete_router
-from app.api.providers_complete import router as providers_complete_router
-from app.api.requests_complete import router as requests_complete_router
-from app.api.finances_complete import router as finances_complete_router
-from app.api.ai_complete import router as ai_complete_router
-from app.api.settings_complete import router as settings_complete_router
-from app.api.geolocation import router as geolocation_router
-from app.api.notifications import router as notifications_router
-from app.api.export import router as export_router
-from app.api.messages import router as messages_router
-
-# Register comprehensive API endpoints
-app.include_router(analytics_complete_router, prefix="/api/analytics", tags=["analytics-complete"])
-app.include_router(providers_complete_router, prefix="/api/providers", tags=["providers-complete"])
-app.include_router(requests_complete_router, prefix="/api/requests", tags=["requests-complete"])
-app.include_router(finances_complete_router, prefix="/api/finances", tags=["finances-complete"])
-app.include_router(ai_complete_router, prefix="/api/ai", tags=["ai-complete"])
-app.include_router(settings_complete_router, prefix="/api/settings", tags=["settings-complete"])
-app.include_router(geolocation_router, prefix="/api/geolocation", tags=["geolocation"])
-app.include_router(notifications_router, prefix="/api/notifications", tags=["notifications"])
-app.include_router(export_router, prefix="/api/export", tags=["export"])
-app.include_router(messages_router, prefix="/api/messages", tags=["messages"])
-
-# Core admin interface (keep main admin)
-from app.api.admin import router as admin_router
-app.include_router(admin_router, prefix="/admin", tags=["admin"])
-
-# Essential external API endpoints (cleaned up - no duplicates)
+# Essential external API endpoints (kept for existing integrations)
 from app.routes.web_chat_routes import router as web_chat_api_router
-
 app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"])
-# All API endpoints now use the *_complete modules above
 
-# Configuration API endpoints
+# Configuration API endpoints (system configuration)
 from app.api.config import router as config_api_router
 app.include_router(config_api_router, prefix="/api/config", tags=["configuration"])
 
-# Chat widget endpoint
+# Chat widget endpoint (frontend integration)
 from app.api.chat import router as chat_router
 app.include_router(chat_router, tags=["chat"])
 
-# Main dashboard (remove demo dashboard duplicates)
-from app.api.dashboard import router as dashboard_router
-app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
-
-# Dashboard API endpoint (as per documentation) - should be accessible as /api/dashboard
-app.include_router(dashboard_router, prefix="/api", tags=["dashboard-api"])
-
-# Landing page dynamic data
+# Landing page dynamic data (frontend integration)
 from app.api.landing_data import router as landing_data_router
 app.include_router(landing_data_router, tags=["landing-data"])
 
-# Communication metrics endpoint
-from app.api.communication_metrics import router as communication_router
-app.include_router(communication_router, prefix="/api/communication", tags=["communication"])
-
-# AI Suggestions endpoint - removed (functionality integrated into ai_complete.py)
+# LLM Status endpoint (system monitoring)
 from app.api.llm_status import router as llm_status_router
 app.include_router(llm_status_router, tags=["llm-management"])
 
-# Monitoring API endpoint
-from app.api.monitoring import router as monitoring_router
-app.include_router(monitoring_router, prefix="/api/monitoring", tags=["monitoring"])
+# ==== LEGACY COMPATIBILITY (DEPRECATED) ====
+# These endpoints are deprecated and will be removed in v2.0.0
+# Please use /api/v1/* endpoints instead
 
-# ==== END CLEAN API STRUCTURE ====
+# Legacy admin interface (use /api/v1/admin instead)
+from app.api.admin import router as legacy_admin_router
+app.include_router(legacy_admin_router, prefix="/admin", tags=["admin-legacy"])
+
+# Legacy dashboard (use /api/v1/admin/dashboard instead)
+from app.api.dashboard import router as legacy_dashboard_router
+app.include_router(legacy_dashboard_router, prefix="/api/dashboard", tags=["dashboard-legacy"])
+
+# Legacy complete API modules (use /api/v1/* instead)
+from app.api.analytics_complete import router as legacy_analytics_router
+from app.api.providers_complete import router as legacy_providers_router
+from app.api.requests_complete import router as legacy_requests_router
+from app.api.finances_complete import router as legacy_finances_router
+from app.api.ai_complete import router as legacy_ai_router
+from app.api.settings_complete import router as legacy_settings_router
+from app.api.geolocation import router as legacy_geolocation_router
+from app.api.notifications import router as legacy_notifications_router
+from app.api.export import router as legacy_export_router
+from app.api.messages import router as legacy_messages_router
+
+# Register legacy endpoints (DEPRECATED)
+app.include_router(legacy_analytics_router, prefix="/api/analytics", tags=["analytics-legacy"])
+app.include_router(legacy_providers_router, prefix="/api/providers", tags=["providers-legacy"])
+app.include_router(legacy_requests_router, prefix="/api/requests", tags=["requests-legacy"])
+app.include_router(legacy_finances_router, prefix="/api/finances", tags=["finances-legacy"])
+app.include_router(legacy_ai_router, prefix="/api/ai", tags=["ai-legacy"])
+app.include_router(legacy_settings_router, prefix="/api/settings", tags=["settings-legacy"])
+app.include_router(legacy_geolocation_router, prefix="/api/geolocation", tags=["geolocation-legacy"])
+app.include_router(legacy_notifications_router, prefix="/api/notifications", tags=["notifications-legacy"])
+app.include_router(legacy_export_router, prefix="/api/export", tags=["export-legacy"])
+app.include_router(legacy_messages_router, prefix="/api/messages", tags=["messages-legacy"])
+
+# Communication metrics endpoint (legacy)
+from app.api.communication_metrics import router as legacy_communication_router
+app.include_router(legacy_communication_router, prefix="/api/communication", tags=["communication-legacy"])
+
+# Monitoring API endpoint (legacy)
+from app.api.monitoring import router as legacy_monitoring_router
+app.include_router(legacy_monitoring_router, prefix="/api/monitoring", tags=["monitoring-legacy"])
+
+# ==== END UNIFIED API STRUCTURE ====
 
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)
