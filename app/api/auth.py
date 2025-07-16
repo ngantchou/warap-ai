@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List
 from datetime import datetime
+import uuid
 
 from app.database import get_db
 from app.services.auth_service import auth_service
@@ -67,6 +68,44 @@ class UserProfileUpdateRequest(BaseModel):
     address: Optional[str] = None
     profile: Optional[dict] = None
 
+class ChangePasswordRequest(BaseModel):
+    """Change password request model"""
+    currentPassword: str
+    newPassword: str
+    
+    @validator('newPassword')
+    def validate_new_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('New password must be at least 8 characters long')
+        if not any(c.isupper() for c in v):
+            raise ValueError('New password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('New password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('New password must contain at least one digit')
+        return v
+
+class ForgotPasswordRequest(BaseModel):
+    """Forgot password request model"""
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    """Reset password request model"""
+    token: str
+    newPassword: str
+    
+    @validator('newPassword')
+    def validate_new_password(cls, v):
+        if len(v) < 8:
+            raise ValueError('New password must be at least 8 characters long')
+        if not any(c.isupper() for c in v):
+            raise ValueError('New password must contain at least one uppercase letter')
+        if not any(c.islower() for c in v):
+            raise ValueError('New password must contain at least one lowercase letter')
+        if not any(c.isdigit() for c in v):
+            raise ValueError('New password must contain at least one digit')
+        return v
+
 class UserResponse(BaseModel):
     """User response model"""
     id: str
@@ -96,7 +135,16 @@ class AuthResponse(BaseModel):
     """Authentication response model"""
     success: bool = True
     message: str
-    data: dict
+    data: dict = {}
+
+class ErrorResponse(BaseModel):
+    """Error response model"""
+    success: bool = False
+    error: str
+    message: str
+    details: Optional[List[str]] = []
+    requestId: Optional[str] = None
+    timestamp: str
 
 class TokenResponse(BaseModel):
     """Token response model"""
@@ -489,6 +537,181 @@ async def update_user_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while updating profile"
+        )
+
+@router.post("/change-password", response_model=AuthResponse)
+async def change_password(
+    password_data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Change user password
+    
+    Updates the user's password after verifying the current password.
+    """
+    try:
+        # Verify current password
+        if not auth_service.verify_password(password_data.currentPassword, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "success": False,
+                    "error": "INVALID_CURRENT_PASSWORD",
+                    "message": "Current password is incorrect",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+        
+        # Update password
+        success = auth_service.change_password(
+            user_id=current_user.id,
+            new_password=password_data.newPassword,
+            db=db
+        )
+        
+        if success:
+            return AuthResponse(
+                success=True,
+                message="Password changed successfully"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "success": False,
+                    "error": "PASSWORD_CHANGE_FAILED",
+                    "message": "Failed to change password",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "error": "INTERNAL_SERVER_ERROR",
+                "message": "An error occurred while changing password",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
+
+@router.post("/forgot-password", response_model=AuthResponse)
+async def forgot_password(
+    request_data: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Forgot password
+    
+    Sends a password reset email to the user.
+    """
+    try:
+        # Check if user exists
+        user = db.query(User).filter(User.email == request_data.email).first()
+        if not user:
+            # Return success even if user doesn't exist for security
+            return AuthResponse(
+                success=True,
+                message="Password reset email sent"
+            )
+        
+        # Generate reset token
+        reset_token = auth_service.generate_password_reset_token(user.id, db)
+        
+        # In production, you would send an email here
+        # For now, we'll just return success
+        # send_password_reset_email(user.email, reset_token)
+        
+        return AuthResponse(
+            success=True,
+            message="Password reset email sent"
+        )
+        
+    except Exception as e:
+        return ErrorResponse(
+            success=False,
+            error="INTERNAL_SERVER_ERROR",
+            message="An error occurred while processing forgot password request",
+            timestamp=datetime.utcnow().isoformat()
+        )
+
+@router.post("/reset-password", response_model=AuthResponse)
+async def reset_password(
+    reset_data: ResetPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Reset password
+    
+    Resets the user's password using a reset token.
+    """
+    try:
+        # Verify and use reset token
+        success = auth_service.reset_password_with_token(
+            token=reset_data.token,
+            new_password=reset_data.newPassword,
+            db=db
+        )
+        
+        if success:
+            return AuthResponse(
+                success=True,
+                message="Password reset successfully"
+            )
+        else:
+            return ErrorResponse(
+                success=False,
+                error="INVALID_RESET_TOKEN",
+                message="Invalid or expired reset token",
+                timestamp=datetime.utcnow().isoformat()
+            )
+        
+    except Exception as e:
+        return ErrorResponse(
+            success=False,
+            error="INTERNAL_SERVER_ERROR",
+            message="An error occurred while resetting password",
+            timestamp=datetime.utcnow().isoformat()
+        )
+
+@router.post("/logout", response_model=AuthResponse)
+async def logout_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """
+    User logout
+    
+    Revokes the refresh token to invalidate the session.
+    """
+    try:
+        # Extract refresh token from Authorization header
+        refresh_token = credentials.credentials
+        
+        # Logout user (revoke refresh token)
+        success = auth_service.logout_user(refresh_token, db)
+        
+        if success:
+            return AuthResponse(
+                success=True,
+                message="Logged out successfully"
+            )
+        else:
+            return ErrorResponse(
+                success=False,
+                error="INVALID_REFRESH_TOKEN",
+                message="Invalid refresh token",
+                timestamp=datetime.utcnow().isoformat()
+            )
+        
+    except Exception as e:
+        return ErrorResponse(
+            success=False,
+            error="INTERNAL_SERVER_ERROR",
+            message="An error occurred during logout",
+            timestamp=datetime.utcnow().isoformat()
         )
 
 @router.get("/health")
