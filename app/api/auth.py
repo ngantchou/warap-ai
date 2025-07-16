@@ -50,6 +50,16 @@ class UserRegisterRequest(BaseModel):
             raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}')
         return v
 
+class UserLoginRequest(BaseModel):
+    """User login request model"""
+    email: EmailStr
+    password: str
+    rememberMe: bool = False
+
+class TokenRefreshRequest(BaseModel):
+    """Token refresh request model"""
+    refreshToken: str
+
 class UserResponse(BaseModel):
     """User response model"""
     id: str
@@ -200,6 +210,137 @@ async def get_current_user_info(
         message="User information retrieved successfully",
         data={"user": user_response.dict()}
     )
+
+@router.post("/login", response_model=AuthResponse)
+async def login_user(
+    login_data: UserLoginRequest,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    User login
+    
+    Authenticates user with email and password.
+    Returns user data and JWT tokens.
+    """
+    try:
+        # Use email as username for authentication
+        login_result = auth_service.login_user(
+            username=login_data.email,
+            password=login_data.password,
+            db=db
+        )
+        
+        # Get user for response formatting
+        user = auth_service.get_user_by_id(login_result["user"]["id"], db)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Get user permissions
+        permissions = get_user_permissions(user, db)
+        
+        # Format user response
+        user_response = format_user_response(user, permissions)
+        
+        # Prepare response data
+        response_data = {
+            "user": user_response.dict(),
+            "token": login_result["access_token"],
+            "refreshToken": login_result["refresh_token"],
+            "expiresIn": login_result["expires_in"]
+        }
+        
+        return AuthResponse(
+            success=True,
+            message="Login successful",
+            data=response_data
+        )
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during login"
+        )
+
+@router.post("/refresh", response_model=AuthResponse)
+async def refresh_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token
+    
+    Uses refresh token to generate new access token.
+    Implements token rotation for security.
+    """
+    try:
+        # Extract refresh token from Authorization header
+        refresh_token = credentials.credentials
+        
+        # Refresh the token
+        refresh_result = auth_service.refresh_access_token(refresh_token, db)
+        
+        response_data = {
+            "token": refresh_result["access_token"],
+            "refreshToken": refresh_result["refresh_token"],
+            "expiresIn": refresh_result["expires_in"]
+        }
+        
+        return AuthResponse(
+            success=True,
+            message="Token refreshed successfully",
+            data=response_data
+        )
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during token refresh"
+        )
+
+@router.post("/logout", response_model=AuthResponse)
+async def logout_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """
+    User logout
+    
+    Revokes the refresh token to invalidate the session.
+    """
+    try:
+        # Extract refresh token from Authorization header
+        refresh_token = credentials.credentials
+        
+        # Logout user (revoke refresh token)
+        success = auth_service.logout_user(refresh_token, db)
+        
+        if success:
+            return AuthResponse(
+                success=True,
+                message="Logout successful",
+                data={}
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid refresh token"
+            )
+        
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during logout"
+        )
 
 @router.get("/health")
 async def auth_health():
