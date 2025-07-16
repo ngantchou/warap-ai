@@ -82,10 +82,16 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Custom CORS middleware to handle preflight requests
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Templates
+templates = Jinja2Templates(directory="templates")
+
+# Custom CORS middleware to handle preflight requests - MUST BE FIRST
 class CORSPreflightMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
-        # Handle preflight OPTIONS requests
+        # Handle preflight OPTIONS requests BEFORE any other middleware
         if request.method == "OPTIONS":
             response = PlainTextResponse("", status_code=200)
             response.headers["Access-Control-Allow-Origin"] = "*"
@@ -104,7 +110,7 @@ class CORSPreflightMiddleware(BaseHTTPMiddleware):
         
         return response
 
-# Add custom CORS middleware BEFORE security middleware
+# Add custom CORS middleware FIRST (before security middleware)
 app.add_middleware(CORSPreflightMiddleware)
 
 # Configure CORS middleware for external access - Allow ALL origins
@@ -118,15 +124,10 @@ app.add_middleware(
     max_age=3600
 )
 
-# Mount static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Templates
-templates = Jinja2Templates(directory="templates")
-
-# Setup security middleware
-from app.middleware.security import setup_security_middleware
-setup_security_middleware(app)
+# Setup security middleware AFTER CORS (minimal security without CORS conflicts)
+from app.middleware.security import SecurityHeadersMiddleware, InputValidationMiddleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(InputValidationMiddleware, max_content_length=10 * 1024 * 1024)
 
 # ==== UNIFIED API V1 STRUCTURE - PRODUCTION READY ====
 
@@ -141,20 +142,7 @@ app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"
 from app.api.auth import router as auth_router
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 
-# Add global OPTIONS handler for CORS preflight requests
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str):
-    """Handle CORS preflight OPTIONS requests"""
-    return Response(
-        content="",
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Mx-ReqToken, Keep-Alive, X-Requested-With, If-Modified-Since",
-            "Access-Control-Max-Age": "3600"
-        }
-    )
+# Remove the options handler since the middleware handles it now
 
 # All other API endpoints moved to old-endpoint/ folder:
 # - webhook.py -> old-endpoint/webhook.py
