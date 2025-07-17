@@ -85,6 +85,16 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan)
 
+# Configure CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
+
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
