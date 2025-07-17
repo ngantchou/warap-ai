@@ -251,6 +251,82 @@ def get_dashboard_charts_endpoint(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Charts error: {str(e)}")
 
+@router.get("/dashboard/activity")
+def get_dashboard_activity(
+    limit: int = Query(10, ge=1, le=50, description="Number of items to return"),
+    activity_type: str = Query("all", alias="type", description="Type of activity: requests|alerts|all"),
+    current_user: AuthUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get dashboard activity data (requests and alerts) as per API specification
+    
+    Args:
+        limit: Number of items to return (1-50, default: 10)
+        activity_type: Type of activity (requests, alerts, all)
+        current_user: Authenticated user
+        db: Database session
+    
+    Returns:
+        Activity data with requests and alerts
+    """
+    try:
+        response_data = {}
+        
+        if activity_type == "requests":
+            # Only requests
+            response_data["requests"] = get_activity_requests(db, limit)
+        elif activity_type == "alerts":
+            # Only alerts  
+            response_data["alerts"] = get_activity_alerts(db, limit)
+        else:
+            # Both requests and alerts - need to respect total limit
+            # Get more items initially, then truncate to respect limit
+            raw_requests = get_activity_requests(db, limit)
+            raw_alerts = get_activity_alerts(db, limit)
+            
+            # Combine all items with timestamps for sorting
+            all_items = []
+            for req in raw_requests:
+                all_items.append({
+                    "type": "request",
+                    "data": req,
+                    "time": req["time"]
+                })
+            for alert in raw_alerts:
+                all_items.append({
+                    "type": "alert", 
+                    "data": alert,
+                    "time": alert["time"]
+                })
+            
+            # Sort by time (most recent first)
+            all_items.sort(key=lambda x: x["time"], reverse=True)
+            
+            # Take only the limit number of items
+            limited_items = all_items[:limit]
+            
+            # Separate back into requests and alerts
+            requests = []
+            alerts = []
+            for item in limited_items:
+                if item["type"] == "request":
+                    requests.append(item["data"])
+                else:
+                    alerts.append(item["data"])
+            
+            response_data["requests"] = requests
+            response_data["alerts"] = alerts
+        
+        return {
+            "success": True,
+            "data": response_data,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Activity error: {str(e)}")
+
 @router.get("/dashboard")
 def get_dashboard_overview(
     period: str = Query("7d", description="Period for data analysis"),
@@ -471,8 +547,247 @@ def get_recent_activity(db: Session, limit: int = 10) -> List[dict]:
     except Exception as e:
         return []
 
+def get_activity_requests(db: Session, limit: int) -> List[dict]:
+    """Get activity requests data as per API specification"""
+    try:
+        # Get recent service requests
+        service_requests = db.query(ServiceRequest).order_by(
+            desc(ServiceRequest.created_at)
+        ).limit(limit).all()
+        
+        requests_data = []
+        for request in service_requests:
+            # Get client information
+            client_name = "Client Anonyme"
+            avatar_url = None
+            
+            if hasattr(request, 'client_name') and request.client_name:
+                client_name = request.client_name
+            elif hasattr(request, 'user_id') and request.user_id:
+                user = db.query(User).filter(User.id == request.user_id).first()
+                if user and hasattr(user, 'phone_number'):
+                    client_name = f"Client {user.phone_number[-4:]}"
+            
+            # Map service types to French names
+            service_map = {
+                'plomberie': 'Plomberie',
+                'électricité': 'Électricité',
+                'electromenager': 'Électroménager',
+                'electricite': 'Électricité',
+                'menage': 'Ménage',
+                'jardinage': 'Jardinage',
+                'peinture': 'Peinture',
+                'climatisation': 'Climatisation',
+                'serrurerie': 'Serrurerie'
+            }
+            
+            service_name = service_map.get(request.service_type, request.service_type.title())
+            
+            # Determine priority based on urgency
+            priority = "normal"
+            if hasattr(request, 'urgency'):
+                if request.urgency in ['urgent', 'emergency', 'high']:
+                    priority = "high"
+                elif request.urgency in ['low']:
+                    priority = "low"
+            
+            # Format status
+            status_map = {
+                'pending': 'en attente',
+                'assigned': 'assigné',
+                'in_progress': 'en cours',
+                'completed': 'terminé',
+                'cancelled': 'annulé'
+            }
+            
+            status = status_map.get(request.status, request.status)
+            
+            requests_data.append({
+                "id": f"req-{request.id}",
+                "client": client_name,
+                "service": service_name,
+                "location": request.location or "Non spécifié",
+                "time": request.created_at.isoformat(),
+                "status": status,
+                "avatar": avatar_url,
+                "priority": priority
+            })
+        
+        return requests_data
+        
+    except Exception as e:
+        return []
+
+def get_activity_alerts(db: Session, limit: int) -> List[dict]:
+    """Get activity alerts data as per API specification"""
+    try:
+        alerts_data = []
+        
+        # Get urgent requests as alerts
+        urgent_requests = db.query(ServiceRequest).filter(
+            ServiceRequest.urgency.in_(['urgent', 'emergency', 'high'])
+        ).order_by(desc(ServiceRequest.created_at)).limit(limit).all()
+        
+        for request in urgent_requests:
+            alert_title = f"Demande urgente - {request.service_type.title()}"
+            alert_description = f"Nouvelle demande urgente de {request.service_type} à {request.location} nécessitant une attention immédiate"
+            
+            alerts_data.append({
+                "id": f"alert-{request.id}",
+                "title": alert_title,
+                "description": alert_description,
+                "time": request.created_at.isoformat(),
+                "type": "warning",
+                "status": "non résolu" if request.status == "pending" else "résolu",
+                "severity": "high"
+            })
+        
+        # Only add pending requests if we haven't reached the limit
+        if len(alerts_data) < limit:
+            remaining_limit = limit - len(alerts_data)
+            pending_requests = db.query(ServiceRequest).filter(
+                ServiceRequest.status == "pending",
+                ~ServiceRequest.urgency.in_(['urgent', 'emergency', 'high'])  # Exclude urgent ones already added
+            ).order_by(desc(ServiceRequest.created_at)).limit(remaining_limit).all()
+            
+            for request in pending_requests:
+                alert_title = f"Demande en attente - {request.service_type.title()}"
+                alert_description = f"Demande de {request.service_type} à {request.location} en attente d'assignation"
+                
+                alerts_data.append({
+                    "id": f"alert-pending-{request.id}",
+                    "title": alert_title,
+                    "description": alert_description,
+                    "time": request.created_at.isoformat(),
+                    "type": "info",
+                    "status": "en attente",
+                    "severity": "medium"
+                })
+        
+        # Sort by time and limit
+        alerts_data.sort(key=lambda x: x["time"], reverse=True)
+        return alerts_data[:limit]
+        
+    except Exception as e:
+        return []
+
+@router.get("/dashboard/quick-actions")
+def get_dashboard_quick_actions(
+    current_user: AuthUser = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get dashboard quick actions as per API specification
+    
+    Args:
+        current_user: Authenticated user
+        db: Database session
+    
+    Returns:
+        Quick actions available for the user
+    """
+    try:
+        # Get message count for the user
+        message_count = get_user_message_count(db, current_user.id)
+        
+        # Build quick actions based on user role
+        quick_actions = [
+            {
+                "id": "new-request",
+                "title": "Nouvelle Demande",
+                "icon": "plus",
+                "action": "/requests?action=new",
+                "enabled": True
+            },
+            {
+                "id": "view-messages",
+                "title": "Messages",
+                "icon": "message-square",
+                "action": "/messages",
+                "enabled": True,
+                "count": message_count
+            },
+            {
+                "id": "view-analytics",
+                "title": "Analytics",
+                "icon": "bar-chart-3",
+                "action": "/analytics",
+                "enabled": True
+            },
+            {
+                "id": "view-settings",
+                "title": "Paramètres",
+                "icon": "settings",
+                "action": "/settings",
+                "enabled": True
+            }
+        ]
+        
+        # Add admin-specific actions
+        if hasattr(current_user, 'role') and current_user.role == 'admin':
+            quick_actions.extend([
+                {
+                    "id": "system-health",
+                    "title": "Santé du Système",
+                    "icon": "activity",
+                    "action": "/admin/health",
+                    "enabled": True
+                },
+                {
+                    "id": "manage-users",
+                    "title": "Gestion Utilisateurs",
+                    "icon": "users",
+                    "action": "/admin/users",
+                    "enabled": True
+                }
+            ])
+        
+        # Add provider-specific actions
+        if hasattr(current_user, 'role') and current_user.role == 'provider':
+            quick_actions.extend([
+                {
+                    "id": "my-services",
+                    "title": "Mes Services",
+                    "icon": "briefcase",
+                    "action": "/provider/services",
+                    "enabled": True
+                },
+                {
+                    "id": "earnings",
+                    "title": "Revenus",
+                    "icon": "dollar-sign",
+                    "action": "/provider/earnings",
+                    "enabled": True
+                }
+            ])
+        
+        return {
+            "success": True,
+            "data": quick_actions,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Quick actions error: {str(e)}")
+
+def get_user_message_count(db: Session, user_id: str) -> int:
+    """Get message count for a user"""
+    try:
+        # Count unread notifications for the user
+        from app.models.database_models import WebChatNotification
+        
+        count = db.query(WebChatNotification).filter(
+            WebChatNotification.user_id == user_id,
+            WebChatNotification.read == False
+        ).count()
+        
+        return count
+        
+    except Exception:
+        return 0
+
 def get_quick_actions(current_user: AuthUser) -> List[dict]:
-    """Get quick actions based on user role"""
+    """Get quick actions based on user role (legacy method)"""
     actions = [
         {
             "title": "View Requests",
