@@ -103,6 +103,11 @@ from app.api.auth import router as auth_router
 
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 
+# Dashboard API (real data dashboard endpoints)
+from app.api.dashboard import router as dashboard_router
+
+app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
+
 # Remove the options handler since the middleware handles it now
 
 # All other API endpoints moved to old-endpoint/ folder:
