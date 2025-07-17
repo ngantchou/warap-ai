@@ -13,18 +13,19 @@ import uvicorn
 from app.models.database_models import Base, init_db
 from app.models.cultural_models import CulturalContext
 from app.models.personalization_models import UserPreferences, ServiceHistory
-from app.models.provider_models import (
-    ProviderSession, ProviderSettings, ProviderStatsCache, 
-    ProviderNotification, ProviderAvailability, ProviderDashboardWidget
-)
-from app.models.settings_models import (
-    SystemSettings, NotificationSettings, SecuritySettings, PerformanceSettings,
-    AISettings, WhatsAppSettings, BusinessSettings, ProviderSettings as ProviderSettingsModel,
-    RequestSettings, AdminSettings
-)
-from app.models.auth_models import (
-    User, RefreshToken, UserRole, Permission, RolePermission, LoginAttempt, UserSession
-)
+from app.models.provider_models import (ProviderSession, ProviderSettings,
+                                        ProviderStatsCache,
+                                        ProviderNotification,
+                                        ProviderAvailability,
+                                        ProviderDashboardWidget)
+from app.models.settings_models import (SystemSettings, NotificationSettings,
+                                        SecuritySettings, PerformanceSettings,
+                                        AISettings, WhatsAppSettings,
+                                        BusinessSettings, ProviderSettings as
+                                        ProviderSettingsModel, RequestSettings,
+                                        AdminSettings)
+from app.models.auth_models import (User, RefreshToken, UserRole, Permission,
+                                    RolePermission, LoginAttempt, UserSession)
 from app.database import engine, get_db
 from app.utils.logger import setup_logger
 from app.config import get_settings
@@ -36,51 +37,53 @@ logger = setup_logger(__name__)
 
 settings = get_settings()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
     # Startup
     logger.info("Starting Djobea AI application...")
-    
+
     # Create database tables
     try:
         init_db(engine)
         logger.info("Database initialized successfully")
-        
+
         # Initialize authentication permissions
         from app.services.permission_service import permission_service
         with next(get_db()) as db:
             permission_service.initialize_default_permissions(db)
         logger.info("Authentication permissions initialized")
-        
+
         # Seed cultural data
         cultural_service = CulturalDataService()
         with next(get_db()) as db:
             cultural_service.seed_all_cultural_data(db)
         logger.info("Cultural data seeded successfully")
-        
+
         # Initialize configuration service
         with next(get_db()) as db:
             config_service = init_config(db)
             config_service.settings_service.seed_default_settings()
         logger.info("Configuration service initialized successfully")
-        
+
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
         raise
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Djobea AI application...")
+
 
 # Create FastAPI app
 app = FastAPI(
     title="Djobea AI",
-    description="Agent conversationnel WhatsApp pour services à domicile au Cameroun",
+    description=
+    "Agent conversationnel WhatsApp pour services à domicile au Cameroun",
     version="1.0.0",
-    lifespan=lifespan
-)
+    lifespan=lifespan)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -88,65 +91,23 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Templates
 templates = Jinja2Templates(directory="templates")
 
-# Custom CORS middleware to handle preflight requests - MUST BE FIRST
-class CORSPreflightMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        # Handle preflight OPTIONS requests BEFORE any other middleware
-        if request.method == "OPTIONS":
-            response = PlainTextResponse("", status_code=200)
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-            response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Mx-ReqToken, Keep-Alive, X-Requested-With, If-Modified-Since"
-            response.headers["Access-Control-Max-Age"] = "3600"
-            return response
-        
-        # Process the request
-        response = await call_next(request)
-        
-        # Add CORS headers to all responses
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, User-Agent, DNT, Cache-Control, X-Mx-ReqToken, Keep-Alive, X-Requested-With, If-Modified-Since"
-        
-        return response
-
-# Add custom CORS middleware FIRST (before security middleware)
-app.add_middleware(CORSPreflightMiddleware)
-
-# Configure CORS middleware for external access - Allow ALL origins
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
-    allow_credentials=False,  # Must be False when allow_origins=["*"]
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],
-    max_age=3600
-)
-
-# Setup security middleware AFTER CORS (minimal security without CORS conflicts)
-from app.middleware.security import SecurityHeadersMiddleware, InputValidationMiddleware
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(InputValidationMiddleware, max_content_length=10 * 1024 * 1024)
-
-# ==== UNIFIED API V1 STRUCTURE - PRODUCTION READY ====
-
-# All API files moved to old-endpoint/ folder
-# No active API v1 routes - all moved to old-endpoint/
-
 # Essential external API endpoints (kept for existing integrations)
 from app.routes.web_chat_routes import router as web_chat_api_router
-app.include_router(web_chat_api_router, prefix="/api/web-chat", tags=["web-chat"])
+
+app.include_router(web_chat_api_router,
+                   prefix="/api/web-chat",
+                   tags=["web-chat"])
 
 # JWT Authentication API (comprehensive authentication system)
 from app.api.auth import router as auth_router
+
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 
 # Remove the options handler since the middleware handles it now
 
 # All other API endpoints moved to old-endpoint/ folder:
 # - webhook.py -> old-endpoint/webhook.py
-# - config.py -> old-endpoint/config.py  
+# - config.py -> old-endpoint/config.py
 # - chat.py -> old-endpoint/chat.py
 # - landing_data.py -> old-endpoint/landing_data.py
 # - llm_status.py -> old-endpoint/llm_status.py
@@ -158,27 +119,35 @@ app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 
 # ==== END UNIFIED API STRUCTURE ====
 
+
 # Root endpoint
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Root endpoint - serve beautiful landing page"""
     return templates.TemplateResponse("landing_v2.html", {"request": request})
 
+
 # Provider dashboard routes
 @app.get("/provider-login", response_class=HTMLResponse)
 async def provider_login_page(request: Request):
     """Provider login page"""
-    return templates.TemplateResponse("provider_login.html", {"request": request})
+    return templates.TemplateResponse("provider_login.html",
+                                      {"request": request})
+
 
 @app.get("/provider-dashboard", response_class=HTMLResponse)
 async def provider_dashboard_page(request: Request):
     """Provider dashboard page"""
-    return templates.TemplateResponse("provider_dashboard.html", {"request": request})
+    return templates.TemplateResponse("provider_dashboard.html",
+                                      {"request": request})
+
 
 @app.get("/provider-profile", response_class=HTMLResponse)
 async def provider_profile_page(request: Request):
     """Provider profile management page"""
-    return templates.TemplateResponse("provider_profile.html", {"request": request})
+    return templates.TemplateResponse("provider_profile.html",
+                                      {"request": request})
+
 
 @app.get("/admin")
 async def admin_redirect():
@@ -186,10 +155,13 @@ async def admin_redirect():
     from fastapi.responses import RedirectResponse
     return RedirectResponse(url="/admin/", status_code=307)
 
+
 @app.get("/agent-dashboard", response_class=HTMLResponse)
 async def agent_dashboard_page(request: Request):
     """Agent dashboard page for human escalation"""
-    return templates.TemplateResponse("agent_dashboard.html", {"request": request})
+    return templates.TemplateResponse("agent_dashboard.html",
+                                      {"request": request})
+
 
 # Health check endpoint
 @app.get("/health")
@@ -197,22 +169,17 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "djobea-ai"}
 
+
 @app.get("/api/config")
 async def get_config():
     """Get client configuration"""
-    return {
-        "demo_mode": settings.demo_mode,
-        "app_name": settings.app_name
-    }
-
+    return {"demo_mode": settings.demo_mode, "app_name": settings.app_name}
 
 
 if __name__ == "__main__":
     # Run the application
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=5000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("main:app",
+                host="0.0.0.0",
+                port=5000,
+                reload=True,
+                log_level="info")
