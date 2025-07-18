@@ -116,7 +116,7 @@ app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
 # Analytics API Package (comprehensive analytics endpoints)
 from app.api.analytics import router as analytics_router
 
-app.include_router(analytics_router, prefix="/api", tags=["analytics"])
+app.include_router(analytics_router, prefix="/api/analytics", tags=["analytics"])
 
 # Provider API (complete provider management system)
 from app.api.providers_complete import router as providers_router

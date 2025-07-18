@@ -4,6 +4,7 @@ Contains all analytics-related endpoints organized by functionality
 """
 
 from fastapi import APIRouter
+from .main_dashboard import router as main_dashboard_router
 from .kpis import router as kpis_router
 from .performance import router as performance_router
 from .services import router as services_router
@@ -15,6 +16,9 @@ from .share import router as share_router
 
 # Create main analytics router
 router = APIRouter()
+
+# Include main dashboard router (root endpoint)
+router.include_router(main_dashboard_router, tags=["analytics-main"])
 
 # Include all analytics sub-routers
 router.include_router(kpis_router, tags=["analytics-kpis"])
