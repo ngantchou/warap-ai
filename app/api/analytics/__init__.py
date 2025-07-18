@@ -9,6 +9,9 @@ from .performance import router as performance_router
 from .services import router as services_router
 from .geographic import router as geographic_router
 from .insights import router as insights_router
+from .leaderboard import router as leaderboard_router
+from .export import router as export_router
+from .share import router as share_router
 
 # Create main analytics router
 router = APIRouter()
@@ -19,3 +22,6 @@ router.include_router(performance_router, tags=["analytics-performance"])
 router.include_router(services_router, tags=["analytics-services"])
 router.include_router(geographic_router, tags=["analytics-geographic"])
 router.include_router(insights_router, tags=["analytics-insights"])
+router.include_router(leaderboard_router, tags=["analytics-leaderboard"])
+router.include_router(export_router, tags=["analytics-export"])
+router.include_router(share_router, tags=["analytics-share"])
