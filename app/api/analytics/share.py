@@ -180,7 +180,7 @@ async def share_analytics_report(
         
         # Create share record
         share_record = await _create_share_record(
-            db, share_id, request.reportId, request.recipients, expires_at, current_user["user_id"]
+            db, share_id, request.reportId, request.recipients, expires_at, current_user.id
         )
         
         # Generate share URL
@@ -191,7 +191,7 @@ async def share_analytics_report(
         
         # Send emails to recipients
         emails_sent = True
-        sender_name = current_user.get("username", "Djobea AI")
+        sender_name = current_user.username if hasattr(current_user, 'username') else "Djobea AI"
         
         for recipient in request.recipients:
             try:
