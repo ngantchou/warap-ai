@@ -88,8 +88,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["*"],
-    expose_headers=["*"]
-)
+    expose_headers=["*"])
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -114,10 +113,15 @@ from app.api.dashboard import router as dashboard_router
 
 app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
 
+# Analytics KPIs API (comprehensive analytics endpoints)
+from app.api.analytics_kpis import router as analytics_kpis_router
+
+app.include_router(analytics_kpis_router, prefix="/api", tags=["analytics"])
+
 # Provider API (complete provider management system)
 from app.api.providers_complete import router as providers_router
 
-app.include_router(providers_router, tags=["providers"])
+app.include_router(providers_router)
 
 # Remove the options handler since the middleware handles it now
 
