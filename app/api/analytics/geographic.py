@@ -70,7 +70,7 @@ async def get_geographic_analytics(
             ServiceRequest.location,
             func.count(ServiceRequest.id).label('requests'),
             func.count(func.distinct(ServiceRequest.provider_id)).label('providers'),
-            func.sum(ServiceRequest.estimated_price).label('revenue'),
+            func.sum(ServiceRequest.estimated_cost).label('revenue'),
             func.avg(ServiceRequest.rating).label('satisfaction'),
             func.avg(
                 func.extract('epoch', ServiceRequest.updated_at - ServiceRequest.created_at) / 3600
