@@ -667,12 +667,14 @@ Preferred communication style: Simple, everyday language.
 ✓ **Analytics Performance API**: Comprehensive performance metrics API with configurable granularity (hour, day, week, month) and metric filtering
 ✓ **Services Analytics API**: Complete services analytics with category breakdowns, revenue analysis, comparison tools, and satisfaction metrics
 ✓ **Geographic Analytics API**: Comprehensive geographic analytics with regional breakdowns, heatmap data, coordinates mapping, and location-based insights for Cameroon cities
+✓ **Analytics Insights API**: AI-generated insights and recommendations with 5 insight types (positive, warning, critical, neutral), priority filtering, and category-based analysis
 ✓ **Real Database Integration**: All analytics calculated from actual PostgreSQL data with 57 service requests and 3 active providers
 ✓ **Advanced KPI Features**: Period filtering (24h, 7d, 30d, 90d, 1y), comparison with previous period, metric-specific filtering, trend analysis, target tracking
 ✓ **Performance Time-Series Data**: Detailed performance metrics over time with 3 datasets (success rate, response time, AI efficiency)
 ✓ **Geographic Data Processing**: Cameroon-specific city coordinates mapping, regional market share calculation, and location-based performance metrics
+✓ **Intelligent Insights Generation**: AI-powered insights with confidence scoring, impact assessment, and actionable recommendations for business improvement
 ✓ **JWT Authentication**: Secure API access with full authentication and authorization integration for all endpoints
-✓ **Organized API Structure**: Complete analytics API reorganization into dedicated app/api/analytics/ folder with modular router system
+✓ **Organized API Structure**: Complete analytics API reorganization into dedicated app/api/analytics/ folder with modular router system (KPIs, Performance, Services, Geographic, Insights)
 ✓ **Target Progress Tracking**: Business targets with progress calculation (totalRequests: 1300, activeProviders: 100, revenue: 50000 XAF)
 ✓ **Revenue Analytics**: 15% commission calculation on completed requests with XAF currency support
 ✓ **Performance Metrics**: Customer satisfaction (4.7/5.0), average response time (15 minutes), completion rate tracking

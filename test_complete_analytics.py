@@ -123,6 +123,26 @@ def test_analytics_endpoints():
             "url": "http://localhost:5000/api/analytics/geographic/heatmap",
             "params": {"period": "30d", "metric": "requests"},
             "expected_fields": ["lat", "lng", "value", "location"]
+        },
+        
+        # Analytics Insights API
+        {
+            "name": "Analytics Insights (7 days)",
+            "url": "http://localhost:5000/api/analytics/insights",
+            "params": {"period": "7d"},
+            "expected_fields": ["id", "type", "priority", "category", "title", "description", "impact", "confidence", "metrics", "recommendations", "createdAt"]
+        },
+        {
+            "name": "High Priority Insights",
+            "url": "http://localhost:5000/api/analytics/insights",
+            "params": {"priority": "high"},
+            "expected_fields": ["id", "type", "priority", "category", "title", "description", "impact", "confidence", "metrics", "recommendations", "createdAt"]
+        },
+        {
+            "name": "Performance Category Insights",
+            "url": "http://localhost:5000/api/analytics/insights",
+            "params": {"category": "performance"},
+            "expected_fields": ["id", "type", "priority", "category", "title", "description", "impact", "confidence", "metrics", "recommendations", "createdAt"]
         }
     ]
     
@@ -231,6 +251,28 @@ def test_analytics_endpoints():
                                     success_count += 1
                             else:
                                 print(f"❌ Invalid geographic data structure")
+                        
+                        elif "Analytics Insights" in test_case['name'] or "Priority Insights" in test_case['name'] or "Category Insights" in test_case['name']:
+                            # Insights should be a list
+                            if isinstance(api_data, list):
+                                if len(api_data) > 0:
+                                    first_insight = api_data[0]
+                                    has_fields = all(field in first_insight for field in test_case['expected_fields'])
+                                    if has_fields:
+                                        print(f"✅ Success - {len(api_data)} insights found")
+                                        # Show insight details
+                                        print(f"   Title: {first_insight.get('title', 'N/A')}")
+                                        print(f"   Type: {first_insight.get('type', 'N/A')}, Priority: {first_insight.get('priority', 'N/A')}")
+                                        print(f"   Category: {first_insight.get('category', 'N/A')}")
+                                        print(f"   Confidence: {first_insight.get('confidence', 'N/A')}")
+                                        success_count += 1
+                                    else:
+                                        print(f"❌ Missing expected fields in insights: {test_case['expected_fields']}")
+                                else:
+                                    print(f"✅ Success - No insights found (empty list)")
+                                    success_count += 1
+                            else:
+                                print(f"❌ Invalid insights data structure")
                         
                         else:
                             # Regular endpoints should have expected fields
