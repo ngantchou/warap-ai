@@ -118,6 +118,11 @@ from app.api.analytics_kpis import router as analytics_kpis_router
 
 app.include_router(analytics_kpis_router, prefix="/api", tags=["analytics"])
 
+# Analytics Performance API (detailed performance metrics)
+from app.api.analytics_performance import router as analytics_performance_router
+
+app.include_router(analytics_performance_router, prefix="/api", tags=["analytics"])
+
 # Provider API (complete provider management system)
 from app.api.providers_complete import router as providers_router
 
