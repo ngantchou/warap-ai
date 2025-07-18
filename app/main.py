@@ -113,15 +113,10 @@ from app.api.dashboard import router as dashboard_router
 
 app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
 
-# Analytics KPIs API (comprehensive analytics endpoints)
-from app.api.analytics_kpis import router as analytics_kpis_router
+# Analytics API Package (comprehensive analytics endpoints)
+from app.api.analytics import router as analytics_router
 
-app.include_router(analytics_kpis_router, prefix="/api", tags=["analytics"])
-
-# Analytics Performance API (detailed performance metrics)
-from app.api.analytics_performance import router as analytics_performance_router
-
-app.include_router(analytics_performance_router, prefix="/api", tags=["analytics"])
+app.include_router(analytics_router, prefix="/api", tags=["analytics"])
 
 # Provider API (complete provider management system)
 from app.api.providers_complete import router as providers_router

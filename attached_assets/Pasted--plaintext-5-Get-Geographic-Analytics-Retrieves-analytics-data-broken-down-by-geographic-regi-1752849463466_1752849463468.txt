@@ -1,0 +1,147 @@
+```plaintext
+### 5. Get Geographic Analytics
+Retrieves analytics data broken down by geographic regions.
+
+**Endpoint:** `GET /api/analytics/geographic`
+
+**Query Parameters:**
+- `period` (string, optional): Time period for data
+- `region` (string, optional): Filter by specific region
+- `level` (string, optional): Geographic level (`city`, `region`, `country`)
+
+**Request Example:**
+```http
+GET /api/analytics/geographic?period=30d&level=city
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response Example:**
+```json
+{
+"success": true,
+"data": [
+{
+"region": "Casablanca",
+"requests": 450,
+"providers": 45,
+"revenue": 22350.00,
+"satisfaction": 4.7,
+"responseTime": 11.8,
+"coordinates": [33.5731, -7.5898],
+"growth": 15.2,
+"marketShare": 34.8
+},
+{
+"region": "Rabat",
+"requests": 320,
+"providers": 32,
+"revenue": 16800.00,
+"satisfaction": 4.8,
+"responseTime": 10.5,
+"coordinates": [34.0209, -6.8416],
+"growth": 8.7,
+"marketShare": 24.7
+},
+{
+"region": "Marrakech",
+"requests": 280,
+"providers": 28,
+"revenue": 14560.00,
+"satisfaction": 4.6,
+"responseTime": 13.2,
+"coordinates": [31.6295, -7.9811],
+"growth": 12.1,
+"marketShare": 21.6
+}
+],
+"summary": {
+"totalRegions": 8,
+"totalRequests": 1290,
+"totalProviders": 128,
+"totalRevenue": 67890.00,
+"averageSatisfaction": 4.7
+},
+"message": "Geographic analytics retrieved successfully"
+}
+
+```plaintext
+
+### 6. Get Analytics Insights
+Retrieves AI-generated insights and recommendations.
+
+**Endpoint:** `GET /api/analytics/insights`
+
+**Query Parameters:**
+- `period` (string, optional): Time period for insights
+- `category` (string, optional): Filter by insight category
+- `priority` (string, optional): Filter by priority level
+
+**Request Example:**
+```http
+GET /api/analytics/insights?period=7d&priority=high
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Response Example:**
+```json
+{
+"success": true,
+"data": [
+{
+"id": "insight_001",
+"type": "positive",
+"priority": "high",
+"category": "performance",
+"title": "Amélioration significative du temps de réponse",
+"description": "Le temps de réponse moyen a diminué de 15% cette semaine, passant de 14.2 à 12.1 minutes.",
+"impact": "high",
+"confidence": 0.92,
+"metrics": {
+"previousValue": 14.2,
+"currentValue": 12.1,
+"improvement": 15.0,
+"unit": "minutes"
+},
+"recommendations": [
+"Maintenir les pratiques actuelles d'optimisation",
+"Étendre ces améliorations aux autres régions"
+],
+"createdAt": "2024-01-15T08:30:00Z"
+},
+{
+"id": "insight_002",
+"type": "warning",
+"priority": "medium",
+"category": "satisfaction",
+"title": "Baisse de satisfaction dans la région de Fès",
+"description": "La satisfaction client à Fès a chuté à 4.2/5, en dessous de la moyenne nationale de 4.7/5.",
+"impact": "medium",
+"confidence": 0.87,
+"metrics": {
+"currentValue": 4.2,
+"averageValue": 4.7,
+"deviation": -10.6,
+"affectedRequests": 45
+},
+"recommendations": [
+"Analyser les commentaires clients récents",
+"Organiser une formation pour les prestataires locaux",
+"Mettre en place un suivi renforcé"
+],
+"createdAt": "2024-01-15T07:15:00Z"
+}
+],
+"summary": {
+"totalInsights": 12,
+"highPriority": 3,
+"mediumPriority": 6,
+"lowPriority": 3,
+"categories": {
+"performance": 4,
+"satisfaction": 3,
+"revenue": 2,
+"efficiency": 3
+}
+},
+"message": "Analytics insights retrieved successfully"
+}

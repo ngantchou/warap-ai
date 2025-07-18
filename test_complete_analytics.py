@@ -1,183 +1,290 @@
 #!/usr/bin/env python3
-"""Complete test script for Analytics API System (KPIs + Performance)"""
+"""
+Complete Analytics API Test Suite
+Tests all analytics endpoints: KPIs, Performance, and Services
+"""
 
 import requests
 import json
-import sys
+import time
 
-def test_complete_analytics():
-    """Test the complete Analytics API system with all endpoints"""
-    
-    # Test login first
-    print("=== COMPLETE ANALYTICS API SYSTEM TEST ===")
-    print("Testing authentication...")
+def get_auth_token():
+    """Get authentication token for API calls"""
     try:
         response = requests.post(
             'http://localhost:5000/api/auth/login',
-            headers={'Content-Type': 'application/json'},
-            json={'email': 'admin@djobea.ai', 'password': 'Admin2025!'}
+            json={'email': 'admin@djobea.ai', 'password': 'Admin2025!'},
+            timeout=10
         )
         
-        if response.status_code != 200:
-            print(f"✗ Login failed with status {response.status_code}")
-            return False
-            
-        data = response.json()
-        token = data['data']['token']
-        print(f"✓ Authentication successful")
-        
+        if response.status_code == 200:
+            return response.json()['data']['token']
+        else:
+            print(f"Login failed: {response.status_code} - {response.text}")
+            return None
     except Exception as e:
-        print(f"✗ Authentication error: {e}")
+        print(f"Login error: {e}")
+        return None
+
+def test_analytics_endpoints():
+    """Test all analytics endpoints"""
+    
+    print("=== Djobea AI - Complete Analytics API Test Suite ===")
+    print()
+    
+    # Get authentication token
+    print("1. Getting authentication token...")
+    token = get_auth_token()
+    if not token:
+        print("❌ Failed to get authentication token")
         return False
     
-    # Test all Analytics endpoints
-    print("\n=== TESTING ANALYTICS ENDPOINTS ===")
+    print("✅ Authentication successful")
     
-    endpoints = [
-        # KPIs API Endpoints
+    headers = {'Authorization': f'Bearer {token}'}
+    
+    # Test cases for all analytics endpoints
+    test_cases = [
+        # Analytics KPIs API
         {
-            "category": "KPIs",
-            "name": "Main KPIs",
+            "name": "Analytics KPIs (30 days)",
             "url": "http://localhost:5000/api/analytics/kpis",
-            "params": {"period": "30d", "compare": "true"},
-            "expected_fields": ["totalRequests", "activeProviders", "completedRequests", "revenue", "averageResponseTime", "customerSatisfaction"]
-        },
-        {
-            "category": "KPIs",
-            "name": "KPI Trends",
-            "url": "http://localhost:5000/api/analytics/kpis/trends",
             "params": {"period": "30d"},
-            "expected_fields": ["requestsTrend", "completionRateTrend"]
-        },
-        {
-            "category": "KPIs",
-            "name": "KPI Targets",
-            "url": "http://localhost:5000/api/analytics/kpis/targets",
-            "params": {},
             "expected_fields": ["totalRequests", "activeProviders", "completedRequests", "revenue", "averageResponseTime", "customerSatisfaction"]
         },
-        # Performance API Endpoints
         {
-            "category": "Performance",
-            "name": "Performance Data",
+            "name": "Analytics KPIs (7 days)",
+            "url": "http://localhost:5000/api/analytics/kpis",
+            "params": {"period": "7d"},
+            "expected_fields": ["totalRequests", "activeProviders", "completedRequests", "revenue", "averageResponseTime", "customerSatisfaction"]
+        },
+        
+        # Analytics Performance API
+        {
+            "name": "Analytics Performance (daily)",
             "url": "http://localhost:5000/api/analytics/performance",
             "params": {"period": "7d", "granularity": "day"},
-            "expected_fields": ["labels", "datasets", "summary"]
+            "expected_fields": ["labels", "datasets"]
         },
         {
-            "category": "Performance",
-            "name": "Performance Summary",
-            "url": "http://localhost:5000/api/analytics/performance/summary",
-            "params": {"period": "7d"},
-            "expected_fields": ["totalRequests", "successRate", "responseTime", "aiEfficiency"]
+            "name": "Analytics Performance (hourly)",
+            "url": "http://localhost:5000/api/analytics/performance",
+            "params": {"period": "24h", "granularity": "hour"},
+            "expected_fields": ["labels", "datasets"]
+        },
+        
+        # Analytics Services API
+        {
+            "name": "Analytics Services (30 days)",
+            "url": "http://localhost:5000/api/analytics/services",
+            "params": {"period": "30d"},
+            "expected_fields": ["labels", "datasets", "totals", "details"]
         },
         {
-            "category": "Performance",
-            "name": "Available Metrics",
-            "url": "http://localhost:5000/api/analytics/performance/metrics",
+            "name": "Analytics Services (sorted by revenue)",
+            "url": "http://localhost:5000/api/analytics/services",
+            "params": {"period": "30d", "sort": "revenue"},
+            "expected_fields": ["labels", "datasets", "totals", "details"]
+        },
+        {
+            "name": "Service Categories",
+            "url": "http://localhost:5000/api/analytics/services/categories",
             "params": {},
-            "expected_fields": ["successRate", "responseTime", "aiEfficiency"]
+            "expected_fields": ["name", "key", "description"]
+        },
+        {
+            "name": "Services Comparison",
+            "url": "http://localhost:5000/api/analytics/services/comparison",
+            "params": {"period": "30d", "services": ["plomberie", "electricite"]},
+            "expected_fields": ["plomberie", "electricite"]
+        },
+        
+        # Analytics Geographic API
+        {
+            "name": "Geographic Analytics (30 days)",
+            "url": "http://localhost:5000/api/analytics/geographic",
+            "params": {"period": "30d", "level": "city"},
+            "expected_fields": ["region", "requests", "providers", "revenue", "satisfaction", "responseTime", "coordinates", "growth", "marketShare"]
+        },
+        {
+            "name": "Geographic Analytics (filtered by region)",
+            "url": "http://localhost:5000/api/analytics/geographic",
+            "params": {"period": "30d", "region": "Douala"},
+            "expected_fields": ["region", "requests", "providers", "revenue", "satisfaction", "responseTime", "coordinates", "growth", "marketShare"]
+        },
+        {
+            "name": "Available Regions",
+            "url": "http://localhost:5000/api/analytics/geographic/regions",
+            "params": {},
+            "expected_fields": ["name", "requestCount", "key"]
+        },
+        {
+            "name": "Geographic Heatmap",
+            "url": "http://localhost:5000/api/analytics/geographic/heatmap",
+            "params": {"period": "30d", "metric": "requests"},
+            "expected_fields": ["lat", "lng", "value", "location"]
         }
     ]
     
-    results = {}
-    total_tests = len(endpoints)
-    successful_tests = 0
+    print()
+    print("2. Testing analytics endpoints...")
     
-    for endpoint in endpoints:
-        category = endpoint["category"]
-        if category not in results:
-            results[category] = {"success": 0, "total": 0}
-        
-        print(f"\n--- Testing {endpoint['category']}: {endpoint['name']} ---")
+    success_count = 0
+    total_tests = len(test_cases)
+    
+    for i, test_case in enumerate(test_cases, 1):
+        print(f"\n{i}/{total_tests}: {test_case['name']}")
         
         try:
+            # Add small delay to prevent overwhelming the server
+            time.sleep(0.1)
+            
             response = requests.get(
-                endpoint['url'],
-                headers={'Authorization': f'Bearer {token}'},
-                params=endpoint['params']
+                test_case['url'],
+                headers=headers,
+                params=test_case['params'],
+                timeout=10
             )
             
-            results[category]["total"] += 1
-            
             if response.status_code == 200:
-                data = response.json()
-                print(f"✓ Status: {response.status_code}")
-                
-                # Validate expected fields
-                if 'data' in data:
-                    # Handle different data structures
-                    if isinstance(data['data'], dict):
-                        data_keys = list(data['data'].keys())
-                        expected_fields = endpoint['expected_fields']
-                        
-                        found_fields = [field for field in expected_fields if field in data_keys]
-                        print(f"✓ Expected fields found: {len(found_fields)}/{len(expected_fields)}")
-                        
-                        if found_fields:
-                            print(f"  Fields: {found_fields}")
-                        
-                        # Show sample data
-                        if category == "KPIs" and "kpis" in endpoint['url'] and "trends" not in endpoint['url'] and "targets" not in endpoint['url']:
-                            sample_kpi = list(data['data'].keys())[0]
-                            sample_value = data['data'][sample_kpi]
-                            print(f"  Sample KPI ({sample_kpi}): Value={sample_value.get('value', 'N/A')}, Change={sample_value.get('change', 'N/A')}%")
-                        
-                        elif category == "Performance" and "performance" in endpoint['url'] and "summary" not in endpoint['url'] and "metrics" not in endpoint['url']:
-                            print(f"  Data points: {len(data['data'].get('labels', []))}")
-                            print(f"  Datasets: {len(data['data'].get('datasets', []))}")
-                            summary = data['data'].get('summary', {})
-                            print(f"  Summary: Success={summary.get('averageSuccessRate', 0)}%, Response={summary.get('averageResponseTime', 0)}min, AI={summary.get('averageAiEfficiency', 0)}%")
+                try:
+                    data = response.json()
                     
-                    elif isinstance(data['data'], list):
-                        # Handle list data (like available metrics)
-                        expected_fields = endpoint['expected_fields']
-                        if data['data'] and isinstance(data['data'][0], dict):
-                            available_keys = [metric['key'] for metric in data['data']]
-                            found_fields = [field for field in expected_fields if field in available_keys]
-                            print(f"✓ Expected metrics found: {len(found_fields)}/{len(expected_fields)}")
-                            print(f"  Available metrics: {available_keys}")
+                    # Check if response has expected structure
+                    if 'data' in data:
+                        api_data = data['data']
+                        
+                        # Validate expected fields
+                        if test_case['name'] == "Service Categories":
+                            # Categories should be a list
+                            if isinstance(api_data, list) and len(api_data) > 0:
+                                first_category = api_data[0]
+                                has_fields = all(field in first_category for field in test_case['expected_fields'])
+                                if has_fields:
+                                    print(f"✅ Success - {len(api_data)} categories found")
+                                    success_count += 1
+                                else:
+                                    print(f"❌ Missing expected fields: {test_case['expected_fields']}")
+                            else:
+                                print(f"❌ Invalid categories data structure")
+                        
+                        elif test_case['name'] == "Services Comparison":
+                            # Comparison should have service keys
+                            has_services = all(service in api_data for service in test_case['expected_fields'])
+                            if has_services:
+                                print(f"✅ Success - Comparison for {len(api_data)} services")
+                                success_count += 1
+                            else:
+                                print(f"❌ Missing services in comparison: {test_case['expected_fields']}")
+                        
+                        elif test_case['name'] == "Available Regions":
+                            # Regions should be a list
+                            if isinstance(api_data, list):
+                                if len(api_data) > 0:
+                                    first_region = api_data[0]
+                                    has_fields = all(field in first_region for field in test_case['expected_fields'])
+                                    if has_fields:
+                                        print(f"✅ Success - {len(api_data)} regions found")
+                                        success_count += 1
+                                    else:
+                                        print(f"❌ Missing expected fields in regions: {test_case['expected_fields']}")
+                                else:
+                                    print(f"✅ Success - No regions found (empty list)")
+                                    success_count += 1
+                            else:
+                                print(f"❌ Invalid regions data structure")
+                        
+                        elif test_case['name'] == "Geographic Heatmap":
+                            # Heatmap should be a list
+                            if isinstance(api_data, list):
+                                if len(api_data) > 0:
+                                    first_point = api_data[0]
+                                    has_fields = all(field in first_point for field in test_case['expected_fields'])
+                                    if has_fields:
+                                        print(f"✅ Success - {len(api_data)} heatmap points found")
+                                        success_count += 1
+                                    else:
+                                        print(f"❌ Missing expected fields in heatmap: {test_case['expected_fields']}")
+                                else:
+                                    print(f"✅ Success - No heatmap data found (empty list)")
+                                    success_count += 1
+                            else:
+                                print(f"❌ Invalid heatmap data structure")
+                        
+                        elif "Geographic Analytics" in test_case['name']:
+                            # Geographic analytics should be a list
+                            if isinstance(api_data, list):
+                                if len(api_data) > 0:
+                                    first_region = api_data[0]
+                                    has_fields = all(field in first_region for field in test_case['expected_fields'])
+                                    if has_fields:
+                                        print(f"✅ Success - {len(api_data)} geographic regions found")
+                                        # Show some insights
+                                        print(f"   Top Region: {first_region.get('region', 'N/A')}")
+                                        print(f"   Requests: {first_region.get('requests', 0)}")
+                                        print(f"   Market Share: {first_region.get('marketShare', 0)}%")
+                                        success_count += 1
+                                    else:
+                                        print(f"❌ Missing expected fields in geographic data: {test_case['expected_fields']}")
+                                else:
+                                    print(f"✅ Success - No geographic data found (empty list)")
+                                    success_count += 1
+                            else:
+                                print(f"❌ Invalid geographic data structure")
+                        
                         else:
-                            print(f"✓ Data structure: List with {len(data['data'])} items")
-                    
+                            # Regular endpoints should have expected fields
+                            has_fields = all(field in api_data for field in test_case['expected_fields'])
+                            if has_fields:
+                                print(f"✅ Success - All expected fields present")
+                                
+                                # Show some data insights
+                                if 'totalRequests' in api_data:
+                                    print(f"   Total Requests: {api_data.get('totalRequests', 0)}")
+                                if 'revenue' in api_data:
+                                    print(f"   Revenue: {api_data.get('revenue', 0)} XAF")
+                                if 'labels' in api_data:
+                                    print(f"   Data Points: {len(api_data.get('labels', []))}")
+                                if 'totals' in api_data:
+                                    totals = api_data['totals']
+                                    print(f"   Total Requests: {totals.get('totalRequests', 0)}")
+                                    print(f"   Total Revenue: {totals.get('totalRevenue', 0)} XAF")
+                                
+                                success_count += 1
+                            else:
+                                print(f"❌ Missing expected fields: {test_case['expected_fields']}")
+                                print(f"   Available fields: {list(api_data.keys())}")
                     else:
-                        print(f"✓ Data structure: {type(data['data'])}")
-                
-                results[category]["success"] += 1
-                successful_tests += 1
+                        print(f"❌ Response missing 'data' field")
+                        print(f"   Response: {json.dumps(data, indent=2)[:200]}...")
+                        
+                except json.JSONDecodeError:
+                    print(f"❌ Invalid JSON response")
+                    print(f"   Response: {response.text[:200]}...")
+                    
             else:
-                print(f"✗ Failed: {response.status_code} - {response.text}")
+                print(f"❌ HTTP {response.status_code}")
+                print(f"   Error: {response.text[:200]}...")
                 
+        except requests.exceptions.Timeout:
+            print(f"❌ Request timeout")
+        except requests.exceptions.ConnectionError:
+            print(f"❌ Connection error")
         except Exception as e:
-            print(f"✗ Error: {e}")
-            results[category]["total"] += 1
+            print(f"❌ Unexpected error: {str(e)}")
     
-    # Summary results
-    print(f"\n=== ANALYTICS SYSTEM TEST RESULTS ===")
-    for category, result in results.items():
-        success_rate = (result["success"] / result["total"]) * 100 if result["total"] > 0 else 0
-        print(f"{category} API: {result['success']}/{result['total']} ({success_rate:.1f}%)")
+    print()
+    print("=== Test Results ===")
+    print(f"Successful tests: {success_count}/{total_tests}")
+    print(f"Success rate: {(success_count/total_tests)*100:.1f}%")
     
-    overall_success_rate = (successful_tests / total_tests) * 100
-    print(f"\nOverall Success Rate: {successful_tests}/{total_tests} ({overall_success_rate:.1f}%)")
-    
-    # System status
-    if overall_success_rate == 100:
-        print("🎉 COMPLETE ANALYTICS SYSTEM OPERATIONAL")
-        print("✅ All KPIs and Performance endpoints working")
-        print("✅ Real database integration confirmed")
-        print("✅ JWT authentication working")
-        print("✅ Ready for production deployment")
-    elif overall_success_rate >= 80:
-        print("⚠️  Analytics system mostly operational")
-        print("✅ Core functionality working")
-        print("⚠️  Some endpoints may need attention")
+    if success_count == total_tests:
+        print("🎉 All analytics endpoints are working perfectly!")
+        return True
     else:
-        print("❌ Analytics system needs attention")
-        print("❌ Multiple endpoints failing")
-    
-    return overall_success_rate == 100
+        print("⚠️  Some endpoints need attention")
+        return False
 
 if __name__ == "__main__":
-    success = test_complete_analytics()
-    sys.exit(0 if success else 1)
+    success = test_analytics_endpoints()
+    exit(0 if success else 1)
