@@ -71,7 +71,6 @@ async def get_geographic_analytics(
             func.count(ServiceRequest.id).label('requests'),
             func.count(func.distinct(ServiceRequest.provider_id)).label('providers'),
             func.sum(ServiceRequest.estimated_cost).label('revenue'),
-            func.avg(ServiceRequest.rating).label('satisfaction'),
             func.avg(
                 func.extract('epoch', ServiceRequest.updated_at - ServiceRequest.created_at) / 3600
             ).label('response_time')
@@ -129,7 +128,7 @@ async def get_geographic_analytics(
             requests_count = result.requests or 0
             providers_count = result.providers or 0
             revenue = float(result.revenue or 0)
-            satisfaction = float(result.satisfaction or 0) if result.satisfaction else 0
+            satisfaction = 0  # Default satisfaction since we don't have rating data
             response_time = float(result.response_time or 0) if result.response_time else 0
             
             # Calculate growth (simplified calculation)
