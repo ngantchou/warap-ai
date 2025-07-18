@@ -182,7 +182,7 @@ def calculate_ai_efficiency(requests: List[ServiceRequest], conversations: List[
     
     return sum(efficiency_scores) / len(efficiency_scores) if efficiency_scores else 0.0
 
-@router.get("/analytics/performance", response_model=PerformanceResponse)
+@router.get("/performance", response_model=PerformanceResponse)
 def get_performance_data(
     period: str = Query(..., description="Time period for data (e.g., 7d, 30d, 90d)"),
     granularity: str = Query("day", description="Data granularity (hour, day, week, month)"),
@@ -295,7 +295,7 @@ def get_performance_data(
             detail=f"Error retrieving performance data: {str(e)}"
         )
 
-@router.get("/analytics/performance/summary")
+@router.get("/performance/summary")
 def get_performance_summary(
     period: str = Query("7d", description="Time period for summary"),
     current_user: AuthUser = Depends(get_current_user),
@@ -353,7 +353,7 @@ def get_performance_summary(
             detail=f"Error retrieving performance summary: {str(e)}"
         )
 
-@router.get("/analytics/performance/metrics")
+@router.get("/performance/metrics")
 def get_available_metrics(
     current_user: AuthUser = Depends(get_current_user),
     db: Session = Depends(get_db)

@@ -88,7 +88,7 @@ def calculate_target_progress(current: float, target: float) -> float:
         return 100.0 if current == 0 else 0.0
     return min((current / target) * 100, 100.0)
 
-@router.get("/analytics/kpis", response_model=KPIResponse)
+@router.get("/kpis", response_model=KPIResponse)
 def get_kpis(
     period: str = Query("30d", description="Time period for KPI calculation"),
     compare: bool = Query(False, description="Include comparison with previous period"),

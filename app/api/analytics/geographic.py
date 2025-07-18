@@ -31,7 +31,7 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return user
 
-@router.get("/analytics/geographic")
+@router.get("/geographic")
 async def get_geographic_analytics(
     period: Optional[str] = Query("30d", description="Time period for data"),
     region: Optional[str] = Query(None, description="Filter by specific region"),
@@ -192,7 +192,7 @@ async def get_geographic_analytics(
             detail=f"Error retrieving geographic analytics: {str(e)}"
         )
 
-@router.get("/analytics/geographic/regions")
+@router.get("/geographic/regions")
 async def get_available_regions(
     db: Session = Depends(get_db),
     current_user: AuthUser = Depends(get_current_user)
@@ -241,7 +241,7 @@ async def get_available_regions(
             detail=f"Error retrieving available regions: {str(e)}"
         )
 
-@router.get("/analytics/geographic/heatmap")
+@router.get("/geographic/heatmap")
 async def get_geographic_heatmap(
     period: Optional[str] = Query("30d", description="Time period for data"),
     metric: Optional[str] = Query("requests", description="Metric for heatmap (requests, revenue, satisfaction)"),

@@ -200,7 +200,7 @@ def calculate_service_metrics(requests: List[ServiceRequest], service_type: str)
         "growth": growth
     }
 
-@router.get("/analytics/services", response_model=ServicesResponse)
+@router.get("/services", response_model=ServicesResponse)
 def get_services_analytics(
     period: str = Query("30d", description="Time period for data (e.g., 7d, 30d, 90d)"),
     category: Optional[str] = Query(None, description="Filter by specific service category"),
@@ -318,7 +318,7 @@ def get_services_analytics(
             detail=f"Error retrieving services analytics: {str(e)}"
         )
 
-@router.get("/analytics/services/comparison")
+@router.get("/services/comparison")
 def get_services_comparison(
     period: str = Query("30d", description="Time period for comparison"),
     services: List[str] = Query([], description="Services to compare"),
@@ -369,7 +369,7 @@ def get_services_comparison(
             detail=f"Error retrieving services comparison: {str(e)}"
         )
 
-@router.get("/analytics/services/categories")
+@router.get("/services/categories")
 def get_service_categories(
     current_user: AuthUser = Depends(get_current_user),
     db: Session = Depends(get_db)
