@@ -13,11 +13,7 @@ import uvicorn
 from app.models.database_models import Base, init_db
 from app.models.cultural_models import CulturalContext
 from app.models.personalization_models import UserPreferences, ServiceHistory
-from app.models.provider_models import (ProviderSession, ProviderSettings,
-                                        ProviderStatsCache,
-                                        ProviderNotification,
-                                        ProviderAvailability,
-                                        ProviderDashboardWidget)
+# Provider models are now in separate file for API use
 from app.models.settings_models import (SystemSettings, NotificationSettings,
                                         SecuritySettings, PerformanceSettings,
                                         AISettings, WhatsAppSettings,
@@ -117,6 +113,11 @@ app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
 from app.api.dashboard import router as dashboard_router
 
 app.include_router(dashboard_router, prefix="/api", tags=["dashboard"])
+
+# Provider API (complete provider management system)
+from app.api.providers_complete import router as providers_router
+
+app.include_router(providers_router, tags=["providers"])
 
 # Remove the options handler since the middleware handles it now
 

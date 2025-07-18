@@ -1,0 +1,1635 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Djobea Providers API",
+    "version": "1.0.0",
+    "description": "Complete API documentation for managing service providers in the Djobea platform",
+    "contact": {
+      "name": "Djobea API Support",
+      "email": "api@djobea.com",
+      "url": "https://djobea.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://d3324f2b-c80d-4cbb-b79e-06687739daaa-00-f9udfc02zf4g.kirk.replit.dev/api",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Development server"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/providers": {
+      "get": {
+        "summary": "Get list of providers",
+        "description": "Retrieve a paginated list of service providers with optional filtering and sorting",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number for pagination",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items per page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search term for provider name, email, or services",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by provider status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["active", "inactive", "suspended"]
+            }
+          },
+          {
+            "name": "specialty",
+            "in": "query",
+            "description": "Filter by provider specialty",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zone",
+            "in": "query",
+            "description": "Filter by coverage zone",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "description": "Minimum rating filter",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5
+            }
+          },
+          {
+            "name": "services",
+            "in": "query",
+            "description": "Comma-separated list of services",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "availability",
+            "in": "query",
+            "description": "Filter by availability status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["available", "busy", "offline"]
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "description": "Field to sort by",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["name", "rating", "missions", "joinDate", "lastActivity"]
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "description": "Sort order",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["asc", "desc"],
+              "default": "asc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Providers retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new provider",
+        "description": "Create a new service provider with the provided information",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Provider created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict - Provider already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}": {
+      "get": {
+        "summary": "Get provider by ID",
+        "description": "Retrieve detailed information about a specific provider",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Provider ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update provider",
+        "description": "Update an existing provider's information",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Provider ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete provider",
+        "description": "Delete a provider from the system",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Provider ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}/status": {
+      "put": {
+        "summary": "Update provider status",
+        "description": "Update the status of a provider (active, inactive, suspended)",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Provider ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "inactive", "suspended"],
+                    "description": "New status for the provider"
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}/contact": {
+      "post": {
+        "summary": "Contact provider",
+        "description": "Send a message to a provider via call, WhatsApp, or email",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Provider ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "enum": ["call", "whatsapp", "email"],
+                    "description": "Contact method"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Optional message to send",
+                    "maxLength": 1000
+                  }
+                },
+                "required": ["method"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider contacted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/available": {
+      "post": {
+        "summary": "Get available providers",
+        "description": "Get a list of providers available for a specific service request",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "serviceType": {
+                    "type": "string",
+                    "description": "Type of service needed"
+                  },
+                  "location": {
+                    "type": "object",
+                    "properties": {
+                      "lat": {
+                        "type": "number",
+                        "description": "Latitude"
+                      },
+                      "lng": {
+                        "type": "number",
+                        "description": "Longitude"
+                      },
+                      "radius": {
+                        "type": "number",
+                        "description": "Search radius in kilometers",
+                        "default": 10
+                      }
+                    }
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Preferred service date"
+                  },
+                  "urgency": {
+                    "type": "boolean",
+                    "description": "Whether this is an urgent request"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Available providers retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Provider"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/search": {
+      "get": {
+        "summary": "Search providers",
+        "description": "Search for providers by name, services, or other criteria",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Provider"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/export": {
+      "post": {
+        "summary": "Export providers data",
+        "description": "Export providers data in various formats (CSV, XLSX, PDF)",
+        "tags": ["Providers"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filters": {
+                    "$ref": "#/components/schemas/ProvidersFilters"
+                  },
+                  "format": {
+                    "type": "string",
+                    "enum": ["csv", "xlsx", "pdf"],
+                    "default": "csv"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export file generated successfully",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique provider identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Provider's full name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Provider's email address"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Provider's phone number"
+          },
+          "whatsapp": {
+            "type": "string",
+            "description": "Provider's WhatsApp number"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of services offered"
+          },
+          "coverageAreas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Areas where provider operates"
+          },
+          "specialty": {
+            "type": "string",
+            "description": "Primary specialty"
+          },
+          "zone": {
+            "type": "string",
+            "description": "Primary operating zone"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Average rating"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of reviews"
+          },
+          "totalMissions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total number of missions completed"
+          },
+          "completedJobs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of successfully completed jobs"
+          },
+          "cancelledJobs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of cancelled jobs"
+          },
+          "successRate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Success rate percentage"
+          },
+          "responseTime": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Average response time in minutes"
+          },
+          "performanceStatus": {
+            "type": "string",
+            "enum": ["excellent", "good", "warning", "poor"],
+            "description": "Performance status"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive", "suspended"],
+            "description": "Provider status"
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["available", "busy", "offline"],
+            "description": "Current availability"
+          },
+          "joinDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Date when provider joined"
+          },
+          "lastActivity": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last activity timestamp"
+          },
+          "hourlyRate": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Hourly rate in local currency"
+          },
+          "experience": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Years of experience"
+          },
+          "acceptanceRate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Job acceptance rate percentage"
+          },
+          "description": {
+            "type": "string",
+            "description": "Provider description"
+          },
+          "profileImage": {
+            "type": "string",
+            "format": "uri",
+            "description": "Profile image URL"
+          },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of certifications"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number",
+                "description": "Latitude"
+              },
+              "lng": {
+                "type": "number",
+                "description": "Longitude"
+              },
+              "address": {
+                "type": "string",
+                "description": "Physical address"
+              }
+            }
+          },
+          "workingHours": {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "type": "string",
+                      "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                    },
+                    "end": {
+                      "type": "string",
+                      "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                    }
+                  },
+                  "required": ["start", "end"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": "Working hours by day of week"
+          },
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "hourlyRate": {
+                "type": "number",
+                "minimum": 0
+              },
+              "fixedRates": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "services",
+          "coverageAreas",
+          "specialty",
+          "zone",
+          "rating",
+          "reviewCount",
+          "totalMissions",
+          "status",
+          "availability",
+          "joinDate",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateProviderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100,
+            "description": "Provider's full name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Provider's email address"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{1,14}$",
+            "description": "Provider's phone number"
+          },
+          "whatsapp": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{1,14}$",
+            "description": "Provider's WhatsApp number"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "description": "List of services offered"
+          },
+          "coverageAreas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "description": "Areas where provider operates"
+          },
+          "specialty": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "Primary specialty"
+          },
+          "zone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "Primary operating zone"
+          },
+          "hourlyRate": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Hourly rate in local currency"
+          },
+          "experience": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50,
+            "description": "Years of experience"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Provider description"
+          },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of certifications"
+          },
+          "workingHours": {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "type": "string",
+                      "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                    },
+                    "end": {
+                      "type": "string",
+                      "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                    }
+                  },
+                  "required": ["start", "end"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": "Working hours by day of week"
+          }
+        },
+        "required": ["name", "email", "phone", "services", "coverageAreas", "specialty", "zone"]
+      },
+      "UpdateProviderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{1,14}$"
+          },
+          "whatsapp": {
+            "type": "string",
+            "pattern": "^\\+?[1-9]\\d{1,14}$"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "coverageAreas": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "specialty": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "zone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50
+          },
+          "hourlyRate": {
+            "type": "number",
+            "minimum": 0
+          },
+          "experience": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "certifications": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive", "suspended"]
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["available", "busy", "offline"]
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "performanceStatus": {
+            "type": "string",
+            "enum": ["excellent", "good", "warning", "poor"]
+          },
+          "workingHours": {
+            "type": "object",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "start": {
+                      "type": "string",
+                      "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                    },
+                    "end": {
+                      "type": "string",
+                      "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$"
+                    }
+                  },
+                  "required": ["start", "end"]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "ProvidersFilters": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive", "suspended"]
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "zone": {
+            "type": "string"
+          },
+          "minRating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["available", "busy", "offline"]
+          },
+          "sortBy": {
+            "type": "string",
+            "enum": ["name", "rating", "missions", "joinDate", "lastActivity"]
+          },
+          "sortOrder": {
+            "type": "string",
+            "enum": ["asc", "desc"]
+          },
+          "dateRange": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "required": ["start", "end"]
+          }
+        }
+      },
+      "ProvidersResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "providers": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Provider"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/Pagination"
+              },
+              "stats": {
+                "$ref": "#/components/schemas/ProvidersStats"
+              }
+            },
+            "required": ["providers", "pagination", "stats"]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["success", "data"]
+      },
+      "ProviderResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Provider"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["success", "data"]
+      },
+      "ProvidersStats": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total number of providers"
+          },
+          "active": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of active providers"
+          },
+          "inactive": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of inactive providers"
+          },
+          "suspended": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of suspended providers"
+          },
+          "available": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of available providers"
+          },
+          "avgRating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Average rating across all providers"
+          },
+          "newThisMonth": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of providers joined this month"
+          },
+          "topPerformers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provider"
+            },
+            "description": "List of top performing providers"
+          }
+        },
+        "required": [
+          "total",
+          "active",
+          "inactive",
+          "suspended",
+          "available",
+          "avgRating",
+          "newThisMonth",
+          "topPerformers"
+        ]
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Current page number"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Number of items per page"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total number of items"
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total number of pages"
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Whether there is a next page"
+          },
+          "hasPrev": {
+            "type": "boolean",
+            "description": "Whether there is a previous page"
+          }
+        },
+        "required": ["page", "limit", "total", "totalPages", "hasNext", "hasPrev"]
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["success", "message"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [false]
+          },
+          "error": {
+            "type": "string",
+            "description": "Error type or code"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Specific error code"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details"
+          }
+        },
+        "required": ["success", "error", "message"]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Providers",
+      "description": "Operations related to service providers management"
+    }
+  ]
+}

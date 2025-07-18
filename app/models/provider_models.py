@@ -1,175 +1,198 @@
 """
-Provider-specific database models for Djobea AI Provider Dashboard
-Enhanced models for provider session management, settings, and analytics
+Provider models for the Djobea AI platform
 """
+from typing import Optional, List, Dict, Any
+from datetime import datetime, date
+from pydantic import BaseModel, Field, validator
+from enum import Enum
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, DECIMAL, JSON, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from datetime import datetime, timedelta, timezone
-from app.database import Base
+class ProviderStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    SUSPENDED = "suspended"
 
-class ProviderSession(Base):
-    """Provider authentication sessions for dashboard access"""
-    __tablename__ = "provider_sessions"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
-    session_token = Column(String(255), unique=True, nullable=False)
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_activity = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relationships (removed to avoid circular imports)
-    
-    @property
-    def is_valid(self) -> bool:
-        """Check if session is still valid"""
-        now = datetime.now(timezone.utc)
-        return now < self.expires_at
-    
-    @property
-    def is_active(self) -> bool:
-        """Check if session has recent activity (within 30 minutes)"""
-        now = datetime.now(timezone.utc)
-        return now - self.last_activity < timedelta(minutes=30)
+class ProviderAvailability(str, Enum):
+    AVAILABLE = "available"
+    BUSY = "busy"
+    OFFLINE = "offline"
 
-class ProviderSettings(Base):
-    """Provider dashboard and notification settings"""
-    __tablename__ = "provider_settings"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    provider_id = Column(Integer, ForeignKey("providers.id"), unique=True, nullable=False)
-    
-    # Notification preferences
-    notifications_enabled = Column(Boolean, default=True)
-    notification_sound = Column(Boolean, default=True)
-    auto_accept_familiar_clients = Column(Boolean, default=False)
-    
-    # Working hours configuration
-    working_hours = Column(JSON, default=lambda: {
-        "start": "08:00",
-        "end": "18:00", 
-        "days": [1, 2, 3, 4, 5]  # Monday to Friday
-    })
-    
-    # Dashboard preferences
-    dashboard_layout = Column(JSON, default=lambda: {
-        "show_revenue_chart": True,
-        "show_activity_heatmap": True,
-        "default_period": "week"
-    })
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    # Relationships - use string reference to avoid circular imports
+class PerformanceStatus(str, Enum):
+    EXCELLENT = "excellent"
+    GOOD = "good"
+    WARNING = "warning"
+    POOR = "poor"
 
-class ProviderStatsCache(Base):
-    """Cached provider statistics for performance optimization"""
-    __tablename__ = "provider_stats_cache"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    provider_id = Column(Integer, ForeignKey("providers.id"), unique=True, nullable=False)
-    
-    # Period configuration
-    period_start = Column(Date, nullable=False)
-    period_end = Column(Date, nullable=False)
-    
-    # Core metrics
-    total_requests = Column(Integer, default=0)
-    completed_requests = Column(Integer, default=0)
-    cancelled_requests = Column(Integer, default=0)
-    declined_requests = Column(Integer, default=0)
-    
-    # Financial metrics
-    total_earnings = Column(DECIMAL(10, 2), default=0)
-    commission_paid = Column(DECIMAL(10, 2), default=0)
-    net_earnings = Column(DECIMAL(10, 2), default=0)
-    
-    # Performance metrics
-    average_rating = Column(DECIMAL(3, 2), default=0)
-    response_time_avg = Column(Integer, default=0)  # in minutes
-    acceptance_rate = Column(DECIMAL(5, 2), default=0)  # percentage
-    completion_rate = Column(DECIMAL(5, 2), default=0)  # percentage
-    
-    # Service breakdown
-    service_breakdown = Column(JSON, default=lambda: {
-        "plomberie": 0,
-        "électricité": 0,
-        "réparation électroménager": 0
-    })
-    
-    calculated_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relationships - use string reference to avoid circular imports
+class ContactMethod(str, Enum):
+    CALL = "call"
+    WHATSAPP = "whatsapp"
+    EMAIL = "email"
 
-class ProviderNotification(Base):
-    """Provider-specific notifications and alerts"""
-    __tablename__ = "provider_notifications"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
-    
-    # Notification details
-    type = Column(String(50), nullable=False)  # new_request, payment_received, rating_received
-    title = Column(String(200), nullable=False)
-    message = Column(Text, nullable=False)
-    
-    # Related objects
-    service_request_id = Column(Integer, ForeignKey("service_requests.id"), nullable=True)
-    
-    # Status tracking
-    is_read = Column(Boolean, default=False)
-    is_urgent = Column(Boolean, default=False)
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    read_at = Column(DateTime(timezone=True), nullable=True)
-    
-    # Relationships - use string reference to avoid circular imports
+class ExportFormat(str, Enum):
+    CSV = "csv"
+    XLSX = "xlsx"
+    PDF = "pdf"
 
-class ProviderAvailability(Base):
-    """Provider availability and absence management"""
-    __tablename__ = "provider_availability"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
-    
-    # Availability details
-    date = Column(Date, nullable=False)
-    is_available = Column(Boolean, default=True)
-    reason = Column(String(100), nullable=True)  # vacation, sick, maintenance
-    
-    # Time slots (for future implementation)
-    available_slots = Column(JSON, default=lambda: {
-        "morning": True,
-        "afternoon": True,
-        "evening": False
-    })
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    # Relationships - use string reference to avoid circular imports
+class SortBy(str, Enum):
+    NAME = "name"
+    RATING = "rating"
+    MISSIONS = "missions"
+    JOIN_DATE = "joinDate"
+    LAST_ACTIVITY = "lastActivity"
 
-class ProviderDashboardWidget(Base):
-    """Customizable dashboard widgets for providers"""
-    __tablename__ = "provider_dashboard_widgets"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    provider_id = Column(Integer, ForeignKey("providers.id"), nullable=False)
-    
-    # Widget configuration
-    widget_type = Column(String(50), nullable=False)  # revenue_chart, request_summary, performance_metrics
-    position = Column(Integer, default=0)  # for ordering
-    size = Column(String(20), default="medium")  # small, medium, large
-    
-    # Widget settings
-    settings = Column(JSON, default=lambda: {})
-    is_visible = Column(Boolean, default=True)
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    # Relationships - use string reference to avoid circular imports
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+class WorkingHours(BaseModel):
+    start: str = Field(..., pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")
+    end: str = Field(..., pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")
+
+class Location(BaseModel):
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    address: Optional[str] = None
+
+class Pricing(BaseModel):
+    hourlyRate: Optional[float] = Field(None, ge=0)
+    fixedRates: Optional[Dict[str, float]] = Field(None, description="Service-specific fixed rates")
+
+class Provider(BaseModel):
+    id: str
+    name: str
+    email: str
+    phone: str
+    whatsapp: Optional[str] = None
+    services: List[str]
+    coverageAreas: List[str]
+    specialty: str
+    zone: str
+    rating: float = Field(..., ge=0, le=5)
+    reviewCount: int = Field(..., ge=0)
+    totalMissions: int = Field(..., ge=0)
+    completedJobs: Optional[int] = Field(None, ge=0)
+    cancelledJobs: Optional[int] = Field(None, ge=0)
+    successRate: Optional[float] = Field(None, ge=0, le=100)
+    responseTime: Optional[float] = Field(None, ge=0, description="Average response time in minutes")
+    performanceStatus: Optional[PerformanceStatus] = None
+    status: ProviderStatus
+    availability: ProviderAvailability
+    joinDate: date
+    lastActivity: Optional[datetime] = None
+    hourlyRate: Optional[float] = Field(None, ge=0)
+    experience: Optional[int] = Field(None, ge=0)
+    acceptanceRate: Optional[float] = Field(None, ge=0, le=100)
+    description: Optional[str] = None
+    profileImage: Optional[str] = Field(None, description="Profile image URL")
+    certifications: Optional[List[str]] = None
+    location: Optional[Location] = None
+    workingHours: Optional[Dict[str, Optional[WorkingHours]]] = None
+    pricing: Optional[Pricing] = None
+    createdAt: datetime
+    updatedAt: datetime
+
+    class Config:
+        from_attributes = True
+
+class CreateProviderRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: str = Field(..., pattern=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    phone: str = Field(..., pattern=r"^\+?[1-9]\d{1,14}$")
+    whatsapp: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    services: List[str] = Field(..., min_items=1)
+    coverageAreas: List[str] = Field(..., min_items=1)
+    specialty: str = Field(..., min_length=1, max_length=50)
+    zone: str = Field(..., min_length=1, max_length=50)
+    hourlyRate: Optional[float] = Field(None, ge=0)
+    experience: Optional[int] = Field(None, ge=0, le=50)
+    description: Optional[str] = Field(None, max_length=1000)
+    certifications: Optional[List[str]] = None
+    workingHours: Optional[Dict[str, Optional[WorkingHours]]] = None
+
+class UpdateProviderRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[str] = Field(None, pattern=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    phone: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    whatsapp: Optional[str] = Field(None, pattern=r"^\+?[1-9]\d{1,14}$")
+    services: Optional[List[str]] = Field(None, min_items=1)
+    coverageAreas: Optional[List[str]] = Field(None, min_items=1)
+    specialty: Optional[str] = Field(None, min_length=1, max_length=50)
+    zone: Optional[str] = Field(None, min_length=1, max_length=50)
+    hourlyRate: Optional[float] = Field(None, ge=0)
+    experience: Optional[int] = Field(None, ge=0, le=50)
+    description: Optional[str] = Field(None, max_length=1000)
+    certifications: Optional[List[str]] = None
+    status: Optional[ProviderStatus] = None
+    availability: Optional[ProviderAvailability] = None
+    rating: Optional[float] = Field(None, ge=0, le=5)
+    performanceStatus: Optional[PerformanceStatus] = None
+    workingHours: Optional[Dict[str, Optional[WorkingHours]]] = None
+
+class UpdateProviderStatusRequest(BaseModel):
+    status: ProviderStatus
+
+class ContactProviderRequest(BaseModel):
+    method: ContactMethod
+    message: Optional[str] = Field(None, max_length=1000)
+
+class AvailableProvidersRequest(BaseModel):
+    serviceType: Optional[str] = None
+    location: Optional[Dict[str, Any]] = None
+    date: Optional[datetime] = None
+    urgency: Optional[bool] = None
+
+class ProvidersFilters(BaseModel):
+    page: Optional[int] = Field(None, ge=1)
+    limit: Optional[int] = Field(None, ge=1, le=100)
+    search: Optional[str] = Field(None, max_length=255)
+    status: Optional[ProviderStatus] = None
+    specialty: Optional[str] = None
+    zone: Optional[str] = None
+    minRating: Optional[float] = Field(None, ge=0, le=5)
+    services: Optional[List[str]] = None
+    availability: Optional[ProviderAvailability] = None
+    sortBy: Optional[SortBy] = None
+    sortOrder: Optional[SortOrder] = None
+    dateRange: Optional[Dict[str, date]] = None
+
+class ExportProvidersRequest(BaseModel):
+    filters: Optional[ProvidersFilters] = None
+    format: Optional[ExportFormat] = ExportFormat.CSV
+
+class Pagination(BaseModel):
+    page: int = Field(..., ge=1)
+    limit: int = Field(..., ge=1, le=100)
+    total: int = Field(..., ge=0)
+    totalPages: int = Field(..., ge=0)
+    hasNext: bool
+    hasPrev: bool
+
+class ProvidersStats(BaseModel):
+    total: int = Field(..., ge=0)
+    active: int = Field(..., ge=0)
+    inactive: int = Field(..., ge=0)
+    suspended: int = Field(..., ge=0)
+    available: int = Field(..., ge=0)
+    avgRating: float = Field(..., ge=0, le=5)
+    newThisMonth: int = Field(..., ge=0)
+    topPerformers: List[Provider] = Field(default_factory=list)
+
+class ProvidersResponse(BaseModel):
+    success: bool
+    data: Dict[str, Any]
+    message: Optional[str] = None
+
+class ProviderResponse(BaseModel):
+    success: bool
+    data: Provider
+    message: Optional[str] = None
+
+class SuccessResponse(BaseModel):
+    success: bool
+    message: str
+
+class ErrorResponse(BaseModel):
+    success: bool = False
+    error: str
+    message: str
+    code: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
