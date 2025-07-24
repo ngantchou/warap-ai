@@ -1,0 +1,2491 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Djobea Analytics API",
+    "description": "API documentation for Djobea Analytics platform - A comprehensive service provider management system",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Djobea Support",
+      "email": "support@djobea.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Development server"
+    },
+    {
+      "url": "https://djobea-analytics.vercel.app/api",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Dashboard",
+      "description": "Dashboard data and statistics"
+    },
+    {
+      "name": "Analytics",
+      "description": "Analytics and reporting endpoints"
+    },
+    {
+      "name": "Providers",
+      "description": "Service provider management"
+    },
+    {
+      "name": "Requests",
+      "description": "Service request management"
+    },
+    {
+      "name": "Settings",
+      "description": "System configuration and settings"
+    },
+    {
+      "name": "Finances",
+      "description": "Financial data and transactions"
+    },
+    {
+      "name": "AI",
+      "description": "AI predictions and insights"
+    },
+    {
+      "name": "System",
+      "description": "System metrics and monitoring"
+    }
+  ],
+  "paths": {
+    "/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Get dashboard data",
+        "description": "Retrieve dashboard statistics, charts, and recent activity",
+        "responses": {
+          "200": {
+            "description": "Dashboard data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardData"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get analytics overview",
+        "description": "Retrieve analytics overview data",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for analytics",
+            "schema": {
+              "type": "string",
+              "enum": ["24h", "7d", "30d", "90d", "1y"],
+              "default": "7d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/kpis": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get KPI metrics",
+        "description": "Retrieve key performance indicators",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for KPIs",
+            "schema": {
+              "type": "string",
+              "enum": ["24h", "7d", "30d", "90d", "1y"],
+              "default": "7d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "KPI data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KPIData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/performance": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get performance metrics",
+        "description": "Retrieve performance analytics over time",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for performance data",
+            "schema": {
+              "type": "string",
+              "enum": ["24h", "7d", "30d", "90d", "1y"],
+              "default": "7d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Performance data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerformanceData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/services": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get services analytics",
+        "description": "Retrieve service distribution analytics",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for services data",
+            "schema": {
+              "type": "string",
+              "enum": ["24h", "7d", "30d", "90d", "1y"],
+              "default": "7d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Services data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServicesData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/geographic": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get geographic analytics",
+        "description": "Retrieve geographic distribution of services",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for geographic data",
+            "schema": {
+              "type": "string",
+              "enum": ["24h", "7d", "30d", "90d", "1y"],
+              "default": "7d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Geographic data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeographicData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/insights": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get AI insights",
+        "description": "Retrieve AI-generated insights and recommendations",
+        "responses": {
+          "200": {
+            "description": "Insights retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Insight"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/leaderboard": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Get provider leaderboard",
+        "description": "Retrieve top performing providers",
+        "responses": {
+          "200": {
+            "description": "Leaderboard retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaderboardProvider"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers": {
+      "get": {
+        "tags": ["Providers"],
+        "summary": "Get providers list",
+        "description": "Retrieve paginated list of service providers with filtering",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 6
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search term",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Provider status filter",
+            "schema": {
+              "type": "string",
+              "enum": ["active", "inactive", "new", "available", "busy"]
+            }
+          },
+          {
+            "name": "specialty",
+            "in": "query",
+            "description": "Service specialty filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "zone",
+            "in": "query",
+            "description": "Coverage zone filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "minRating",
+            "in": "query",
+            "description": "Minimum rating filter",
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Providers retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Providers"],
+        "summary": "Create new provider",
+        "description": "Add a new service provider to the system",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Provider created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Provider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}": {
+      "get": {
+        "tags": ["Providers"],
+        "summary": "Get provider by ID",
+        "description": "Retrieve detailed information about a specific provider",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Provider ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Provider"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Providers"],
+        "summary": "Update provider",
+        "description": "Update provider information",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Provider ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Provider updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Providers"],
+        "summary": "Delete provider",
+        "description": "Remove a provider from the system",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Provider ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Provider deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Provider not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}/contact": {
+      "post": {
+        "tags": ["Providers"],
+        "summary": "Contact provider",
+        "description": "Send a message to a provider via various communication methods",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Provider ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactProviderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/{id}/status": {
+      "put": {
+        "tags": ["Providers"],
+        "summary": "Update provider status",
+        "description": "Change provider status (active/inactive)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Provider ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "inactive"]
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/available": {
+      "get": {
+        "tags": ["Providers"],
+        "summary": "Get available providers",
+        "description": "Retrieve list of available providers for assignment",
+        "parameters": [
+          {
+            "name": "service",
+            "in": "query",
+            "description": "Service type filter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available providers retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableProvider"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/providers/stats": {
+      "get": {
+        "tags": ["Providers"],
+        "summary": "Get provider statistics",
+        "description": "Retrieve overall provider statistics",
+        "responses": {
+          "200": {
+            "description": "Provider statistics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests": {
+      "get": {
+        "tags": ["Requests"],
+        "summary": "Get requests list",
+        "description": "Retrieve paginated list of service requests with filtering",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search term",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Request status filter",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "pending", "assigned", "in-progress", "completed", "cancelled"]
+            }
+          },
+          {
+            "name": "serviceType",
+            "in": "query",
+            "description": "Service type filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "description": "Location filter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "description": "Priority filter",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "low", "normal", "high", "urgent"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Requests retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestsResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Create new request",
+        "description": "Create a new service request",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Request created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Request"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}": {
+      "get": {
+        "tags": ["Requests"],
+        "summary": "Get request details",
+        "description": "Retrieve detailed information about a specific request",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Request not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}/assign": {
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Assign request to provider",
+        "description": "Assign a service request to a specific provider",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "providerId": {
+                    "type": "string",
+                    "description": "ID of the provider to assign"
+                  }
+                },
+                "required": ["providerId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request assigned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssignResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}/cancel": {
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Cancel request",
+        "description": "Cancel a service request",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for cancellation"
+                  },
+                  "comments": {
+                    "type": "string",
+                    "description": "Additional comments"
+                  }
+                },
+                "required": ["reason"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}/status": {
+      "put": {
+        "tags": ["Requests"],
+        "summary": "Update request status",
+        "description": "Update the status of a service request",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "assigned", "in-progress", "completed", "cancelled"]
+                  }
+                },
+                "required": ["status"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/requests/{id}/invoice": {
+      "post": {
+        "tags": ["Requests"],
+        "summary": "Generate invoice",
+        "description": "Generate PDF invoice for a completed request",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Request ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice generated successfully",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finances": {
+      "get": {
+        "tags": ["Finances"],
+        "summary": "Get financial overview",
+        "description": "Retrieve financial statistics and overview",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Time period for financial data",
+            "schema": {
+              "type": "string",
+              "enum": ["24h", "7d", "30d", "90d", "1y"],
+              "default": "30d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Financial data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finances/transactions": {
+      "get": {
+        "tags": ["Finances"],
+        "summary": "Get transactions",
+        "description": "Retrieve list of financial transactions",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Items per page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Transaction type filter",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "income", "expense", "commission"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transactions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zones": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get zones list",
+        "description": "Retrieve list of service zones",
+        "responses": {
+          "200": {
+            "description": "Zones retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Zone"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/system": {
+      "get": {
+        "tags": ["System"],
+        "summary": "Get system metrics",
+        "description": "Retrieve system performance metrics",
+        "responses": {
+          "200": {
+            "description": "System metrics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemMetrics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/predictions": {
+      "get": {
+        "tags": ["AI"],
+        "summary": "Get AI predictions",
+        "description": "Retrieve AI-generated predictions and forecasts",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Type of prediction",
+            "schema": {
+              "type": "string",
+              "enum": ["demand", "performance", "revenue", "optimization"]
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "description": "Prediction period",
+            "schema": {
+              "type": "string",
+              "enum": ["24h", "7d", "30d"],
+              "default": "7d"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Predictions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionsData"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/notifications": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Get notification settings",
+        "description": "Retrieve current notification configuration",
+        "responses": {
+          "200": {
+            "description": "Notification settings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Settings"],
+        "summary": "Update notification settings",
+        "description": "Update notification configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/performance": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Get performance settings",
+        "description": "Retrieve system performance configuration",
+        "responses": {
+          "200": {
+            "description": "Performance settings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PerformanceSettings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Settings"],
+        "summary": "Update performance settings",
+        "description": "Update system performance configuration",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code"
+          }
+        },
+        "required": ["error"]
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          }
+        },
+        "required": ["success", "message"]
+      },
+      "DashboardData": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "totalRequests": {
+                "type": "integer"
+              },
+              "successRate": {
+                "type": "number"
+              },
+              "pendingRequests": {
+                "type": "integer"
+              },
+              "activeProviders": {
+                "type": "integer"
+              }
+            }
+          },
+          "charts": {
+            "type": "object",
+            "properties": {
+              "activity": {
+                "type": "object",
+                "properties": {
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "services": {
+                "type": "object",
+                "properties": {
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "activity": {
+            "type": "object",
+            "properties": {
+              "requests": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ActivityRequest"
+                }
+              },
+              "alerts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Alert"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ActivityRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "client": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "active", "completed"]
+          },
+          "avatar": {
+            "type": "string"
+          }
+        }
+      },
+      "Alert": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["success", "warning", "error", "info"]
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "KPIData": {
+        "type": "object",
+        "properties": {
+          "successRate": {
+            "type": "number"
+          },
+          "responseTime": {
+            "type": "number"
+          },
+          "totalRequests": {
+            "type": "integer"
+          },
+          "satisfaction": {
+            "type": "number"
+          },
+          "trends": {
+            "type": "object",
+            "properties": {
+              "successRate": {
+                "type": "number"
+              },
+              "responseTime": {
+                "type": "number"
+              },
+              "totalRequests": {
+                "type": "number"
+              },
+              "satisfaction": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "PerformanceData": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "successRate": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "aiEfficiency": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "satisfaction": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "ServicesData": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "GeographicData": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "Insight": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["positive", "warning", "info", "negative"]
+          },
+          "icon": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "LeaderboardProvider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "missions": {
+            "type": "integer"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "responseTime": {
+            "type": "number"
+          },
+          "score": {
+            "type": "number"
+          }
+        }
+      },
+      "Provider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "reviewCount": {
+            "type": "integer"
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "coverageAreas": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalMissions": {
+            "type": "integer"
+          },
+          "successRate": {
+            "type": "number"
+          },
+          "responseTime": {
+            "type": "number"
+          },
+          "acceptanceRate": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive"]
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["available", "busy"]
+          },
+          "performanceStatus": {
+            "type": "string",
+            "enum": ["excellent", "good", "warning", "danger"]
+          },
+          "hourlyRate": {
+            "type": "number"
+          },
+          "experience": {
+            "type": "integer"
+          },
+          "joinDate": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ProvidersResponse": {
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Provider"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "CreateProviderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "services": {
+            "type": "string",
+            "description": "Comma-separated list of services"
+          },
+          "coverage": {
+            "type": "string",
+            "description": "Comma-separated list of coverage areas"
+          },
+          "rate": {
+            "type": "string"
+          },
+          "experience": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": ["name", "phone", "services", "coverage"]
+      },
+      "UpdateProviderRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "services": {
+            "type": "string"
+          },
+          "coverage": {
+            "type": "string"
+          },
+          "rate": {
+            "type": "string"
+          },
+          "experience": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ContactProviderRequest": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": ["call", "whatsapp", "email", "message"]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["method", "message"]
+      },
+      "ContactResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "providerId": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "sentAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "AvailableProvider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number"
+          },
+          "completedJobs": {
+            "type": "integer"
+          },
+          "distance": {
+            "type": "string"
+          },
+          "responseTime": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "ProviderStats": {
+        "type": "object",
+        "properties": {
+          "totalProviders": {
+            "type": "integer"
+          },
+          "activeProviders": {
+            "type": "integer"
+          },
+          "availableProviders": {
+            "type": "integer"
+          },
+          "averageRating": {
+            "type": "number"
+          }
+        }
+      },
+      "Request": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "client": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "avatar": {
+                "type": "string"
+              }
+            }
+          },
+          "service": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "estimatedDuration": {
+                "type": "string"
+              }
+            }
+          },
+          "location": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "normal", "high", "urgent"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "assigned", "in-progress", "completed", "cancelled"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assignedProvider": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "rating": {
+                "type": "number"
+              }
+            }
+          },
+          "estimatedCost": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "RequestsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Request"
+            }
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              },
+              "assigned": {
+                "type": "integer"
+              },
+              "inProgress": {
+                "type": "integer"
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "cancelled": {
+                "type": "integer"
+              },
+              "avgResponseTime": {
+                "type": "string"
+              },
+              "completionRate": {
+                "type": "number"
+              }
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "CreateRequestRequest": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": ["name", "phone"]
+          },
+          "service": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": ["type", "description"]
+          },
+          "location": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "normal", "high", "urgent"]
+          }
+        },
+        "required": ["client", "service", "location"]
+      },
+      "RequestDetails": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Request"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "timeline": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": ["completed", "current", "pending"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AssignResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string"
+              },
+              "providerId": {
+                "type": "string"
+              },
+              "assignedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "CancelResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "comments": {
+                "type": "string"
+              },
+              "cancelledAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "FinancialData": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "totalRevenue": {
+                "type": "number"
+              },
+              "totalCommissions": {
+                "type": "number"
+              },
+              "totalExpenses": {
+                "type": "number"
+              },
+              "netProfit": {
+                "type": "number"
+              },
+              "trends": {
+                "type": "object",
+                "properties": {
+                  "revenue": {
+                    "type": "number"
+                  },
+                  "commissions": {
+                    "type": "number"
+                  },
+                  "expenses": {
+                    "type": "number"
+                  },
+                  "profit": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "charts": {
+            "type": "object",
+            "properties": {
+              "revenue": {
+                "type": "object",
+                "properties": {
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "commissions": {
+                "type": "object",
+                "properties": {
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "data": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TransactionsResponse": {
+        "type": "object",
+        "properties": {
+          "transactions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["income", "expense", "commission"]
+                },
+                "amount": {
+                  "type": "number"
+                },
+                "currency": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["completed", "pending", "failed"]
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "client": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "Zone": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "coordinates": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              }
+            }
+          },
+          "activeProviders": {
+            "type": "integer"
+          },
+          "totalRequests": {
+            "type": "integer"
+          }
+        }
+      },
+      "SystemMetrics": {
+        "type": "object",
+        "properties": {
+          "cpu": {
+            "type": "number"
+          },
+          "memory": {
+            "type": "number"
+          },
+          "disk": {
+            "type": "number"
+          },
+          "network": {
+            "type": "object",
+            "properties": {
+              "in": {
+                "type": "number"
+              },
+              "out": {
+                "type": "number"
+              }
+            }
+          },
+          "uptime": {
+            "type": "number"
+          },
+          "activeConnections": {
+            "type": "integer"
+          }
+        }
+      },
+      "PredictionsData": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "period": {
+            "type": "string"
+          },
+          "predictions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "value": {
+                  "type": "number"
+                },
+                "confidence": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "insights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "NotificationSettings": {
+        "type": "object",
+        "properties": {
+          "push": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "newRequests": {
+                "type": "boolean"
+              },
+              "statusUpdates": {
+                "type": "boolean"
+              },
+              "systemAlerts": {
+                "type": "boolean"
+              }
+            }
+          },
+          "email": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "dailyReports": {
+                "type": "boolean"
+              },
+              "weeklyReports": {
+                "type": "boolean"
+              },
+              "criticalAlerts": {
+                "type": "boolean"
+              }
+            }
+          },
+          "sms": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "urgentRequests": {
+                "type": "boolean"
+              },
+              "systemDown": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "PerformanceSettings": {
+        "type": "object",
+        "properties": {
+          "optimization": {
+            "type": "object",
+            "properties": {
+              "cacheEnabled": {
+                "type": "boolean"
+              },
+              "compressionEnabled": {
+                "type": "boolean"
+              },
+              "cdnEnabled": {
+                "type": "boolean"
+              }
+            }
+          },
+          "monitoring": {
+            "type": "object",
+            "properties": {
+              "metricsEnabled": {
+                "type": "boolean"
+              },
+              "alertsEnabled": {
+                "type": "boolean"
+              },
+              "loggingLevel": {
+                "type": "string",
+                "enum": ["error", "warn", "info", "debug"]
+              }
+            }
+          },
+          "database": {
+            "type": "object",
+            "properties": {
+              "connectionPoolSize": {
+                "type": "integer"
+              },
+              "queryTimeout": {
+                "type": "integer"
+              },
+              "indexOptimization": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPrevPage": {
+            "type": "boolean"
+          },
+          "startIndex": {
+            "type": "integer"
+          },
+          "endIndex": {
+            "type": "integer"
+          }
+        }
+      },
+      "AnalyticsData": {
+        "type": "object",
+        "properties": {
+          "kpis": {
+            "$ref": "#/components/schemas/KPIData"
+          },
+          "performance": {
+            "$ref": "#/components/schemas/PerformanceData"
+          },
+          "services": {
+            "$ref": "#/components/schemas/ServicesData"
+          },
+          "geographic": {
+            "$ref": "#/components/schemas/GeographicData"
+          },
+          "insights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Insight"
+            }
+          },
+          "leaderboard": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardProvider"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    },
+    {
+      "apiKeyAuth": []
+    }
+  ]
+}

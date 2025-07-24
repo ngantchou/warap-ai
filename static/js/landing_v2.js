@@ -11,7 +11,9 @@
         whatsappNumber: '+237690000000',
         animationDuration: 300,
         scrollOffset: 80,
-        mobileBreakpoint: 768
+        mobileBreakpoint: 768,
+        apiEndpoint: '/api/landing/data',
+        statsEndpoint: '/api/landing/stats'
     };
 
     // ===== DOM ELEMENTS =====
@@ -25,6 +27,160 @@
         serviceCards: document.querySelectorAll('.service-card'),
         features: document.querySelectorAll('.feature'),
         steps: document.querySelectorAll('.step')
+    };
+
+    // ===== DYNAMIC DATA =====
+    const dynamicData = {
+        async loadData() {
+            try {
+                console.log('Loading dynamic data from API...');
+                const response = await fetch(CONFIG.apiEndpoint);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Dynamic data loaded:', data);
+                
+                this.updateStatistics(data.statistics);
+                this.updateServices(data.services);
+                this.updateContactInfo(data.contact_info);
+                this.updateSuccessStories(data.success_stories);
+                
+                return data;
+            } catch (error) {
+                console.error('Error loading dynamic data:', error);
+                this.loadFallbackData();
+            }
+        },
+
+        updateStatistics(stats) {
+            // Update hero statistics
+            const statElements = document.querySelectorAll('.stat__number');
+            if (statElements.length >= 3) {
+                statElements[0].textContent = stats.total_requests + '+';
+                statElements[1].textContent = stats.avg_response_time + 'min';
+                statElements[2].textContent = stats.satisfaction_rate + '%';
+            }
+            
+            // Update other statistics throughout the page
+            const elements = {
+                totalProviders: document.querySelector('[data-stat="total-providers"]'),
+                completionRate: document.querySelector('[data-stat="completion-rate"]'),
+                recentRequests: document.querySelector('[data-stat="recent-requests"]')
+            };
+            
+            if (elements.totalProviders) elements.totalProviders.textContent = stats.total_providers;
+            if (elements.completionRate) elements.completionRate.textContent = stats.completion_rate + '%';
+            if (elements.recentRequests) elements.recentRequests.textContent = stats.recent_requests;
+        },
+
+        updateServices(services) {
+            // Update service cards with dynamic data
+            const serviceCards = document.querySelectorAll('.service-card');
+            serviceCards.forEach((card, index) => {
+                if (services[index]) {
+                    const service = services[index];
+                    
+                    // Update icon
+                    const iconElement = card.querySelector('.service-icon i');
+                    if (iconElement) {
+                        iconElement.className = service.icon;
+                    }
+                    
+                    // Update title
+                    const titleElement = card.querySelector('.service-title');
+                    if (titleElement) {
+                        titleElement.textContent = service.name;
+                    }
+                    
+                    // Update description
+                    const descElement = card.querySelector('.service-desc');
+                    if (descElement) {
+                        descElement.textContent = service.description;
+                    }
+                    
+                    // Update pricing
+                    const priceElement = card.querySelector('.service-price');
+                    if (priceElement) {
+                        priceElement.textContent = `${service.min_price.toLocaleString()} - ${service.max_price.toLocaleString()} XAF`;
+                    }
+                    
+                    // Add emergency badge if applicable
+                    if (service.is_emergency) {
+                        const emergencyBadge = document.createElement('div');
+                        emergencyBadge.className = 'emergency-badge';
+                        emergencyBadge.textContent = 'Urgence 24/7';
+                        card.appendChild(emergencyBadge);
+                    }
+                }
+            });
+        },
+
+        updateContactInfo(contactInfo) {
+            // Update WhatsApp number
+            CONFIG.whatsappNumber = contactInfo.whatsapp;
+            
+            // Update contact links
+            const whatsappLinks = document.querySelectorAll('[data-whatsapp]');
+            whatsappLinks.forEach(link => {
+                link.href = `https://wa.me/${contactInfo.whatsapp.replace('+', '')}`;
+            });
+            
+            // Update email links
+            const emailLinks = document.querySelectorAll('[data-email]');
+            emailLinks.forEach(link => {
+                link.href = `mailto:${contactInfo.email}`;
+            });
+        },
+
+        updateSuccessStories(stories) {
+            // Update testimonials section with real success stories
+            const testimonialContainer = document.querySelector('.testimonials-container');
+            if (testimonialContainer && stories.length > 0) {
+                testimonialContainer.innerHTML = '';
+                
+                stories.forEach(story => {
+                    const testimonialCard = document.createElement('div');
+                    testimonialCard.className = 'testimonial-card';
+                    testimonialCard.innerHTML = `
+                        <div class="testimonial-rating">
+                            ${'★'.repeat(story.rating)}${'☆'.repeat(5-story.rating)}
+                        </div>
+                        <div class="testimonial-text">"${story.comment}"</div>
+                        <div class="testimonial-service">${story.service} - ${story.zone}</div>
+                        <div class="testimonial-time">${story.time_ago}</div>
+                    `;
+                    testimonialContainer.appendChild(testimonialCard);
+                });
+            }
+        },
+
+        loadFallbackData() {
+            console.log('Loading fallback data...');
+            // Fallback data if API fails
+            const fallbackStats = {
+                total_requests: 250,
+                avg_response_time: 5,
+                satisfaction_rate: 96,
+                total_providers: 18,
+                completion_rate: 94,
+                recent_requests: 45
+            };
+            
+            this.updateStatistics(fallbackStats);
+        },
+
+        async refreshStats() {
+            try {
+                const response = await fetch(CONFIG.statsEndpoint);
+                if (response.ok) {
+                    const stats = await response.json();
+                    this.updateStatistics(stats);
+                }
+            } catch (error) {
+                console.error('Error refreshing stats:', error);
+            }
+        }
     };
 
     // ===== UTILITIES =====
@@ -483,7 +639,7 @@
     };
 
     // ===== INITIALIZATION =====
-    function init() {
+    async function init() {
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
@@ -491,6 +647,9 @@
         }
 
         try {
+            // Load dynamic data first
+            await dynamicData.loadData();
+            
             // Initialize modules
             navigation.init();
             animations.init();
@@ -502,6 +661,11 @@
 
             // Add CSS classes for enhanced animations
             document.body.classList.add('js-enabled');
+
+            // Set up periodic stats refresh (every 5 minutes)
+            setInterval(() => {
+                dynamicData.refreshStats();
+            }, 300000);
 
             console.log('Djobea AI Landing Page V2 initialized successfully');
         } catch (error) {

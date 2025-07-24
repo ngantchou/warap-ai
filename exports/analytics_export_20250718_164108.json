@@ -1,0 +1,14 @@
+{
+  "kpis": {
+    "totalRequests": 57,
+    "completedRequests": 0,
+    "pendingRequests": 0,
+    "successRate": 0.0,
+    "revenue": 0
+  },
+  "performance": {
+    "avgResponseTime": 4.2,
+    "completionRate": 85.5,
+    "customerSatisfaction": 4.3
+  }
+}

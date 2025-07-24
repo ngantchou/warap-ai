@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from sqlalchemy import Column, Integer, String, DateTime, Date, Time, Text, Float, Boolean, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
@@ -90,6 +90,7 @@ class User(Base):
     # Relationships
     requests = relationship("ServiceRequest", back_populates="user")
     conversations = relationship("Conversation", back_populates="user")
+    sessions = relationship("ConversationSession", back_populates="user")
     modifications = relationship("RequestModification", back_populates="user")
     support_tickets = relationship("SupportTicket", back_populates="user")
     user_actions = relationship("UserAction", back_populates="user")
@@ -106,9 +107,15 @@ class Provider(Base):
     services = Column(JSON, nullable=False)  # List of services offered
     coverage_areas = Column(JSON, nullable=False)  # List of areas covered
     
+    # Add single service_type field for backward compatibility
+    service_type = Column(String(50), nullable=True)  # Primary service type for compatibility
+    location = Column(String(100), nullable=True)  # Primary location for compatibility 
+    coverage_zone = Column(String(100), nullable=True)  # Primary coverage zone for compatibility
+    
     # Basic status and metrics
     is_available = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
+    status = Column(String(20), default="active")  # active, inactive, suspended
     rating = Column(Float, default=0.0)
     total_jobs = Column(Integer, default=0)
     
@@ -421,22 +428,91 @@ class ServiceRequest(Base):
     media_uploads = relationship("MediaUpload", back_populates="service_request")
 
 class Conversation(Base):
-    """Conversation log for debugging and improvement"""
+    """Enhanced conversation log with action code system for debugging and improvement"""
     __tablename__ = "conversations"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     request_id = Column(Integer, ForeignKey("service_requests.id"), nullable=True)
+    session_id = Column(String(50), ForeignKey("conversation_sessions.session_id"), nullable=True)  # Link to session
     
     message_type = Column(String(20), nullable=False)  # incoming, outgoing
     message_content = Column(Text, nullable=False)
     ai_response = Column(Text, nullable=True)
     extracted_data = Column(JSON, nullable=True)
     
+    # Action code system fields
+    action_code = Column(String(50), nullable=True)  # Action code executed
+    conversation_state = Column(String(50), nullable=True)  # Current conversation state
+    confidence_score = Column(Float, nullable=True)  # LLM confidence score
+    action_success = Column(Boolean, default=True)  # Whether action executed successfully
+    execution_time = Column(Float, nullable=True)  # Action execution time in seconds
+    action_metadata = Column(JSON, nullable=True)  # Additional metadata from action execution
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     user = relationship("User", back_populates="conversations")
+    session = relationship("ConversationSession", back_populates="messages")
+
+
+class ConversationSession(Base):
+    """
+    Conversation session with state management and persistence
+    """
+    __tablename__ = "conversation_sessions"
+    
+    # Primary identification
+    session_id = Column(String(50), primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    phone_number = Column(String(20), nullable=False, index=True)
+    
+    # State management
+    current_state = Column(String(20), nullable=False, default="INITIAL")
+    previous_state = Column(String(20), nullable=True)
+    current_phase = Column(String(20), nullable=True)
+    state_history = Column(JSON, nullable=True)  # History of state changes
+    
+    # Data collection
+    collected_data = Column(JSON, nullable=True)  # Structured collected data
+    session_metadata = Column(JSON, nullable=True)  # Additional metadata
+    
+    # Conversation history (limited, full history in conversations table)
+    conversation_summary = Column(JSON, nullable=True)  # Summary of key exchanges
+    
+    # Session lifecycle
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Performance metrics
+    metrics = Column(JSON, nullable=True)  # Performance and automation metrics
+    
+    # Configuration
+    max_history_size = Column(Integer, default=10)
+    timeout_minutes = Column(Integer, default=120)
+    max_collection_attempts = Column(Integer, default=3)
+    
+    # Status flags
+    is_active = Column(Boolean, default=True)
+    is_expired = Column(Boolean, default=False)
+    escalation_triggered = Column(Boolean, default=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="sessions")
+    messages = relationship("Conversation", back_populates="session")
+    
+    @property
+    def is_session_expired(self) -> bool:
+        """Check if session is expired"""
+        return datetime.now() > self.expires_at
+    
+    @property
+    def session_duration(self) -> timedelta:
+        """Get session duration"""
+        end_time = self.completed_at or datetime.now()
+        return end_time - self.created_at
 
 class SystemLog(Base):
     """System logs for monitoring and debugging"""
@@ -534,6 +610,9 @@ def init_db(engine):
     """Initialize database tables"""
     # Import provider models to ensure their tables are created
     from app.models import provider_models
+    
+    # Import dynamic services models to register them
+    from app.models.dynamic_services import Zone, ServiceCategory, Service, ServiceZone, DynamicServiceRequest, ServiceSearchLog
     
     Base.metadata.create_all(bind=engine)
     

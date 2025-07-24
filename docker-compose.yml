@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: djobea-postgres
+    environment:
+      POSTGRES_DB: djobea_ai
+      POSTGRES_USER: djobea_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-djobea_secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - djobea-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U djobea_user -d djobea_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: djobea-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_secure_password}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - djobea-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Djobea AI Application
+  djobea-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: djobea-ai-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://djobea_user:${POSTGRES_PASSWORD:-djobea_secure_password}@postgres:5432/djobea_ai
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: djobea_user
+      PGPASSWORD: ${POSTGRES_PASSWORD:-djobea_secure_password}
+      PGDATABASE: djobea_ai
+      
+      # Redis Configuration
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_secure_password}@redis:6379/0
+      
+      # API Keys (set these in .env file)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      
+      # Twilio Configuration
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      
+      # Application Configuration
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-this}
+      
+      # Environment
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      
+      # Webhook URLs
+      WEBHOOK_BASE_URL: ${WEBHOOK_BASE_URL:-http://localhost:5000}
+      
+    volumes:
+      - ./logs:/app/logs
+      - ./static/uploads:/app/static/uploads
+      - ./data:/app/data
+    ports:
+      - "5000:5000"
+    networks:
+      - djobea-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: djobea-nginx
+    depends_on:
+      - djobea-ai
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+      - ./static:/var/www/static
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - djobea-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  djobea-network:
+    driver: bridge

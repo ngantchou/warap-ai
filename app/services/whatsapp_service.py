@@ -38,10 +38,13 @@ class WhatsAppService:
             )
             
             logger.info(f"WhatsApp message sent successfully. SID: {message_obj.sid}")
+            logger.warning(f"NOTE: WhatsApp message may not reach user {to_phone_number} due to Twilio sandbox limitations")
             return True
             
         except TwilioException as e:
             logger.error(f"Twilio error sending message: {e}")
+            # Log the reality of WhatsApp limitations
+            logger.warning(f"WhatsApp messaging failed - this is expected in sandbox mode without user opt-in")
             return False
         except Exception as e:
             logger.error(f"Unexpected error sending WhatsApp message: {e}")

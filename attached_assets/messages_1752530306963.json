@@ -1,0 +1,432 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Djobea Messages API",
+    "version": "1.0.0",
+    "description": "API for messaging and communication"
+  },
+  "servers": [
+    {
+      "url": "http://djobea.ai/api",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/messages": {
+      "get": {
+        "summary": "Get messages or contacts",
+        "tags": ["Messages"],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["contacts", "messages", "stats"]
+            },
+            "description": "Type of data to retrieve"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search term"
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["client", "provider"]
+            },
+            "description": "Filter by role"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["online", "offline", "away", "unread", "pinned", "muted"]
+            },
+            "description": "Filter by status"
+          },
+          {
+            "name": "conversationId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required when type=messages"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "oneOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Contact"
+                          }
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Message"
+                          }
+                        },
+                        {
+                          "$ref": "#/components/schemas/MessagesStats"
+                        }
+                      ]
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Send a message",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update message or contact",
+        "tags": ["Messages"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "messageId": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": ["read", "delivered", "sent"]
+                      }
+                    },
+                    "required": ["messageId", "status"]
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "contactId": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "string",
+                        "enum": ["pin", "mute", "mark_read", "archive", "delete"]
+                      }
+                    },
+                    "required": ["contactId", "action"]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated successfully"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete message or conversation",
+        "tags": ["Messages"],
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of message to delete"
+          },
+          {
+            "name": "conversationId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of conversation to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted successfully"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["client", "provider"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["online", "offline", "away"]
+          },
+          "lastMessage": {
+            "type": "string"
+          },
+          "lastMessageTime": {
+            "type": "string"
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "isPinned": {
+            "type": "boolean"
+          },
+          "isMuted": {
+            "type": "boolean"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              },
+              "address": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "string"
+          },
+          "senderName": {
+            "type": "string"
+          },
+          "senderType": {
+            "type": "string",
+            "enum": ["user", "ai_agent", "human_agent"]
+          },
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["text", "image", "file", "location", "contact"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["sent", "delivered", "read"]
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "string"
+                },
+                "thumbnail": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "agentId": {
+                "type": "string"
+              },
+              "confidence": {
+                "type": "number"
+              },
+              "processingTime": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "SendMessageRequest": {
+        "type": "object",
+        "required": ["conversationId", "content"],
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["text", "image", "file", "location", "contact"],
+            "default": "text"
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "location": {
+            "type": "object"
+          },
+          "contact": {
+            "type": "object"
+          },
+          "senderType": {
+            "type": "string",
+            "enum": ["user", "ai_agent", "human_agent"],
+            "default": "user"
+          },
+          "metadata": {
+            "type": "object"
+          }
+        }
+      },
+      "MessagesStats": {
+        "type": "object",
+        "properties": {
+          "totalContacts": {
+            "type": "integer"
+          },
+          "unreadCount": {
+            "type": "integer"
+          },
+          "onlineCount": {
+            "type": "integer"
+          },
+          "clientsCount": {
+            "type": "integer"
+          },
+          "providersCount": {
+            "type": "integer"
+          },
+          "totalMessages": {
+            "type": "integer"
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          },
+          "hasPrevPage": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

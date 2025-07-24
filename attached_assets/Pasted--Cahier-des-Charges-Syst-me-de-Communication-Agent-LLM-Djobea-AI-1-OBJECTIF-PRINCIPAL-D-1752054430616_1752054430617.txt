@@ -1,0 +1,215 @@
+# Cahier des Charges - Système de Communication Agent-LLM Djobea AI
+
+## 1. OBJECTIF PRINCIPAL
+
+Développer un système de communication structuré entre l'agent Djobea AI et le LLM permettant :
+- **99% d'automatisation** des interactions client
+- **Gestion conversationnelle** complète des demandes de service
+- **Traçabilité totale** des échanges avec codes d'actions
+- **Intervention humaine minimale** (1% des cas seulement)
+
+## 2. ARCHITECTURE DE COMMUNICATION
+
+### 2.1 Flux de Communication
+```
+Client WhatsApp → Agent Djobea → LLM → Agent → Actions → Client
+```
+
+### 2.2 Structure des Messages
+- **Requête Agent → LLM** : Message + Contexte + Profil + Session
+- **Réponse LLM → Agent** : Code d'action + Paramètres + Réponse client + Métadonnées
+- **Exécution Agent** : Action basée sur le code + Mise à jour session + Logging
+
+## 3. SYSTÈME DE CODES D'ACTIONS
+
+### 3.1 Codes de Collecte d'Information (COLLECTE_*)
+| Code | Description | Paramètres | Réponse Type |
+|------|-------------|------------|--------------|
+| `COLLECTE_BESOIN` | Identification du service initial | `service_hint`, `confidence` | Question ouverte |
+| `COLLECTE_LOCALISATION` | Précision de la localisation | `location_detected`, `requires_validation` | Confirmation/Précision |
+| `COLLECTE_DESCRIPTION` | Détails du problème | `service_type`, `urgency_detected` | Questions spécifiques |
+| `COLLECTE_DELAI` | Délai d'intervention souhaité | `urgency_level`, `time_options` | Propositions horaires |
+| `COLLECTE_BUDGET` | Budget estimé (optionnel) | `service_type`, `complexity` | Fourchette de prix |
+| `COLLECTE_CONTACT` | Informations de contact | `missing_fields` | Formulaire simplifié |
+
+### 3.2 Codes de Traitement des Demandes (CREATE_*, VALIDATE_*, SEARCH_*)
+| Code | Description | Paramètres | Actions |
+|------|-------------|------------|---------|
+| `CREATE_SERVICE` | Création demande complète | `service_data`, `auto_validate` | Insertion BDD + Génération ID |
+| `VALIDATE_SERVICE` | Validation avant création | `validation_errors`, `missing_fields` | Vérification données |
+| `SEARCH_PROVIDERS` | Recherche prestataires | `service_type`, `location`, `urgency` | Matching algorithme |
+| `NOTIFY_PROVIDERS` | Notification prestataires | `provider_list`, `notification_type` | Envoi WhatsApp |
+| `CONFIRM_MATCH` | Confirmation du matching | `provider_id`, `client_id` | Mise en relation |
+
+### 3.3 Codes de Gestion des Statuts (STATUS_*, CANCEL_*, MODIFY_*)
+| Code | Description | Paramètres | Actions |
+|------|-------------|------------|---------|
+| `STATUS_CHECK` | Vérification statut demande | `service_id`, `detailed_view` | Récupération statut |
+| `CANCEL_SERVICE` | Annulation demande | `service_id`, `reason` | Mise à jour statut |
+| `MODIFY_SERVICE` | Modification demande | `service_id`, `changes` | Update BDD |
+| `COMPLETE_SERVICE` | Finalisation service | `service_id`, `completion_data` | Clôture + Facturation |
+
+### 3.4 Codes d'Information et Navigation (INFO_*, HELP_*, MENU_*)
+| Code | Description | Paramètres | Actions |
+|------|-------------|------------|---------|
+| `INFO_GENERALE` | Informations générales | `topic`, `detail_level` | Réponse informationnelle |
+| `INFO_TARIFS` | Informations tarifaires | `service_type`, `location` | Grille tarifaire |
+| `INFO_DELAIS` | Informations délais | `service_type`, `urgency` | Estimations temporelles |
+| `HELP_NAVIGATION` | Aide navigation | `current_context`, `available_actions` | Menu d'options |
+| `MENU_PRINCIPAL` | Menu principal | `user_state`, `quick_actions` | Interface principale |
+
+### 3.5 Codes de Gestion des Erreurs (ERROR_*, FALLBACK_*, ESCALATE_*)
+| Code | Description | Paramètres | Actions |
+|------|-------------|------------|---------|
+| `ERROR_HANDLING` | Gestion erreurs système | `error_type`, `recovery_options` | Réponse d'erreur |
+| `FALLBACK` | Action de secours | `attempt_count`, `alternative_action` | Plan B |
+| `ESCALATE_HUMAN` | Escalade vers humain | `escalation_reason`, `context_summary` | Transfert agent |
+| `CLARIFICATION` | Demande de clarification | `ambiguity_type`, `clarification_options` | Questions précises |
+
+## 4. FONCTIONNALITÉS CONVERSATIONNELLES
+
+### 4.1 Gestion de Session
+- **Contexte conversationnel** : Maintien historique sur 10 derniers échanges
+- **Données de session** : Stockage temporaire des informations collectées
+- **Reprise de conversation** : Possibilité de reprendre conversation interrompue
+- **Timeout de session** : Expiration après 30 minutes d'inactivité
+
+### 4.2 Capacités du LLM
+- **Extraction d'entités** : Service, lieu, urgence, description
+- **Détection d'intention** : Nouvelle demande, modification, annulation, info
+- **Gestion d'ambiguïté** : Questions de clarification automatiques
+- **Adaptation contextuelle** : Réponses adaptées au profil utilisateur
+
+### 4.3 Mécanismes de Fallback
+- **Incompréhension** : Après 3 tentatives → `CLARIFICATION`
+- **Données manquantes** : Collecte guidée par étapes
+- **Erreur système** : Message d'excuse + retry automatique
+- **Escalade humaine** : Transfert après 5 échanges infructueux
+
+## 5. ENREGISTREMENT ET TRAÇABILITÉ
+
+### 5.1 Logging des Interactions
+```python
+ConversationLog = {
+    "timestamp": datetime,
+    "user_id": str,
+    "message_in": str,
+    "llm_response": LLMResponse,
+    "action_executed": str,
+    "session_state": dict,
+    "execution_time": float,
+    "success": bool
+}
+```
+
+### 5.2 Métriques de Performance
+- **Taux de compréhension** : % de messages correctement interprétés
+- **Taux de conversion** : % de conversations → demandes créées
+- **Temps de résolution** : Durée moyenne conversation → matching
+- **Taux d'escalade** : % de cas nécessitant intervention humaine
+
+### 5.3 Audit et Conformité
+- **Chiffrement** : Toutes les données conversation chiffrées
+- **Rétention** : Conservation 1 an pour optimisation
+- **Accès** : Logs accessibles uniquement aux admins
+- **Conformité RGPD** : Possibilité suppression données utilisateur
+
+## 6. EXEMPLES DE CONVERSATIONS TYPES
+
+### 6.1 Conversation Simple (Automatisée)
+```
+Client: "Bonjour, j'ai une fuite d'eau urgent à Bonamoussadi"
+LLM: COLLECTE_DESCRIPTION + "Bonjour ! Je comprends votre urgence. Où se situe exactement la fuite ?"
+Client: "Dans la cuisine, sous l'évier"
+LLM: CREATE_SERVICE + "Parfait ! Je crée votre demande et cherche un plombier disponible..."
+```
+
+### 6.2 Conversation avec Clarification
+```
+Client: "Problème électrique"
+LLM: CLARIFICATION + "Pouvez-vous préciser : panne totale, prise défectueuse, ou autre ?"
+Client: "Panne totale maison"
+LLM: COLLECTE_LOCALISATION + "Compris. Dans quel quartier de Douala ?"
+```
+
+### 6.3 Conversation Complexe (Escalade)
+```
+Client: "Truc bizarre machine"
+LLM: CLARIFICATION + "Quel type d'appareil exactement ?"
+Client: "Machin qui fait du bruit"
+LLM: CLARIFICATION + "Pouvez-vous me dire la marque ou le type d'appareil ?"
+Client: "Je sais pas moi"
+LLM: ESCALATE_HUMAN + "Je vais vous mettre en relation avec un conseiller..."
+```
+
+## 7. CONFIGURATION ET PARAMÉTRAGE
+
+### 7.1 Paramètres LLM
+- **Modèle** : Claude Sonnet 4 (claude-sonnet-4-20250514)
+- **Température** : 0.3 (réponses cohérentes)
+- **Max tokens** : 1000 par réponse
+- **Timeout** : 10 secondes max
+- **Retry** : 3 tentatives en cas d'échec
+
+### 7.2 Seuils d'Escalade
+- **Tentatives clarification** : 3 maximum
+- **Temps de conversation** : 15 minutes maximum
+- **Messages sans progression** : 5 maximum
+- **Confiance minimale** : 70% pour action automatique
+
+### 7.3 Règles Métier
+- **Services disponibles** : Plomberie, Électricité, Électroménager
+- **Zone couverte** : Bonamoussadi uniquement
+- **Horaires service** : 7h-20h en semaine, 8h-18h weekend
+- **Délais d'intervention** : Urgent (<2h), Normal (<24h), Flexible (<48h)
+
+## 8. CRITÈRES DE SUCCÈS
+
+### 8.1 Objectifs Quantitatifs
+- **Taux d'automatisation** : ≥ 99%
+- **Taux de compréhension** : ≥ 90%
+- **Temps de réponse** : < 3 secondes
+- **Satisfaction client** : ≥ 4.5/5
+- **Conversion conversation→demande** : ≥ 80%
+
+### 8.2 Indicateurs de Performance
+- **Escalade humaine** : ≤ 1%
+- **Erreurs système** : ≤ 0.1%
+- **Abandons de conversation** : ≤ 10%
+- **Temps résolution moyen** : ≤ 5 minutes
+
+## 9. PLAN DE DÉPLOIEMENT
+
+### 9.1 Phase 1 : Infrastructure (Semaine 1-2)
+- Setup base de données conversations
+- Intégration LLM avec codes d'actions
+- Tests unitaires système de communication
+
+### 9.2 Phase 2 : Logique Conversationnelle (Semaine 3-4)
+- Implémentation tous les codes d'actions
+- Tests des scénarios conversation
+- Optimisation prompts LLM
+
+### 9.3 Phase 3 : Tests et Optimisation (Semaine 5-6)
+- Tests charges et performance
+- Optimisation taux de compréhension
+- Validation seuils d'escalade
+
+### 9.4 Phase 4 : Déploiement Production (Semaine 7-8)
+- Déploiement progressif
+- Monitoring en temps réel
+- Ajustements basés sur données réelles
+
+## 10. MAINTENANCE ET ÉVOLUTION
+
+### 10.1 Amélioration Continue
+- **Analyse mensuelle** : Revue des logs et métriques
+- **Optimisation prompts** : Ajustements basés sur échecs
+- **Nouveaux codes** : Ajout selon besoins identifiés
+- **Formation LLM** : Amélioration base de connaissances
+
+### 10.2 Évolutions Prévues
+- **Nouveaux services** : Extension catalogue
+- **Nouvelles zones** : Expansion géographique
+- **Multilingue** : Support langues locales
+- **Intégration paiement** : Mobile Money automatique

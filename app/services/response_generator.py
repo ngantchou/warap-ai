@@ -76,6 +76,41 @@ class NaturalResponseGenerator:
                 "Je peux vous aider avec la plomberie, l'électricité, ou la réparation d'électroménager. Que puis-je faire pour vous ?",
                 "Djobea AI couvre tous vos besoins : plomberie, électricité, électroménager. Dites-moi tout !",
                 "Services à domicile - plomberie, électricité, réparations - je suis là pour vous aider !",
+            ],
+            "service_info": [
+                "🔧 **Djobea AI - Services à domicile** 🏠\n\n" +
+                "💧 **Plomberie** : Fuites, WC bloqués, robinets, tuyaux\n" +
+                "⚡ **Électricité** : Pannes, prises, interrupteurs, installations\n" +
+                "🔌 **Électroménager** : Réparation frigo, machine à laver, four, etc.\n\n" +
+                "📍 **Zone couverte** : Bonamoussadi, Douala\n" +
+                "⏰ **Disponible** : 24h/24, 7j/7\n" +
+                "💰 **Prix** : Devis gratuit, paiement après service\n\n" +
+                "💬 Dites-moi simplement votre problème et je vous trouve un expert !",
+                
+                "🛠️ **Nos services Djobea AI** :\n\n" +
+                "• **Plomberie** : Débouchage, réparations, installations\n" +
+                "• **Électricité** : Dépannage, câblage, mise aux normes\n" +
+                "• **Électroménager** : Diagnostic et réparation\n\n" +
+                "📞 **Comment ça marche** :\n" +
+                "1. Décrivez votre problème\n" +
+                "2. Je trouve un expert près de chez vous\n" +
+                "3. Intervention rapide et professionnelle\n\n" +
+                "Alors, quel est votre problème aujourd'hui ?"
+            ],
+            "human_contact": [
+                "🧑‍💼 **Contact avec un gestionnaire**\n\n" +
+                "Je comprends que vous souhaitez parler à une personne.\n" +
+                "Un de nos gestionnaires va vous contacter dans les plus brefs délais.\n\n" +
+                "📞 **Temps d'attente estimé** : 5-10 minutes\n" +
+                "💬 **Nous vous rappelons sur** : {phone_number}\n\n" +
+                "En attendant, je reste disponible pour vous aider avec vos questions !",
+                
+                "👋 **Mise en relation avec un gestionnaire**\n\n" +
+                "Pas de problème ! Je transmets votre demande à notre équipe.\n\n" +
+                "• **Ticket de support créé** : #{ticket_id}\n" +
+                "• **Rappel prévu** : Dans les 10 prochaines minutes\n" +
+                "• **Contact** : {phone_number}\n\n" +
+                "Puis-je vous aider avec autre chose en attendant ?"
             ]
         }
         
@@ -108,7 +143,20 @@ class NaturalResponseGenerator:
         
         intent = intent_analysis.get("primary_intent", "general_inquiry")
         
+        # Convert enum to string if needed
+        if hasattr(intent, 'value'):
+            intent = intent.value
+        
+        logger.info(f"Response generator - intent: {intent}, action: {processing_result.get('action')}")
+        
         try:
+            # Check for service request completion actions regardless of intent
+            action = processing_result.get("action", "")
+            if action in ["request_created", "request_completed", "continue_conversation", "continue_gathering"]:
+                return await self._handle_service_request_response(
+                    intent_analysis, processing_result, conversation_state
+                )
+            
             if intent == "new_service_request":
                 return await self._handle_service_request_response(
                     intent_analysis, processing_result, conversation_state
@@ -116,6 +164,17 @@ class NaturalResponseGenerator:
             
             elif intent == "status_inquiry":
                 return self._handle_status_response(processing_result, conversation_state)
+            
+            elif intent == "view_my_requests":
+                response = self._handle_view_requests_response(processing_result, conversation_state)
+                return response if response else self._get_fallback_response()
+            
+            elif intent == "view_request_details":
+                return self._handle_view_request_details_response(processing_result, conversation_state)
+            
+            elif intent == "modify_request":
+                response = self._handle_modify_request_response(processing_result, conversation_state)
+                return response if response else self._get_fallback_response()
             
             elif intent == "cancel_request":
                 return self._handle_cancellation_response(processing_result)
@@ -129,6 +188,16 @@ class NaturalResponseGenerator:
                 return await self._handle_continuation_response(
                     intent_analysis, processing_result, conversation_state
                 )
+            
+            elif intent == "info_request":
+                # Check if it's an LLM-generated response
+                if processing_result.get("action") == "llm_info_response":
+                    return self._handle_llm_info_response(processing_result, conversation_state)
+                else:
+                    return self._handle_info_response(processing_result, conversation_state)
+            
+            elif intent == "human_contact":
+                return self._handle_human_contact_response(processing_result, conversation_state)
             
             else:
                 return self._handle_general_response(user_message, conversation_state)
@@ -147,13 +216,18 @@ class NaturalResponseGenerator:
         
         action = processing_result.get("action", "")
         service_info = processing_result.get("service_info", {})
+        partial_data = processing_result.get("partial_data", {})
         missing_fields = processing_result.get("missing_fields", [])
         
-        if action == "continue_conversation":
-            # Need more information
-            return await self._generate_information_request(missing_fields, service_info, conversation_state)
+        logger.info(f"Service request response - action: {action}, service_info: {service_info}, partial_data: {partial_data}")
         
-        elif action == "request_created":
+        if action in ["continue_conversation", "continue_gathering"]:
+            # Need more information - use partial_data if service_info is empty
+            data_to_use = service_info if service_info else partial_data
+            logger.info(f"Generating information request for missing fields: {missing_fields}")
+            return await self._generate_information_request(missing_fields, data_to_use, conversation_state)
+        
+        elif action in ["request_created", "request_completed"]:
             # Service request successfully created
             service_type = service_info.get("service_type", "service")
             
@@ -269,10 +343,9 @@ class NaturalResponseGenerator:
             service_type = request.get("service_type", "service")
             
             status_messages = {
-                "PENDING": f"Votre demande de {service_type} est en cours de traitement. Je recherche le meilleur prestataire pour vous.",
-                "PROVIDER_NOTIFIED": f"J'ai trouvé des prestataires pour votre {service_type} et je leur ai transmis votre demande. Attente de leur réponse...",
-                "ASSIGNED": f"Excellente nouvelle ! Un prestataire a accepté votre demande de {service_type}. Il va vous contacter directement.",
-                "IN_PROGRESS": f"Votre service de {service_type} est en cours. Le prestataire devrait être chez vous ou en route."
+                "en attente": f"Votre demande de {service_type} est en cours de traitement. Je recherche le meilleur prestataire pour vous.",
+                "assignée": f"Excellente nouvelle ! Un prestataire a accepté votre demande de {service_type}. Il va vous contacter directement.",
+                "en cours": f"Votre service de {service_type} est en cours. Le prestataire devrait être chez vous ou en route."
             }
             
             return status_messages.get(status, f"Votre demande de {service_type} est en cours de traitement.")
@@ -320,6 +393,165 @@ class NaturalResponseGenerator:
         full_response += "\n\nPour les urgences, nos prestataires répondent généralement dans les 5-10 minutes. Je vous tiens informé !"
         
         return full_response
+    
+    def _handle_view_requests_response(
+        self, 
+        processing_result: Dict[str, Any],
+        conversation_state: ConversationState
+    ) -> str:
+        """Handle view requests responses"""
+        
+        action = processing_result.get("action", "")
+        
+        if action == "no_requests_found":
+            return random.choice([
+                "Vous n'avez pas encore fait de demande de service. Voulez-vous commencer maintenant ?",
+                "Aucune demande trouvée. De quoi avez-vous besoin aujourd'hui ?",
+                "Pas de demande enregistrée. Je peux vous aider avec un problème de plomberie, électricité, ou électroménager !"
+            ])
+        
+        elif action == "requests_listed":
+            active_requests = processing_result.get("active_requests", [])
+            completed_requests = processing_result.get("completed_requests", [])
+            
+            response = "📋 **Voici vos demandes :**\n\n"
+            
+            # Show active requests
+            if active_requests:
+                response += "📋 **DEMANDES ACTIVES :**\n\n"
+                for req in active_requests:
+                    service_emoji = self._get_service_emoji(req.get("service_type", ""))
+                    status_text = self._get_status_text(req.get("status", ""))
+                    response += f"{service_emoji} **#{req.get('request_code', req.get('id'))}** - {req.get('service_type', 'Service')}\n"
+                    response += f"📍 {req.get('location', 'Location')} | {status_text}\n"
+                    response += f"⏰ Créée {self._format_time_ago(req.get('created_at', ''))}\n\n"
+            
+            # Show completed requests
+            if completed_requests:
+                response += "📋 **DEMANDES TERMINÉES :**\n\n"
+                for req in completed_requests:
+                    service_emoji = self._get_service_emoji(req.get("service_type", ""))
+                    status_text = self._get_status_text(req.get("status", ""))
+                    response += f"{service_emoji} **#{req.get('request_code', req.get('id'))}** - {req.get('service_type', 'Service')}\n"
+                    response += f"📍 {req.get('location', 'Location')} | {status_text}\n\n"
+            
+            response += "💬 Tapez le numéro de demande pour plus de détails ou dites-moi ce que vous voulez faire."
+            
+            return response
+    
+    def _handle_view_request_details_response(
+        self, 
+        processing_result: Dict[str, Any],
+        conversation_state: ConversationState
+    ) -> str:
+        """Handle view request details responses"""
+        
+        action = processing_result.get("action", "")
+        
+        if action == "request_not_found":
+            request_ref = processing_result.get("request_reference", "")
+            return f"Désolé, je ne trouve pas la demande {request_ref}. Vérifiez le numéro ou tapez 'voir mes demandes' pour la liste complète."
+        
+        elif action == "show_request_details":
+            request_details = processing_result.get("request_details", {})
+            
+            # Build detailed response
+            response = f"📋 **Détails de la demande {request_details.get('request_code', '')}**\n\n"
+            
+            # Service information
+            response += f"{request_details.get('service_display', '')} **Service**\n"
+            response += f"📍 **Zone** : {request_details.get('location', 'Non spécifié')}\n"
+            response += f"📝 **Description** : {request_details.get('description', 'Non spécifié')}\n"
+            response += f"{request_details.get('urgency_display', '')} **Urgence**\n"
+            response += f"{request_details.get('status_display', '')} **Statut**\n\n"
+            
+            # Timing information
+            response += f"⏰ **Créée** : {request_details.get('time_since_creation', 'Récemment')}\n"
+            
+            # Add contextual information based on status
+            status = request_details.get("status", "")
+            if status == "en attente":
+                response += "\n🔍 **Recherche** : Je cherche activement un prestataire pour vous.\n"
+            elif status == "assigned":
+                response += "\n✅ **Assignée** : Un prestataire a accepté votre demande.\n"
+            elif status == "in_progress":
+                response += "\n🔧 **En cours** : Le prestataire travaille sur votre demande.\n"
+            elif status == "completed":
+                response += "\n✅ **Terminée** : Service complété avec succès.\n"
+            elif status == "cancelled":
+                response += "\n❌ **Annulée** : Cette demande a été annulée.\n"
+            
+            # Add available actions
+            response += "\n💬 **Actions disponibles** :\n"
+            if status in ["en attente"]:
+                response += "• Tapez 'modifier' pour changer les détails\n"
+                response += "• Tapez 'annuler' pour annuler la demande\n"
+            response += "• Tapez 'voir mes demandes' pour la liste complète\n"
+            response += "• Tapez 'statut' pour un résumé rapide\n"
+            
+            return response
+        
+        elif action == "error":
+            error_msg = processing_result.get("error_message", "")
+            return f"Oops ! {error_msg}. Essayez de nouveau ou tapez 'voir mes demandes' pour la liste complète."
+        
+        return "Désolé, je n'ai pas pu récupérer les détails de cette demande. Essayez de nouveau."
+    
+    def _handle_modify_request_response(
+        self, 
+        processing_result: Dict[str, Any],
+        conversation_state: ConversationState
+    ) -> str:
+        """Handle modify request responses"""
+        
+        action = processing_result.get("action", "")
+        
+        if action == "no_modifiable_requests":
+            return random.choice([
+                "Vous n'avez pas de demande en cours qui peut être modifiée. Les demandes déjà assignées ne peuvent plus être changées.",
+                "Aucune demande modifiable trouvée. Une fois qu'un prestataire accepte, les modifications sont limitées.",
+                "Pas de demande en cours de modification possible pour le moment."
+            ])
+        
+        elif action == "show_modifiable_requests":
+            requests = processing_result.get("modifiable_requests", [])
+            
+            response = "Voici vos demandes modifiables :\n\n"
+            
+            for req in requests:
+                service_emoji = self._get_service_emoji(req.get("service_type", ""))
+                status_text = self._get_status_text(req.get("status", ""))
+                response += f"{service_emoji} **#{req.get('request_code', req.get('id'))}** - {req.get('service_type', 'Service')}\n"
+                response += f"📍 {req.get('location', 'Location')} | {status_text}\n"
+                response += f"📝 {req.get('description', 'Description')}\n\n"
+            
+            response += "Tapez le numéro de la demande que vous voulez modifier (ex: DJB-001)"
+            
+            return response
+        
+        elif action == "show_request_details":
+            request_details = processing_result.get("request_details", {})
+            modification_options = processing_result.get("modification_options", [])
+            
+            service_emoji = self._get_service_emoji(request_details.get("service_type", ""))
+            status_text = self._get_status_text(request_details.get("status", ""))
+            
+            response = f"Voici les détails de votre demande **#{request_details.get('request_code', request_details.get('id'))}** :\n\n"
+            response += f"{service_emoji} **Service** : {request_details.get('service_type', 'Service')}\n"
+            response += f"📍 **Zone** : {request_details.get('location', 'Location')}\n"
+            response += f"📝 **Description** : {request_details.get('description', 'Description')}\n"
+            response += f"⚡ **Urgence** : {request_details.get('urgency', 'normale')}\n"
+            response += f"📱 **Statut** : {status_text}\n\n"
+            
+            response += "Que souhaitez-vous modifier ?\n"
+            response += "1️⃣ Description du problème\n"
+            response += "2️⃣ Niveau d'urgence\n"
+            response += "3️⃣ Localisation\n\n"
+            
+            if request_details.get("status") == "assignée":
+                response += "⚠️ **Note** : Un prestataire a déjà été assigné, certains changements peuvent nécessiter une nouvelle recherche."
+            
+            return response
     
     async def _handle_continuation_response(
         self, 
@@ -395,14 +627,98 @@ class NaturalResponseGenerator:
         
         return None
     
-    def _get_fallback_response(self) -> str:
-        """Fallback response when generation fails"""
+    def _get_service_emoji(self, service_type: str) -> str:
+        """Get emoji for service type"""
         
-        return random.choice([
-            "Je suis là pour vous aider ! Pouvez-vous me dire de quel service vous avez besoin ?",
-            "Djobea AI à votre service. Décrivez-moi votre problème et je vous trouve la solution !",
-            "Bonjour ! Comment puis-je vous aider avec vos services à domicile aujourd'hui ?"
-        ])
+        emoji_map = {
+            "plomberie": "🔧",
+            "électricité": "⚡",
+            "réparation électroménager": "🏠",
+            "électroménager": "🏠"
+        }
+        
+        return emoji_map.get(service_type, "🔧")
+    
+    def _get_status_text(self, status) -> str:
+        """Get human-readable status text"""
+        
+        # Handle RequestStatus enum
+        if hasattr(status, 'value'):
+            status_str = status.value
+        else:
+            status_str = str(status)
+        
+        status_map = {
+            "en attente": "📱 En attente",
+            "assignée": "✅ Assignée",
+            "en cours": "🔄 En cours",
+            "terminée": "✅ Terminée",
+            "paiement en attente": "💳 Paiement en attente",
+            "paiement terminé": "✅ Paiement terminé",
+            "annulée": "❌ Annulée"
+        }
+        
+        return status_map.get(status_str, "📱 En cours")
+    
+    def _format_time_ago(self, created_at: str) -> str:
+        """Format time ago from ISO string"""
+        
+        try:
+            from datetime import datetime
+            
+            # Parse ISO datetime
+            created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            now = datetime.now()
+            
+            # Calculate time difference
+            diff = now - created_time
+            
+            if diff.days > 0:
+                return f"il y a {diff.days} jour{'s' if diff.days > 1 else ''}"
+            elif diff.seconds > 3600:
+                hours = diff.seconds // 3600
+                return f"il y a {hours} heure{'s' if hours > 1 else ''}"
+            elif diff.seconds > 60:
+                minutes = diff.seconds // 60
+                return f"il y a {minutes} minute{'s' if minutes > 1 else ''}"
+            else:
+                return "il y a quelques secondes"
+                
+        except Exception:
+            return "récemment"
+    
+    def _handle_info_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
+        """Handle information requests responses"""
+        
+        # Return detailed service information
+        return random.choice(self.response_templates["service_info"])
+    
+    def _handle_llm_info_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
+        """Handle LLM-generated information responses"""
+        return processing_result.get("response", "Je peux vous aider avec vos questions.")
+    
+    def _handle_human_contact_response(self, processing_result: Dict[str, Any], conversation_state: ConversationState) -> str:
+        """Handle human contact requests responses"""
+        
+        context = processing_result.get("context", {})
+        
+        # Generate a ticket ID for tracking
+        import time
+        ticket_id = f"SUP-{int(time.time() % 100000)}"
+        
+        # Get user phone number
+        phone_number = context.get("user_phone", "votre numéro")
+        
+        # Select appropriate template based on context
+        template = random.choice(self.response_templates["human_contact"])
+        
+        # Format template with context
+        response = template.format(
+            phone_number=phone_number,
+            ticket_id=ticket_id
+        )
+        
+        return response
     
     def _get_fallback_response(self) -> str:
         """Fallback response when generation fails"""

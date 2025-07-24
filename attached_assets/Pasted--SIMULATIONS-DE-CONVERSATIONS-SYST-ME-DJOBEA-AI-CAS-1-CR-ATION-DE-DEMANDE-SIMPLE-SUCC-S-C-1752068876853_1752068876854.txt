@@ -1,0 +1,143 @@
+🎭 SIMULATIONS DE CONVERSATIONS - SYSTÈME DJOBEA AI
+📱 CAS 1 : CRÉATION DE DEMANDE SIMPLE (SUCCÈS)
+Contexte : Première utilisation, problème de plomberie urgent
+🤖 SYSTÈME : Session créée (sess_001) | État: INITIAL
+───────────────────────────────────────────────────────────────
+
+📱 CLIENT : "Bonjour, j'ai une fuite d'eau"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "Bonjour, j'ai une fuite d'eau",
+  "conversation_state": "INITIAL",
+  "available_services": ["LEAK_REPAIR", "UNCLOGGING", "FAUCET_INSTALL", ...],
+  "available_zones": ["DLA", "BMS", "AKW", "DID"]
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "Bonjour ! Je suis votre assistant Djobea AI. Je vois que vous avez une fuite d'eau, je peux vous aider à trouver un plombier rapidement. Dans quel quartier êtes-vous ?",
+  "action_code": "COLLECT_LOCATION",
+  "extracted_data": {
+    "service_code": "LEAK_REPAIR",
+    "problem_type": "fuite d'eau"
+  },
+  "session_update": {
+    "conversation_state": "COLLECTING_LOCATION",
+    "next_expected": "zone_code"
+  },
+  "confidence_score": 0.92
+}
+
+📱 CLIENT : "À Bonamoussadi"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "À Bonamoussadi",
+  "conversation_state": "COLLECTING_LOCATION",
+  "collected_data": {"service_code": "LEAK_REPAIR"},
+  "available_zones": ["BMS", "AKW", "DID"]
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "Parfait ! Bonamoussadi est bien dans notre zone de couverture. Pouvez-vous me dire où exactement se trouve la fuite ? (salle de bain, cuisine, etc.)",
+  "action_code": "COLLECT_DESCRIPTION",
+  "extracted_data": {
+    "service_code": "LEAK_REPAIR",
+    "zone_code": "BMS"
+  },
+  "session_update": {
+    "conversation_state": "COLLECTING_DESCRIPTION",
+    "next_expected": "detailed_description"
+  },
+  "confidence_score": 0.95
+}
+
+📱 CLIENT : "Dans la cuisine, sous l'évier"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "Dans la cuisine, sous l'évier",
+  "conversation_state": "COLLECTING_DESCRIPTION",
+  "collected_data": {
+    "service_code": "LEAK_REPAIR",
+    "zone_code": "BMS"
+  }
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "Compris, une fuite sous l'évier de cuisine. C'est urgent ou vous pouvez attendre quelques heures ?",
+  "action_code": "COLLECT_URGENCY",
+  "extracted_data": {
+    "service_code": "LEAK_REPAIR",
+    "zone_code": "BMS",
+    "description": "Fuite sous évier cuisine"
+  },
+  "session_update": {
+    "conversation_state": "COLLECTING_URGENCY",
+    "next_expected": "urgency_level"
+  },
+  "confidence_score": 0.93
+}
+
+📱 CLIENT : "C'est urgent, il y a de l'eau partout"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "C'est urgent, il y a de l'eau partout",
+  "conversation_state": "COLLECTING_URGENCY",
+  "collected_data": {
+    "service_code": "LEAK_REPAIR",
+    "zone_code": "BMS",
+    "description": "Fuite sous évier cuisine"
+  }
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "Je comprends l'urgence ! Voici le récapitulatif de votre demande :\n\n🔧 **Service** : Réparation de fuite\n📍 **Zone** : Bonamoussadi\n📝 **Description** : Fuite sous évier cuisine\n⚡ **Urgence** : URGENT\n💰 **Tarif estimé** : 8,000 - 15,000 XAF\n\nConfirmez-vous cette demande ?",
+  "action_code": "CONFIRM_SERVICE_CREATION",
+  "extracted_data": {
+    "service_code": "LEAK_REPAIR",
+    "zone_code": "BMS",
+    "description": "Fuite sous évier cuisine",
+    "urgency": "URGENT"
+  },
+  "session_update": {
+    "conversation_state": "CONFIRMING_CREATION",
+    "next_expected": "confirmation"
+  },
+  "confidence_score": 0.98
+}
+
+📱 CLIENT : "Oui, je confirme"
+
+🤖 AGENT → LLM :
+{
+  "user_message": "Oui, je confirme",
+  "conversation_state": "CONFIRMING_CREATION",
+  "validation_result": "COMPLETE"
+}
+
+🧠 LLM → AGENT :
+{
+  "response": "✅ **Demande créée avec succès !**\n\n🎫 **Numéro de demande** : #DJB-001\n⏰ **Recherche de plombier en cours...**\n\nVous recevrez une notification dès qu'un plombier accepte votre demande (généralement sous 5 minutes).\n\n💬 **Actions disponibles** :\n• Tapez STATUT pour suivre votre demande\n• Tapez MODIFIER pour changer les détails\n• Tapez AIDE pour obtenir de l'aide",
+  "action_code": "CREATE_SERVICE_REQUEST",
+  "extracted_data": {
+    "service_code": "LEAK_REPAIR",
+    "zone_code": "BMS",
+    "description": "Fuite sous évier cuisine",
+    "urgency": "URGENT"
+  },
+  "session_update": {
+    "conversation_state": "REQUEST_CREATED",
+    "request_id": "DJB-001"
+  },
+  "confidence_score": 0.99
+}
+
+🤖 SYSTÈME : Demande créée → Recherche prestataires → Notifications envoyées
+───────────────────────────────────────────────────────────────
+✅ SUCCÈS : 4 tours de conversation | Temps total : 2 min 30s

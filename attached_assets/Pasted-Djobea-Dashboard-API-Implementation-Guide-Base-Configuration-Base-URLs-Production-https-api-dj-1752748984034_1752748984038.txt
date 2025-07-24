@@ -1,0 +1,123 @@
+Djobea Dashboard API Implementation Guide
+Base Configuration
+
+Base URLs:
+
+Production: https://api.djobea.com/api
+Staging: https://staging-api.djobea.com/api
+Development: http://localhost:3000/api
+
+
+Authentication: Bearer JWT token in Authorization header
+
+API Endpoints Implementation
+1. GET /dashboard
+Purpose: Retrieve complete dashboard data including stats, charts, and activity
+Method: GET
+Query Parameters:
+
+period (optional): 24h|7d|30d|90d|1y (default: 7d)
+
+Headers:
+Authorization: Bearer {jwt_token}
+Content-Type: application/json
+Response Sample:
+json{
+  "success": true,
+  "data": {
+    "stats": {
+      "totalRequests": 1250,
+      "successRate": 87.5,
+      "pendingRequests": 42,
+      "activeProviders": 78,
+      "completedToday": 24,
+      "revenue": 12500.75,
+      "avgResponseTime": 3.2,
+      "customerSatisfaction": 4.7,
+      "totalProviders": 95,
+      "providersChange": 5.2,
+      "requestsChange": 12.8,
+      "monthlyRevenue": 45000,
+      "revenueChange": 8.3,
+      "completionRate": 92.1,
+      "rateChange": 1.5
+    },
+    "charts": {
+      "activity": {
+        "labels": ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+        "data": [12, 19, 15, 22, 30, 25, 18]
+      },
+      "services": {
+        "labels": ["Plomberie", "Électricité", "Ménage", "Jardinage", "Peinture"],
+        "data": [35, 25, 20, 15, 5]
+      },
+      "revenue": {
+        "labels": ["Jan", "Fév", "Mar", "Avr", "Mai", "Juin"],
+        "data": [30000, 35000, 32000, 38000, 42000, 45000]
+      },
+      "requests": [
+        { "name": "Lun", "value": 25, "completed": 20 },
+        { "name": "Mar", "value": 30, "completed": 25 }
+      ]
+    },
+    "activity": {
+      "requests": [
+        {
+          "id": "req-123456",
+          "client": "Jean Dupont",
+          "service": "Plomberie",
+          "location": "Paris 15e",
+          "time": "2023-06-15T14:30:00Z",
+          "status": "completed",
+          "avatar": "https://api.djobea.com/avatars/client-123.jpg",
+          "priority": "normal"
+        }
+      ],
+      "alerts": [
+        {
+          "id": "alert-123456",
+          "title": "Demande urgente",
+          "description": "Nouvelle demande urgente nécessitant une attention immédiate",
+          "time": "2023-06-15T15:45:00Z",
+          "type": "warning",
+          "status": "non résolu",
+          "severity": "high"
+        }
+      ]
+    },
+    "recentActivity": [
+      {
+        "id": "act-123456",
+        "type": "request",
+        "title": "Nouvelle demande",
+        "description": "Jean Dupont a créé une nouvelle demande de plomberie",
+        "user": "Jean Dupont",
+        "timestamp": "2023-06-15T16:30:00Z",
+        "status": "success",
+        "metadata": {
+          "requestId": "req-123456",
+          "serviceType": "Plomberie",
+          "priority": "normal"
+        }
+      }
+    ],
+    "quickActions": [
+      {
+        "id": "new-request",
+        "title": "Nouvelle Demande",
+        "icon": "plus",
+        "action": "/requests?action=new",
+        "enabled": true
+      },
+      {
+        "id": "view-messages",
+        "title": "Messages",
+        "icon": "message-square",
+        "action": "/messages",
+        "enabled": true,
+        "count": 5
+      }
+    ]
+  },
+  "timestamp": "2023-06-15T16:45:00Z"
+}

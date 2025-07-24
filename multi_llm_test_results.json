@@ -1,0 +1,65 @@
+{
+  "total_tests": 8,
+  "passed_tests": 6,
+  "failed_tests": 2,
+  "success_rate": 75.0,
+  "avg_response_time_ms": 735.375,
+  "test_results": [
+    {
+      "test_name": "LLM Status Endpoint",
+      "success": true,
+      "details": "Total: 3, Active: 1, Recommended: gemini",
+      "response_time_ms": 16,
+      "timestamp": "2025-07-11T23:01:56.678206"
+    },
+    {
+      "test_name": "LLM Health Check",
+      "success": true,
+      "details": "Operational: True, Active: ['gemini']",
+      "response_time_ms": 10,
+      "timestamp": "2025-07-11T23:01:56.688975"
+    },
+    {
+      "test_name": "Provider Test: CLAUDE",
+      "success": true,
+      "details": "Response generated successfully",
+      "response_time_ms": 764,
+      "timestamp": "2025-07-11T23:01:57.453585"
+    },
+    {
+      "test_name": "Provider Test: GEMINI",
+      "success": true,
+      "details": "Response generated successfully",
+      "response_time_ms": 567,
+      "timestamp": "2025-07-11T23:01:58.021276"
+    },
+    {
+      "test_name": "Provider Test: OPENAI",
+      "success": true,
+      "details": "Response generated successfully",
+      "response_time_ms": 550,
+      "timestamp": "2025-07-11T23:01:58.572409"
+    },
+    {
+      "test_name": "AI Suggestions Fallback",
+      "success": true,
+      "details": "Suggestions: 3, Fallback: False, Gen time: 3904ms",
+      "response_time_ms": 3976,
+      "timestamp": "2025-07-11T23:02:02.549299"
+    },
+    {
+      "test_name": "Conversation Engine Fallback",
+      "success": false,
+      "details": "HTTP 422",
+      "response_time_ms": 0,
+      "timestamp": "2025-07-11T23:02:02.573267"
+    },
+    {
+      "test_name": "Provider Recovery Reset",
+      "success": false,
+      "details": "HTTP 401",
+      "response_time_ms": 0,
+      "timestamp": "2025-07-11T23:02:02.579816"
+    }
+  ]
+}

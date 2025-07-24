@@ -8,7 +8,7 @@ from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, String
 
 from app.models.database_models import Provider, ServiceRequest, User
 from app.config import get_settings
@@ -35,7 +35,7 @@ class ProviderMatcher:
     
     def __init__(self, db: Session):
         self.db = db
-        self.min_rating_threshold = 3.0
+        self.min_rating_threshold = 0.0  # Allow new providers with 0 rating
         self.max_providers_to_notify = 3
         
         # Scoring weights
@@ -75,17 +75,23 @@ class ProviderMatcher:
             
             # Filter by service type
             service_type = request.service_type.lower()
+            logger.info(f"Filtering providers by service type: {service_type}")
+            
+            # Check if services array contains the service type
             query = query.filter(
-                Provider.services.op('->>')(0).contains(service_type)
+                func.json_array_length(Provider.services) > 0
+            ).filter(
+                func.cast(Provider.services.op('->')(0), String).ilike(f'%{service_type}%')
             )
             
             # Filter by geographic coverage
             location_keywords = self._extract_location_keywords(request.location)
+            logger.info(f"Filtering providers by location keywords: {location_keywords}")
             if location_keywords:
                 coverage_conditions = []
                 for keyword in location_keywords:
                     coverage_conditions.append(
-                        Provider.coverage_areas.op('->>')(0).contains(keyword)
+                        func.cast(Provider.coverage_areas.op('->')(0), String).ilike(f'%{keyword}%')
                     )
                 query = query.filter(or_(*coverage_conditions))
             
@@ -95,17 +101,72 @@ class ProviderMatcher:
                 ServiceRequest.provider_id.isnot(None)
             ).group_by(ServiceRequest.provider_id).having(
                 func.count(ServiceRequest.id) >= 3  # Max 3 concurrent jobs
-            ).subquery()
+            )
             
-            query = query.filter(~Provider.id.in_(busy_providers))
+            # Convert to select to avoid SQLAlchemy warning
+            busy_provider_ids = [row[0] for row in busy_providers.all()]
+            if busy_provider_ids:
+                query = query.filter(~Provider.id.in_(busy_provider_ids))
             
             providers = query.all()
             
             logger.info(f"Found {len(providers)} available providers for service '{service_type}' in '{request.location}'")
+            
+            # If no providers found, try broader search
+            if not providers:
+                logger.warning(f"No providers found for exact match. Trying broader search...")
+                providers = self._find_providers_with_fallback(service_type, request.location)
+                
             return providers
             
         except Exception as e:
             logger.error(f"Error finding available providers: {e}")
+            # Try fallback search with minimal criteria
+            try:
+                fallback_providers = self._emergency_provider_search(request.service_type)
+                logger.info(f"Emergency search found {len(fallback_providers)} providers")
+                return fallback_providers
+            except Exception as fallback_error:
+                logger.error(f"Emergency provider search also failed: {fallback_error}")
+                return []
+    
+    def _find_providers_with_fallback(self, service_type: str, location: str) -> List[Provider]:
+        """Find providers with broader search criteria"""
+        try:
+            # Try search without location constraints
+            query = self.db.query(Provider).filter(
+                Provider.is_active == True,
+                Provider.is_available == True
+            )
+            
+            # Only filter by service type
+            query = query.filter(
+                func.json_array_length(Provider.services) > 0
+            ).filter(
+                func.cast(Provider.services.op('->')(0), String).ilike(f'%{service_type}%')
+            )
+            
+            providers = query.limit(5).all()  # Limit to 5 for fallback
+            logger.info(f"Fallback search found {len(providers)} providers for {service_type}")
+            return providers
+            
+        except Exception as e:
+            logger.error(f"Error in fallback provider search: {e}")
+            return []
+    
+    def _emergency_provider_search(self, service_type: str) -> List[Provider]:
+        """Emergency search with minimal criteria"""
+        try:
+            # Get any active provider
+            providers = self.db.query(Provider).filter(
+                Provider.is_active == True
+            ).limit(3).all()
+            
+            logger.info(f"Emergency search returned {len(providers)} providers")
+            return providers
+            
+        except Exception as e:
+            logger.error(f"Error in emergency provider search: {e}")
             return []
     
     def rank_providers(self, providers: List[Provider], request: ServiceRequest) -> List[ProviderScore]:

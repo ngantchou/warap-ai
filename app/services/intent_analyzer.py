@@ -66,6 +66,49 @@ class IntentAnalyzer:
             "cancellation_requests": [
                 "annuler", "cancel", "arrêter", "stop", "plus besoin", "don't need",
                 "changer d'avis", "changed mind", "i no want again", "forget am"
+            ],
+            "request_management": [
+                "voir mes demandes", "mes demandes", "my requests", "show requests",
+                "mes commandes", "my orders", "voir commandes", "show orders",
+                "voir ma demande", "my request", "check my request", "voir commande",
+                "vérifier demande", "check request", "what did i request", "qu'est-ce que j'ai demandé"
+            ],
+            "modification_requests": [
+                "modifier", "modify", "changer", "change", "corriger", "correct",
+                "ajuster", "adjust", "update", "mettre à jour", "edit", "éditer",
+                "je veux changer", "i want to change", "peut-on modifier", "can we modify"
+            ],
+            "request_reference_patterns": [
+                r"^djb-?\d{3}$",  # DJB-001, DJB001, djb-001, etc.
+                r"^\d{1,3}$",     # 1, 2, 3, etc. (simple numbers)
+                r"^#\d{1,3}$",    # #1, #2, #3, etc.
+                r"^demande\s*\d{1,3}$",  # "demande 1", "demande1", etc.
+                r"^numero\s*\d{1,3}$",   # "numero 1", "numero1", etc.
+                r"^request\s*\d{1,3}$"   # "request 1", "request1", etc.
+            ],
+            "request_details_patterns": [
+                "voir les détails", "détails de la demande", "voir détails",
+                "détails demande", "plus d'infos", "more info", "show details",
+                "voir plus", "see more", "informations détaillées",
+                "je veux voir", "i want to see", "montrer détails"
+            ],
+            "info_requests": [
+                "faq", "help", "aide", "information", "infos", "renseignements",
+                "que pouvez-vous faire", "what can you do", "vos services",
+                "quels services", "what services", "how does it work",
+                "comment ça marche", "tarifs", "prix", "prices", "cost",
+                "coût", "combien", "how much", "en savoir plus",
+                "plus d'informations", "more information", "about you",
+                "à propos", "qui êtes-vous", "who are you", "explain",
+                "expliquer", "comment", "how", "pourquoi", "why"
+            ],
+            "human_contact_requests": [
+                "parler à quelqu'un", "talk to someone", "human", "humain",
+                "personne", "person", "agent", "operateur", "operator",
+                "assistance", "support", "call", "appeler", "téléphone",
+                "phone", "contact", "speak to", "parler avec",
+                "je veux parler", "i want to speak", "customer service",
+                "service client", "real person", "vraie personne"
             ]
         }
     
@@ -115,6 +158,32 @@ class IntentAnalyzer:
                 "method": "pattern_matching"
             }
         
+        # Check for request management
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["request_management"]):
+            return {
+                "primary_intent": "view_my_requests",
+                "confidence": 0.9,
+                "method": "pattern_matching"
+            }
+        
+        # Check for request reference (numbers like "4" for DJB-004)
+        request_ref = self._extract_request_reference(message)
+        if request_ref:
+            return {
+                "primary_intent": "view_request_details",
+                "confidence": 0.95,
+                "method": "pattern_matching",
+                "request_reference": message.strip()  # Pass original message for flexible handling
+            }
+        
+        # Check for modification requests
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["modification_requests"]):
+            return {
+                "primary_intent": "modify_request",
+                "confidence": 0.9,
+                "method": "pattern_matching"
+            }
+        
         # Check for cancellation requests
         if any(pattern in message_lower for pattern in self.cameroon_patterns["cancellation_requests"]):
             return {
@@ -134,6 +203,22 @@ class IntentAnalyzer:
                 "primary_intent": "emergency",
                 "urgency_level": "high",
                 "confidence": 0.85,
+                "method": "pattern_matching"
+            }
+        
+        # Check for information requests (FAQ, help, etc.)
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["info_requests"]):
+            return {
+                "primary_intent": "info_request",
+                "confidence": 0.9,
+                "method": "pattern_matching"
+            }
+        
+        # Check for human contact requests
+        if any(pattern in message_lower for pattern in self.cameroon_patterns["human_contact_requests"]):
+            return {
+                "primary_intent": "human_contact",
+                "confidence": 0.9,
                 "method": "pattern_matching"
             }
         
@@ -176,32 +261,32 @@ class IntentAnalyzer:
             ])
         
         system_prompt = f"""
-        Tu es un analyste d'intentions pour Djobea AI, un service camerounais de mise en relation pour services à domicile.
+        Tu es l'IA conversationnelle de Djobea AI, service camerounais de mise en relation pour services à domicile.
         
-        CONTEXTE CAMEROUNAIS:
-        - Services: plomberie, électricité, réparation électroménager
-        - Zone: Bonamoussadi, Douala
-        - Langues: français, anglais, pidgin english
+        SERVICES DISPONIBLES:
+        - Plomberie: fuites, robinets, WC, tuyaux
+        - Électricité: pannes, prises, interrupteurs
+        - Électroménager: frigo, machine à laver, four
         
-        INTENTIONS POSSIBLES:
-        1. new_service_request - Nouvelle demande de service
-        2. status_inquiry - Demande de statut
-        3. cancel_request - Demande d'annulation
-        4. modify_request - Modification de demande
-        5. emergency - Situation d'urgence
-        6. continue_previous - Suite d'une conversation
-        7. general_inquiry - Question générale
+        ZONE DE COUVERTURE: Bonamoussadi, Douala
         
-        PHASE ACTUELLE: {current_phase or 'unknown'}
+        INTENTIONS PRINCIPALES:
+        1. "info_request" - FAQ, aide, informations sur services/tarifs/fonctionnement
+        2. "human_contact" - Demande de contact humain, parler à quelqu'un
+        3. "view_my_requests" - Voir demandes existantes
+        4. "new_service_request" - Nouvelle demande de service
+        5. "status_inquiry" - Statut d'une demande
+        6. "cancel_request" - Annulation
+        7. "emergency" - Urgence
+        8. "general_inquiry" - Conversation générale
+        
+        PHASE ACTUELLE: {current_phase or 'greeting'}
         
         CONTEXTE CONVERSATION:
         {context}
         
-        Analyse le message et extrais:
-        - L'intention principale
-        - Les informations de service (type, localisation, description, urgence)
-        - Le niveau de confiance
-        - Les informations manquantes
+        Analyse le message naturellement et détermine l'intention la plus appropriée.
+        Priorise "info_request" pour FAQ/aide/services et "human_contact" pour contact humain.
         
         Réponds en JSON strict.
         """
@@ -357,6 +442,23 @@ class IntentAnalyzer:
         for landmark in landmarks:
             if landmark in message_lower:
                 return f"Près de {landmark}, Bonamoussadi"
+        
+        return None
+    
+    def _extract_request_reference(self, message: str) -> Optional[str]:
+        """Extract request reference from message (e.g., '4' -> 'DJB-004')"""
+        
+        message_clean = message.strip().lower()
+        
+        # Check each pattern
+        for pattern in self.cameroon_patterns["request_reference_patterns"]:
+            if re.match(pattern, message_clean):
+                # Extract the number
+                number_match = re.search(r'\d+', message_clean)
+                if number_match:
+                    number = int(number_match.group())
+                    # Format as DJB-XXX
+                    return f"DJB-{number:03d}"
         
         return None
     

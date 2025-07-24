@@ -1,0 +1,315 @@
+{
+  "timestamp": "2025-07-11T16:50:44.150374",
+  "summary": {
+    "total_endpoints": 37,
+    "successful": 0,
+    "failed": 37,
+    "success_rate": 0.0
+  },
+  "detailed_results": [
+    {
+      "timestamp": "2025-07-11T16:50:43.781287",
+      "category": "AUTH",
+      "endpoint": "/auth/api/login",
+      "method": "POST",
+      "status": "FAILED",
+      "details": "Status: 422"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.796852",
+      "category": "ANALYTICS",
+      "endpoint": "/api/analytics/",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.808537",
+      "category": "ANALYTICS",
+      "endpoint": "/api/analytics/performance",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.817295",
+      "category": "ANALYTICS",
+      "endpoint": "/api/analytics/geographic",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.825350",
+      "category": "ANALYTICS",
+      "endpoint": "/api/analytics/services",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.833344",
+      "category": "ANALYTICS",
+      "endpoint": "/api/analytics/kpis",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.842466",
+      "category": "ANALYTICS",
+      "endpoint": "/api/analytics/insights",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.857195",
+      "category": "ANALYTICS",
+      "endpoint": "/api/analytics/leaderboard",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.865448",
+      "category": "PROVIDERS",
+      "endpoint": "/api/providers/",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.872800",
+      "category": "PROVIDERS",
+      "endpoint": "/api/providers/available",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.881331",
+      "category": "PROVIDERS",
+      "endpoint": "/api/providers/stats",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.889553",
+      "category": "PROVIDERS",
+      "endpoint": "/api/providers/1",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.899093",
+      "category": "PROVIDERS",
+      "endpoint": "/api/providers/1/status",
+      "method": "GET",
+      "status": "FAILED",
+      "details": "Status: 405"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.913504",
+      "category": "PROVIDERS",
+      "endpoint": "/api/providers/1/contact",
+      "method": "POST",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.922532",
+      "category": "REQUESTS",
+      "endpoint": "/api/requests/",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.932142",
+      "category": "REQUESTS",
+      "endpoint": "/api/requests/1",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.939827",
+      "category": "REQUESTS",
+      "endpoint": "/api/requests/1/status",
+      "method": "GET",
+      "status": "FAILED",
+      "details": "Status: 405"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.947410",
+      "category": "REQUESTS",
+      "endpoint": "/api/requests/1/invoice",
+      "method": "GET",
+      "status": "FAILED",
+      "details": "Status: 405"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.957115",
+      "category": "REQUESTS",
+      "endpoint": "/api/requests/1/cancel",
+      "method": "POST",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.970208",
+      "category": "REQUESTS",
+      "endpoint": "/api/requests/1/assign",
+      "method": "POST",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.978039",
+      "category": "FINANCES",
+      "endpoint": "/api/finances/",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.989611",
+      "category": "FINANCES",
+      "endpoint": "/api/finances/overview",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:43.998771",
+      "category": "FINANCES",
+      "endpoint": "/api/finances/transactions",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.006495",
+      "category": "FINANCES",
+      "endpoint": "/api/finances/commissions",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.013672",
+      "category": "FINANCES",
+      "endpoint": "/api/finances/payouts",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.021204",
+      "category": "FINANCES",
+      "endpoint": "/api/finances/reports",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.032053",
+      "category": "FINANCES",
+      "endpoint": "/api/finances/payouts",
+      "method": "POST",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.039040",
+      "category": "SYSTEM",
+      "endpoint": "/api/metrics/system",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.049734",
+      "category": "AI",
+      "endpoint": "/api/ai/predictions",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.057191",
+      "category": "AI",
+      "endpoint": "/api/ai/models",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.066404",
+      "category": "AI",
+      "endpoint": "/api/ai/metrics",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.073970",
+      "category": "AI",
+      "endpoint": "/api/ai/health",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.082581",
+      "category": "AI",
+      "endpoint": "/api/ai/analyze",
+      "method": "POST",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.098589",
+      "category": "AI",
+      "endpoint": "/api/ai/chat",
+      "method": "POST",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.120367",
+      "category": "SETTINGS",
+      "endpoint": "/api/settings/system",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.130031",
+      "category": "SETTINGS",
+      "endpoint": "/api/settings/notifications",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.138313",
+      "category": "SETTINGS",
+      "endpoint": "/api/settings/pricing",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    },
+    {
+      "timestamp": "2025-07-11T16:50:44.146578",
+      "category": "SETTINGS",
+      "endpoint": "/api/settings/integrations",
+      "method": "GET",
+      "status": "AUTH_REQUIRED",
+      "details": "Status: 401"
+    }
+  ]
+}

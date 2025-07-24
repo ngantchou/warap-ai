@@ -5,6 +5,7 @@ from typing import Dict, Optional, List
 from anthropic import Anthropic
 from app.utils.logger import setup_logger
 from app.config import get_settings
+from app.services.multi_llm_service import MultiLLMService, LLMProvider
 
 logger = setup_logger(__name__)
 settings = get_settings()
@@ -16,17 +17,23 @@ settings = get_settings()
 DEFAULT_MODEL_STR = "claude-sonnet-4-20250514"
 
 class AIService:
-    """Service for handling AI-powered conversation understanding"""
+    """Service for handling AI-powered conversation understanding with multi-LLM support"""
     
     def __init__(self):
-        # Initialize the client
-        anthropic_key: str = (os.environ.get('ANTHROPIC_API_KEY') or
-                       sys.exit('ANTHROPIC_API_KEY environment variable must be set'))
-
-        self.client = Anthropic(
-            # Get your API key from https://console.anthropic.com/
-            api_key=anthropic_key,
-        )
+        # Initialize multi-LLM service
+        self.multi_llm = MultiLLMService()
+        
+        # Legacy Claude client for backward compatibility
+        try:
+            anthropic_key = os.environ.get('ANTHROPIC_API_KEY')
+            if anthropic_key:
+                self.client = Anthropic(api_key=anthropic_key)
+            else:
+                self.client = None
+                logger.warning("No Anthropic API key found, using multi-LLM fallback only")
+        except Exception as e:
+            self.client = None
+            logger.warning(f"Failed to initialize Claude client: {e}")
         
         self.model = settings.claude_model
         self.target_area = f"{settings.target_district}, {settings.target_city}"
@@ -190,64 +197,177 @@ Djobea AI - Services à domicile
         return status_messages.get(status, "Statut de votre demande mis à jour.")
     
     async def generate_response(self, messages: List[Dict], system_prompt: str = None, max_tokens: int = 1000, temperature: float = 0.7) -> str:
-        """Generate a response using Claude API"""
+        """Generate AI response using multi-LLM system with automatic fallback"""
         try:
-            # Prepare system prompt
-            if not system_prompt:
-                system_prompt = f"""
-                Tu es l'assistant IA de Djobea AI, un service de mise en relation entre clients et prestataires de services à domicile au Cameroun.
-                
-                ZONE COUVERTE: {self.target_area}
-                SERVICES DISPONIBLES: {', '.join(self.supported_services)}
-                
-                Tu dois:
-                - Être poli et professionnel
-                - Parler en français adapté au contexte camerounais
-                - Aider les clients à formuler leurs demandes de service
-                - Être précis dans tes réponses
-                """
-            
-            # Convert messages format if needed
-            claude_messages = []
-            for msg in messages:
-                if isinstance(msg, dict):
-                    claude_messages.append({
-                        "role": msg.get("role", "user"),
-                        "content": msg.get("content", str(msg))
-                    })
-                else:
-                    claude_messages.append({
-                        "role": "user",
-                        "content": str(msg)
-                    })
-            
-            response = self.client.messages.create(
-                model=self.model,
+            # First try multi-LLM service
+            response = await self.multi_llm.generate_response(
+                messages=messages,
+                system_prompt=system_prompt,
                 max_tokens=max_tokens,
-                temperature=temperature,
-                system=system_prompt,
-                messages=claude_messages
+                temperature=temperature
             )
             
-            return response.content[0].text.strip()
+            logger.info(f"Successfully generated response using multi-LLM service")
+            return response
             
         except Exception as e:
-            logger.error(f"Error in generate_response: {e}")
-            return "Désolé, je rencontre une difficulté technique. Pouvez-vous reformuler votre demande ?"
+            logger.error(f"Error in multi-LLM generate_response: {e}")
+            
+            # Legacy fallback to direct Claude client (if available)
+            if self.client:
+                try:
+                    # Prepare system prompt
+                    if not system_prompt:
+                        system_prompt = f"""
+                        Tu es l'assistant IA de Djobea AI, un service de mise en relation entre clients et prestataires de services à domicile au Cameroun.
+                        
+                        ZONE COUVERTE: {self.target_area}
+                        SERVICES DISPONIBLES: {', '.join(self.supported_services)}
+                        
+                        Tu dois:
+                        - Être poli et professionnel
+                        - Parler en français adapté au contexte camerounais
+                        - Aider les clients à formuler leurs demandes de service
+                        - Être précis dans tes réponses
+                        """
+                    
+                    # Convert messages format if needed
+                    claude_messages = []
+                    for msg in messages:
+                        if isinstance(msg, dict):
+                            claude_messages.append({
+                                "role": msg.get("role", "user"),
+                                "content": msg.get("content", str(msg))
+                            })
+                        else:
+                            claude_messages.append({
+                                "role": "user",
+                                "content": str(msg)
+                            })
+                    
+                    response = self.client.messages.create(
+                        model=self.model,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        system=system_prompt,
+                        messages=claude_messages
+                    )
+                    
+                    logger.info("Successfully generated response using legacy Claude client")
+                    return response.content[0].text.strip()
+                    
+                except Exception as legacy_error:
+                    logger.error(f"Legacy Claude client also failed: {legacy_error}")
+            
+            # Final fallback message with basic parsing
+            return self._get_intelligent_fallback_response(messages[-1] if messages else {"content": ""})
     
     def _get_fallback_response(self, message: str) -> Dict:
-        """Fallback response when AI fails"""
+        """Get fallback response when AI service fails"""
+        # Try basic keyword detection when LLM fails
+        service_type = self._detect_service_type(message)
+        location = self._detect_location(message)
+        urgency = self._detect_urgency(message)
+        
+        missing_info = []
+        if not service_type or service_type == "non_identifié":
+            missing_info.append("service_type")
+        if not location:
+            missing_info.append("location")
+        if not any(word in message.lower() for word in ["problème", "panne", "fuite", "coupure", "réparation"]):
+            missing_info.append("description")
+        
+        # Generate appropriate response based on what we detected
+        if service_type and service_type != "non_identifié":
+            response_message = f"Je comprends que vous avez besoin d'un service de {service_type}. "
+            if location:
+                response_message += f"Vous êtes à {location}. "
+            if missing_info:
+                response_message += "Pouvez-vous me donner plus de détails sur le problème ?"
+            else:
+                response_message += "Je vais créer votre demande de service."
+        else:
+            response_message = "Je rencontre une difficulté technique. Pouvez-vous me dire précisément de quel service vous avez besoin (plomberie, électricité, réparation électroménager) et où vous vous trouvez ?"
+        
         return {
-            "service_type": "non_identifié",
-            "description": "",
-            "location": "",
+            "service_type": service_type,
+            "description": self._extract_description(message),
+            "location": location,
             "preferred_time": "",
-            "urgency": "normal",
-            "missing_info": ["service_type", "description", "location"],
-            "response_message": "Bonjour ! Je suis Djobea AI, votre assistant pour les services à domicile. Pouvez-vous me dire quel service vous avez besoin ? (plomberie, électricité, ou réparation d'électroménager)",
-            "is_complete": False,
-            "is_in_coverage_area": None
+            "urgency": urgency,
+            "missing_info": missing_info,
+            "response_message": response_message,
+            "is_complete": len(missing_info) == 0,
+            "is_in_coverage_area": True if location and any(zone in location.lower() for zone in ["bonamoussadi", "douala"]) else None
         }
+    
+    def _detect_service_type(self, message: str) -> str:
+        """Detect service type using keyword matching"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["plombier", "plomberie", "fuite", "robinet", "tuyau", "eau", "wc", "toilette", "douche", "évier"]):
+            return "plomberie"
+        elif any(word in message_lower for word in ["électricien", "électricité", "courant", "lumière", "prise", "interrupteur", "cable", "panne électrique", "court-circuit"]):
+            return "électricité"
+        elif any(word in message_lower for word in ["réfrigérateur", "frigo", "machine", "laver", "climatisation", "clim", "électroménager", "four", "micro-onde"]):
+            return "réparation électroménager"
+        else:
+            return "non_identifié"
+    
+    def _detect_location(self, message: str) -> str:
+        """Detect location using keyword matching"""
+        message_lower = message.lower()
+        
+        if "bonamoussadi" in message_lower:
+            return "Bonamoussadi"
+        elif "douala" in message_lower:
+            return "Douala"
+        elif any(word in message_lower for word in ["chez moi", "à la maison", "domicile"]):
+            return "À préciser"
+        else:
+            return ""
+    
+    def _detect_urgency(self, message: str) -> str:
+        """Detect urgency using keyword matching"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["urgent", "urgence", "rapidement", "vite", "immédiatement", "maintenant"]):
+            return "urgent"
+        elif any(word in message_lower for word in ["flexible", "quand vous voulez", "pas pressé"]):
+            return "flexible"
+        else:
+            return "normal"
+    
+    def _extract_description(self, message: str) -> str:
+        """Extract basic description from message"""
+        message_lower = message.lower()
+        
+        if any(word in message_lower for word in ["fuite", "coule"]):
+            return "Problème de fuite"
+        elif any(word in message_lower for word in ["panne", "ne marche pas", "ne fonctionne pas"]):
+            return "Panne d'équipement"
+        elif any(word in message_lower for word in ["coupure", "plus de courant"]):
+            return "Coupure électrique"
+        elif any(word in message_lower for word in ["installation", "installer"]):
+            return "Installation requise"
+        else:
+            return "Service requis"
+    
+    def _get_intelligent_fallback_response(self, message: Dict) -> str:
+        """Get intelligent fallback response when all LLM providers fail"""
+        content = message.get("content", "") if isinstance(message, dict) else str(message)
+        
+        # Try to detect service type from message
+        service_type = self._detect_service_type(content)
+        location = self._detect_location(content)
+        
+        if service_type and service_type != "non_identifié":
+            if location:
+                return f"Je comprends que vous avez besoin d'un service de {service_type} à {location}. Je vais traiter votre demande malgré les difficultés techniques temporaires."
+            else:
+                return f"Je comprends que vous avez besoin d'un service de {service_type}. Pouvez-vous me préciser votre localisation à Douala ?"
+        else:
+            return "Je rencontre une difficulté technique temporaire. Pouvez-vous me dire de quel service vous avez besoin (plomberie, électricité, réparation électroménager) et votre localisation ?"
 
 # Global AI service instance
 ai_service = AIService()

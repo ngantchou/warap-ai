@@ -7,10 +7,17 @@ class Settings(BaseSettings):
     
     # Database
     database_url: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/djobea_ai")
+    postgres_password: str = os.getenv("POSTGRES_PASSWORD", "")
     
     # Anthropic Claude API
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     claude_model: str = "claude-sonnet-4-20250514"
+    
+    # OpenAI API
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+    
+    # Gemini API
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     
     # Twilio WhatsApp
     twilio_account_sid: str = os.getenv("TWILIO_ACCOUNT_SID", "")
@@ -20,15 +27,32 @@ class Settings(BaseSettings):
     # Monetbil Payment
     monetbil_service_key: str = os.getenv("MONETBIL_SERVICE_KEY", "")
     monetbil_service_secret: str = os.getenv("MONETBIL_SERVICE_SECRET", "")
+    monetbil_api_key: str = os.getenv("MONETBIL_API_KEY", "")
+    monetbil_merchant_id: str = os.getenv("MONETBIL_MERCHANT_ID", "")
     base_url: str = os.getenv("BASE_URL", "https://djobea-ai.replit.app")
     
     # Application
     app_name: str = "Djobea AI"
     debug: bool = os.getenv("DEBUG", "false").lower() == "true"
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
+    secret_key: str = os.getenv("SECRET_KEY", "")
+    environment: str = os.getenv("ENVIRONMENT", "development")
+    webhook_base_url: str = os.getenv("WEBHOOK_BASE_URL", "")
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "")
     
     # Provider authentication mode
     demo_mode: bool = os.getenv("DEMO_MODE", "false").lower() == "true"
+    
+    # Redis Configuration
+    redis_host: str = os.getenv("REDIS_HOST", "localhost")
+    redis_port: int = int(os.getenv("REDIS_PORT", "6379"))
+    redis_db: int = int(os.getenv("REDIS_DB", "0"))
+    redis_password: str = os.getenv("REDIS_PASSWORD", "")
+    
+    # Session Management
+    session_cache_ttl: int = int(os.getenv("SESSION_CACHE_TTL", "7200"))  # 2 hours
+    session_timeout_minutes: int = int(os.getenv("SESSION_TIMEOUT_MINUTES", "120"))  # 2 hours
+    max_active_sessions: int = int(os.getenv("MAX_ACTIVE_SESSIONS", "1000"))
     
     # Business rules
     max_concurrent_requests: int = 50

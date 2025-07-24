@@ -1,0 +1,246 @@
+{
+  "summary": {
+    "total_endpoints": 37,
+    "successful_endpoints": 26,
+    "success_rate": 70.27027027027027,
+    "timestamp": "2025-07-11T16:28:56.960366"
+  },
+  "results": {
+    "Analytics": {
+      "/api/analytics/": {
+        "status": 401,
+        "description": "Analytics Overview",
+        "response_size": 43,
+        "success": true
+      },
+      "/api/analytics/kpis": {
+        "status": 401,
+        "description": "KPI Metrics",
+        "response_size": 43,
+        "success": true
+      },
+      "/api/analytics/performance": {
+        "status": 401,
+        "description": "Performance Metrics",
+        "response_size": 43,
+        "success": true
+      },
+      "/api/analytics/services": {
+        "status": 401,
+        "description": "Services Analytics",
+        "response_size": 43,
+        "success": true
+      },
+      "/api/analytics/geographic": {
+        "status": 401,
+        "description": "Geographic Analytics",
+        "response_size": 43,
+        "success": true
+      },
+      "/api/analytics/insights": {
+        "status": 401,
+        "description": "AI Insights",
+        "response_size": 43,
+        "success": true
+      },
+      "/api/analytics/leaderboard": {
+        "status": 401,
+        "description": "Provider Leaderboard",
+        "response_size": 43,
+        "success": true
+      }
+    },
+    "Providers": {
+      "/api/providers": {
+        "status": 401,
+        "description": "Create Provider",
+        "method": "POST",
+        "success": true
+      },
+      "/api/providers/1": {
+        "status": 401,
+        "description": "Delete Provider",
+        "method": "DELETE",
+        "success": true
+      },
+      "/api/providers/1/contact": {
+        "status": 401,
+        "description": "Contact Provider",
+        "method": "POST",
+        "success": true
+      },
+      "/api/providers/1/status": {
+        "status": 401,
+        "description": "Update Provider Status",
+        "method": "PUT",
+        "success": true
+      },
+      "/api/providers/available": {
+        "status": 401,
+        "description": "Get Available Providers",
+        "method": "GET",
+        "success": true
+      },
+      "/api/providers/stats": {
+        "status": 401,
+        "description": "Get Provider Statistics",
+        "method": "GET",
+        "success": true
+      }
+    },
+    "Requests": {
+      "/api/requests": {
+        "status": 401,
+        "description": "Get Requests List",
+        "method": "GET",
+        "success": true
+      },
+      "/api/requests/1": {
+        "status": 401,
+        "description": "Get Request Details",
+        "method": "GET",
+        "success": true
+      },
+      "/api/requests/1/assign": {
+        "status": 401,
+        "description": "Assign Request to Provider",
+        "method": "POST",
+        "success": true
+      },
+      "/api/requests/1/cancel": {
+        "status": 401,
+        "description": "Cancel Request",
+        "method": "POST",
+        "success": true
+      },
+      "/api/requests/1/status": {
+        "status": 401,
+        "description": "Update Request Status",
+        "method": "PUT",
+        "success": true
+      },
+      "/api/requests/1/invoice": {
+        "status": 401,
+        "description": "Generate Invoice",
+        "method": "POST",
+        "success": true
+      }
+    },
+    "Finances": {
+      "/api/finances/overview": {
+        "status": 404,
+        "description": "Finances Overview",
+        "method": "GET",
+        "success": false
+      },
+      "/api/finances/transactions": {
+        "status": 401,
+        "description": "Get Transactions",
+        "method": "GET",
+        "success": true
+      },
+      "/api/finances/commissions": {
+        "status": 404,
+        "description": "Get Commissions",
+        "method": "GET",
+        "success": false
+      },
+      "/api/finances/payouts": {
+        "status": 404,
+        "description": "Create Payout",
+        "method": "POST",
+        "success": false
+      },
+      "/api/finances/reports": {
+        "status": 404,
+        "description": "Get Financial Reports",
+        "method": "GET",
+        "success": false
+      }
+    },
+    "System": {
+      "/api/zones": {
+        "status": 401,
+        "description": "Get Zones List",
+        "success": true
+      },
+      "/api/metrics/system": {
+        "status": 401,
+        "description": "Get System Metrics",
+        "success": true
+      }
+    },
+    "AI": {
+      "/api/ai/models": {
+        "status": 404,
+        "description": "Get AI Models",
+        "method": "GET",
+        "success": false
+      },
+      "/api/ai/metrics": {
+        "status": 404,
+        "description": "Get AI Metrics",
+        "method": "GET",
+        "success": false
+      },
+      "/api/ai/analyze": {
+        "status": 404,
+        "description": "Analyze Text",
+        "method": "POST",
+        "success": false
+      },
+      "/api/ai/chat": {
+        "status": 404,
+        "description": "Chat with AI",
+        "method": "POST",
+        "success": false
+      },
+      "/api/ai/health": {
+        "status": 404,
+        "description": "AI Health Check",
+        "method": "GET",
+        "success": false
+      }
+    },
+    "Settings": {
+      "/api/settings/general": {
+        "status": 404,
+        "description": "Update General Settings",
+        "method": "PUT",
+        "success": false
+      },
+      "/api/settings/notifications": {
+        "status": 401,
+        "description": "Update Notification Settings",
+        "method": "PUT",
+        "success": true
+      },
+      "/api/settings/business": {
+        "status": 404,
+        "description": "Update Business Settings",
+        "method": "PUT",
+        "success": false
+      }
+    },
+    "Authentication": {
+      "/api/auth/login": {
+        "status": 404,
+        "description": "Login",
+        "method": "POST",
+        "success": true
+      },
+      "/api/auth/refresh": {
+        "status": 404,
+        "description": "Refresh Token",
+        "method": "POST",
+        "success": true
+      },
+      "/api/auth/logout": {
+        "status": 404,
+        "description": "Logout",
+        "method": "POST",
+        "success": true
+      }
+    }
+  }
+}

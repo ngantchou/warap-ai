@@ -14,6 +14,8 @@ from app.database import get_db
 from app.models.database_models import ServiceRequest, User, Provider, RequestStatus
 from app.services.whatsapp_service import WhatsAppService
 from app.services.provider_profile_service import get_provider_profile_service
+from app.services.provider_fallback_service import ProviderFallbackService
+from app.services.web_chat_notification_service import web_chat_notification_service
 
 
 class CommunicationService:
@@ -53,6 +55,30 @@ class CommunicationService:
                 logger.error(f"User not found for request {request_id}")
                 return False
             
+            # Send confirmation via web chat (primary channel)
+            web_chat_success = await web_chat_notification_service.send_instant_confirmation(request_id, request.user_id)
+            if web_chat_success:
+                logger.info(f"Instant confirmation sent via web chat for request {request_id}")
+                return True
+            
+            # If web chat fails, try WhatsApp as fallback (though it has limitations)
+            logger.warning(f"Web chat confirmation failed for request {request_id}, trying WhatsApp fallback")
+            
+            # Try WhatsApp fallback
+            try:
+                whatsapp_message = self._generate_confirmation_message(request, user)
+                whatsapp_success = await self.whatsapp_service.send_message(
+                    user.phone_number,
+                    whatsapp_message
+                )
+                if whatsapp_success:
+                    logger.info(f"WhatsApp fallback confirmation sent for request {request_id}")
+                    return True
+            except Exception as e:
+                logger.error(f"WhatsApp fallback failed for request {request_id}: {e}")
+                
+            return False
+            
             # Get pricing estimate
             pricing = self.get_pricing_estimate(request.service_type)
             price_range = self.format_price_range(pricing)
@@ -65,7 +91,7 @@ class CommunicationService:
             )
             
             # Send confirmation
-            success = await self.whatsapp_service.send_message(
+            success = self.whatsapp_service.send_message(
                 user.whatsapp_id,
                 confirmation_message
             )
@@ -73,15 +99,29 @@ class CommunicationService:
             if success:
                 logger.info(f"Instant confirmation sent for request {request_id}")
                 
+            # If confirmation fails, log it for fallback handling
+            if not success:
+                logger.warning(f"Instant confirmation failed for request {request_id}")
+                await self._handle_confirmation_failure(request, user, db)
+                
                 # Start proactive update task
                 await self.start_proactive_updates(request_id, db)
             else:
                 logger.error(f"Failed to send confirmation for request {request_id}")
+                # Notify user about internal service error if confirmation fails
+                await self._notify_user_about_confirmation_error(request, user)
             
             return success
             
         except Exception as e:
             logger.error(f"Error sending instant confirmation for request {request_id}: {e}")
+            # Try to notify user about confirmation error
+            try:
+                request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+                if request and request.user:
+                    await self._notify_user_about_confirmation_error(request, request.user)
+            except Exception as notify_error:
+                logger.error(f"Failed to notify user about confirmation error: {notify_error}")
             return False
     
     async def start_proactive_updates(self, request_id: int, db: Session) -> None:
@@ -122,8 +162,9 @@ class CommunicationService:
                         logger.info(f"Stopping proactive updates for completed/cancelled request {request_id}")
                         break
                     
-                    # Calculate time since request creation
-                    time_since_creation = datetime.utcnow() - request.created_at
+                    # Calculate time since request creation with timezone handling
+                    current_time = datetime.now(request.created_at.tzinfo) if request.created_at.tzinfo else datetime.utcnow()
+                    time_since_creation = current_time - request.created_at
                     minutes_elapsed = int(time_since_creation.total_seconds() / 60)
                     
                     # Determine update frequency based on urgency
@@ -157,6 +198,28 @@ class CommunicationService:
             logger.info(f"Proactive updates cancelled for request {request_id}")
         except Exception as e:
             logger.error(f"Error in proactive update loop for request {request_id}: {e}")
+            # Try to get more specific error information
+            try:
+                db = next(get_db())
+                try:
+                    request = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+                    if request:
+                        logger.error(f"Request {request_id} details - Status: {request.status}, User: {request.user_id}, Service: {request.service_type}")
+                        
+                        # Store the error for later analysis
+                        from app.services.error_handling_service import ErrorHandlingService
+                        error_service = ErrorHandlingService(db)
+                        await error_service.handle_whatsapp_failure(
+                            request.user_id, 
+                            request_id, 
+                            f"Proactive update loop error: {str(e)}"
+                        )
+                    else:
+                        logger.error(f"Request {request_id} not found in database")
+                finally:
+                    db.close()
+            except Exception as inner_e:
+                logger.error(f"Error getting request details for {request_id}: {inner_e}")
         finally:
             # Clean up task reference
             if request_id in self.active_tasks:
@@ -167,21 +230,53 @@ class CommunicationService:
         try:
             user = db.query(User).filter(User.id == request.user_id).first()
             if not user:
+                logger.warning(f"User {request.user_id} not found for status update")
                 return
             
             message = self._generate_status_update_message(request)
             
-            await self.whatsapp_service.send_message(user.whatsapp_id, message)
-            logger.info(f"Status update sent for request {request.id}")
+            # Send status update via web chat (primary channel since requests come from web chat)
+            web_chat_success = await web_chat_notification_service.send_status_update(request.id, request.user_id, request.status)
+            if web_chat_success:
+                logger.info(f"Status update sent via web chat for request {request.id}")
+            else:
+                # Try WhatsApp as fallback (NOTE: Limited functionality in sandbox mode)
+                success = self.whatsapp_service.send_message(user.whatsapp_id, message)
+                if success:
+                    logger.info(f"Status update sent via WhatsApp for request {request.id} (may not reach user due to sandbox limitations)")
+                else:
+                    # Handle failure with error handling service
+                    logger.warning(f"Both web chat and WhatsApp status updates failed for request {request.id}")
+                    from app.services.error_handling_service import ErrorHandlingService
+                    error_service = ErrorHandlingService(db)
+                    await error_service.handle_whatsapp_failure(
+                        request.user_id, 
+                        request.id, 
+                        message,
+                        "status_update"
+                    )
             
         except Exception as e:
             logger.error(f"Error sending status update for request {request.id}: {e}")
+            # Store error for later analysis
+            try:
+                from app.services.error_handling_service import ErrorHandlingService
+                error_service = ErrorHandlingService(db)
+                await error_service.handle_whatsapp_failure(
+                    request.user_id, 
+                    request.id, 
+                    f"Status update error: {str(e)}",
+                    "status_update_error"
+                )
+            except Exception as inner_e:
+                logger.error(f"Error storing failed status update: {inner_e}")
     
     async def _send_countdown_warning(self, request: ServiceRequest, minutes_remaining: int, db: Session) -> None:
         """Send countdown warning when timeout approaches"""
         try:
             user = db.query(User).filter(User.id == request.user_id).first()
             if not user:
+                logger.warning(f"User {request.user_id} not found for countdown warning")
                 return
             
             message = f"""⏰ *Mise à jour importante*
@@ -192,11 +287,36 @@ Plus que *{minutes_remaining} minutes* pour qu'un prestataire accepte votre dema
 
 💬 Vous pouvez me poser des questions à tout moment !"""
             
-            await self.whatsapp_service.send_message(user.whatsapp_id, message)
-            logger.info(f"Countdown warning sent for request {request.id}")
+            # Try to send WhatsApp message
+            success = self.whatsapp_service.send_message(user.whatsapp_id, message)
+            if success:
+                logger.info(f"Countdown warning sent for request {request.id}")
+            else:
+                # Handle WhatsApp failure with error handling service
+                logger.warning(f"WhatsApp countdown warning failed for request {request.id}, storing for retry")
+                from app.services.error_handling_service import ErrorHandlingService
+                error_service = ErrorHandlingService(db)
+                await error_service.handle_whatsapp_failure(
+                    request.user_id, 
+                    request.id, 
+                    message,
+                    "countdown_warning"
+                )
             
         except Exception as e:
             logger.error(f"Error sending countdown warning for request {request.id}: {e}")
+            # Store error for later analysis
+            try:
+                from app.services.error_handling_service import ErrorHandlingService
+                error_service = ErrorHandlingService(db)
+                await error_service.handle_whatsapp_failure(
+                    request.user_id, 
+                    request.id, 
+                    f"Countdown warning error: {str(e)}",
+                    "countdown_warning_error"
+                )
+            except Exception as inner_e:
+                logger.error(f"Error storing failed countdown warning: {inner_e}")
     
     async def _handle_timeout(self, request: ServiceRequest, db: Session) -> None:
         """Handle request timeout and initiate fallback"""
@@ -216,7 +336,7 @@ Aucun prestataire n'a répondu dans les temps pour votre demande de {request.ser
 
 💬 Écrivez-moi pour que je trouve une solution adaptée !"""
             
-            await self.whatsapp_service.send_message(user.whatsapp_id, message)
+            self.whatsapp_service.send_message(user.whatsapp_id, message)
             logger.info(f"Timeout message sent for request {request.id}")
             
         except Exception as e:
@@ -279,7 +399,7 @@ Aucun prestataire n'a répondu dans les temps pour votre demande de {request.ser
             
             message = "\n".join(message_parts)
             
-            success = await self.whatsapp_service.send_message(user.whatsapp_id, message)
+            success = self.whatsapp_service.send_message(user.whatsapp_id, message)
             
             if success:
                 # Stop proactive updates
@@ -403,7 +523,9 @@ Je contacte les meilleurs prestataires de votre zone.
     
     def _generate_status_update_message(self, request: ServiceRequest) -> str:
         """Generate status update message based on request state"""
-        time_since_creation = datetime.utcnow() - request.created_at
+        # Handle timezone-aware datetime comparisons
+        current_time = datetime.now(request.created_at.tzinfo) if request.created_at.tzinfo else datetime.utcnow()
+        time_since_creation = current_time - request.created_at
         minutes_elapsed = int(time_since_creation.total_seconds() / 60)
         
         if request.status == RequestStatus.PENDING:
@@ -485,11 +607,196 @@ Je ne trouve pas de prestataires dans cette zone pour le moment.
             
             message = error_messages.get(error_type, error_messages["general"])
             
-            success = await self.whatsapp_service.send_message(user_whatsapp_id, message)
+            success = self.whatsapp_service.send_message(user_whatsapp_id, message)
             logger.info(f"Error message sent to {user_whatsapp_id}")
             
             return success
             
         except Exception as e:
             logger.error(f"Error sending error message to {user_whatsapp_id}: {e}")
+            return False
+    
+    async def _notify_user_about_confirmation_error(self, request: ServiceRequest, user: User) -> bool:
+        """Notify user about confirmation message delivery failure"""
+        try:
+            error_message = f"""⚠️ *Information - Problème de Notification*
+
+Votre demande de {request.service_type} à {request.location} est bien enregistrée et en cours de traitement.
+
+🔧 *Problème technique temporaire* : Nous rencontrons actuellement des difficultés avec notre service de notification automatique.
+
+✅ *Situation actuelle* :
+- Votre demande est prioritaire
+- Nous recherchons activement un prestataire
+- Le traitement continue normalement
+
+⏰ *Délai estimé* : La recherche de prestataires peut prendre quelques minutes supplémentaires (10-15 minutes au lieu de 5-10 minutes).
+
+💰 *Tarif estimé* : {self._get_price_estimate(request.service_type)}
+
+Vous serez informé dès qu'un professionnel accepte votre demande.
+
+Merci de votre patience ! 🙏
+
+📞 *Djobea AI* - Service de mise en relation"""
+            
+            # Try to send via WhatsApp (this might also fail, but it's worth trying)
+            success = self.whatsapp_service.send_message(user.whatsapp_id, error_message)
+            
+            if success:
+                logger.info(f"User {user.id} notified about confirmation error for request {request.id}")
+            else:
+                logger.error(f"Failed to notify user {user.id} about confirmation error - WhatsApp service unavailable")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error notifying user about confirmation error: {e}")
+            return False
+    
+    def _get_price_estimate(self, service_type: str) -> str:
+        """Get price estimate for a service type"""
+        pricing = self.settings.service_pricing.get(service_type.lower(), {})
+        if pricing:
+            min_price = pricing.get("min", 0)
+            max_price = pricing.get("max", 0)
+            return f"{min_price:,} - {max_price:,} XAF".replace(",", " ")
+        return "À négocier"
+    
+    async def _handle_confirmation_failure(self, request: ServiceRequest, user: User, db: Session):
+        """Handle confirmation failure with fallback message"""
+        try:
+            fallback_service = ProviderFallbackService(db)
+            
+            # Send fallback message explaining the delay
+            fallback_message = f"""
+📱 **Confirmation en cours**
+
+Votre demande de {request.service_type} a été reçue et est en cours de traitement.
+
+⏱️ **Délai prolongé :** 10-15 minutes (au lieu de 5-10 minutes habituels)
+
+🔍 Je recherche activement des prestataires dans votre zone.
+
+💬 Vous recevrez une notification dès qu'un professionnel acceptera votre demande.
+
+**Votre référence :** REQ-{request.id}
+"""
+            
+            # Try to send fallback message
+            success = self.whatsapp_service.send_message(user.whatsapp_id, fallback_message)
+            
+            if success:
+                logger.info(f"Fallback confirmation sent for request {request.id}")
+            else:
+                logger.error(f"Both confirmation and fallback failed for request {request.id}")
+                
+                # Store failed notification for retry later
+                await self._store_failed_notification(request, user, fallback_message, db)
+                
+        except Exception as e:
+            logger.error(f"Error handling confirmation failure: {e}")
+            await self._store_failed_notification(request, user, "Confirmation failed", db)
+    
+    async def _store_failed_notification(self, request: ServiceRequest, user: User, message: str, db: Session):
+        """Store failed notification for retry when WhatsApp is available"""
+        try:
+            from app.models.notification import NotificationQueue
+            
+            # Create notification record for retry
+            notification = NotificationQueue(
+                user_id=user.id,
+                request_id=request.id,
+                message=message,
+                notification_type="confirmation",
+                status="failed",
+                retry_count=0,
+                max_retries=3
+            )
+            
+            db.add(notification)
+            db.commit()
+            
+            logger.info(f"Failed notification stored for retry: request {request.id}")
+            
+        except Exception as e:
+            logger.error(f"Error storing failed notification: {e}")
+    
+    async def handle_provider_notification_failure(
+        self, 
+        request: ServiceRequest, 
+        failed_providers: List[Provider], 
+        db: Session
+    ) -> bool:
+        """Handle provider notification failure with fallback provider list"""
+        try:
+            logger.warning(f"Provider notification failed for request {request.id}")
+            
+            user = db.query(User).filter(User.id == request.user_id).first()
+            if not user:
+                return False
+            
+            # Use fallback service to get provider list
+            fallback_service = ProviderFallbackService(db)
+            fallback_message = await fallback_service.handle_notification_failure(
+                request, "provider_notification_failed"
+            )
+            
+            # Send fallback message with provider list
+            success = self.whatsapp_service.send_message(user.whatsapp_id, fallback_message)
+            
+            if success:
+                logger.info(f"Provider fallback list sent for request {request.id}")
+                
+                # Log the failure for analytics
+                await fallback_service.log_notification_failure(
+                    request, 
+                    "provider_notification_failed", 
+                    f"Failed to notify {len(failed_providers)} providers"
+                )
+                
+                return True
+            else:
+                logger.error(f"Failed to send provider fallback list for request {request.id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error handling provider notification failure: {e}")
+            return False
+    
+    async def handle_complete_system_failure(
+        self, 
+        request: ServiceRequest, 
+        db: Session
+    ) -> bool:
+        """Handle complete system failure with emergency fallback"""
+        try:
+            logger.error(f"Complete system failure for request {request.id}")
+            
+            user = db.query(User).filter(User.id == request.user_id).first()
+            if not user:
+                return False
+            
+            # Use fallback service for emergency message
+            fallback_service = ProviderFallbackService(db)
+            emergency_message = fallback_service._generate_emergency_fallback_message(request)
+            
+            # Try to send emergency message
+            success = self.whatsapp_service.send_message(user.whatsapp_id, emergency_message)
+            
+            if success:
+                logger.info(f"Emergency fallback sent for request {request.id}")
+                
+                # Update request status
+                request.status = "SYSTEM_FAILURE"
+                request.notes = "Complete system failure - emergency fallback sent"
+                db.commit()
+                
+                return True
+            else:
+                logger.critical(f"Emergency fallback also failed for request {request.id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error handling complete system failure: {e}")
             return False
